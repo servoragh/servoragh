@@ -47,6 +47,7 @@ export function UnifiedEcommerceSearch({
   const [selectedArea, setSelectedArea] = useState("all");
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isFallback, setIsFallback] = useState(false);
   const [results, setResults] = useState<{
     products: any[];
     services: any[];
@@ -134,6 +135,7 @@ export function UnifiedEcommerceSearch({
       const data = await res.json();
       if (data.results) {
         setResults(data.results);
+        setIsFallback(!!data.isFallback);
       }
     } catch (e) {
       console.error(e);
@@ -400,7 +402,13 @@ export function UnifiedEcommerceSearch({
           <>
             {/* Header result stats */}
             <div className="px-5 py-2.5 bg-stone-50 dark:bg-stone-800/80 flex items-center justify-between text-[11px] font-bold text-stone-500 border-b border-stone-200 dark:border-stone-800">
-              <span>MATCHING RESULTS ({totalResultsCount})</span>
+              {isFallback ? (
+                <span className="text-amber-600 dark:text-amber-400 font-bold">
+                  No exact match for "{query}". Showing popular recommendations:
+                </span>
+              ) : (
+                <span>MATCHING RESULTS ({totalResultsCount})</span>
+              )}
               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black">NORTHERN MARKETPLACE</span>
             </div>
 
