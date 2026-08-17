@@ -7,31 +7,44 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    // Check saved theme or default to light mode
+    function syncTheme() {
+      const isDark = document.documentElement.classList.contains("dark");
+      setTheme(isDark ? "dark" : "light");
+    }
+
+    // Initial check from localStorage / DOM
     const savedTheme = localStorage.getItem("servora_theme") as "light" | "dark" | null;
     if (savedTheme === "dark") {
       setTheme("dark");
       document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
     } else {
       setTheme("light");
       document.documentElement.classList.remove("dark");
-      document.documentElement.classList.add("light");
     }
+
+    window.addEventListener("servora_theme_changed", syncTheme);
+    window.addEventListener("storage", syncTheme);
+
+    return () => {
+      window.removeEventListener("servora_theme_changed", syncTheme);
+      window.removeEventListener("storage", syncTheme);
+    };
   }, []);
 
   function toggleTheme() {
-    if (theme === "light") {
-      setTheme("dark");
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    localStorage.setItem("servora_theme", nextTheme);
+
+    if (nextTheme === "dark") {
       document.documentElement.classList.add("dark");
       document.documentElement.classList.remove("light");
-      localStorage.setItem("servora_theme", "dark");
     } else {
-      setTheme("light");
       document.documentElement.classList.remove("dark");
       document.documentElement.classList.add("light");
-      localStorage.setItem("servora_theme", "light");
     }
+
+    window.dispatchEvent(new Event("servora_theme_changed"));
   }
 
   return (

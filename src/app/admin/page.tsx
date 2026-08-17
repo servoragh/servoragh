@@ -84,11 +84,27 @@ export default function AdminDashboardPage() {
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
 
   useEffect(() => {
+    function syncAdminTheme() {
+      const isDarkNow = document.documentElement.classList.contains("dark");
+      setThemeMode(isDarkNow ? "dark" : "light");
+    }
+
     const savedTheme = localStorage.getItem("servora_theme") as "dark" | "light" | null;
     if (savedTheme) {
       setThemeMode(savedTheme);
+    } else {
+      syncAdminTheme();
     }
+
     fetchAdminStats();
+
+    window.addEventListener("servora_theme_changed", syncAdminTheme);
+    window.addEventListener("storage", syncAdminTheme);
+
+    return () => {
+      window.removeEventListener("servora_theme_changed", syncAdminTheme);
+      window.removeEventListener("storage", syncAdminTheme);
+    };
   }, []);
 
   function handleSwitchTheme(newTheme: "dark" | "light") {
@@ -101,6 +117,7 @@ export default function AdminDashboardPage() {
       document.documentElement.classList.remove("dark");
       document.documentElement.classList.add("light");
     }
+    window.dispatchEvent(new Event("servora_theme_changed"));
   }
 
   async function fetchAdminStats() {
