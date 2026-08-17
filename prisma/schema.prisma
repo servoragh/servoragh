@@ -1,0 +1,469 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String            @id @default(uuid())
+  email            String?           @unique
+  phone            String            @unique
+  passwordHash     String
+  name             String
+  role             String            @default("CUSTOMER") // CUSTOMER, PROVIDER, ADMIN
+  avatarUrl        String?
+  isPhoneVerified  Boolean           @default(false)
+  referralCode     String?           @unique
+  referredByCode   String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  providerProfile       ProviderProfile?
+  serviceRequests       ServiceRequest[]      @relation("CustomerRequests")
+  quotes                Quote[]               @relation("ProviderQuotes")
+  sentMessages          Message[]             @relation("SentMessages")
+  reviewsGiven          Review[]              @relation("AuthorReviews")
+  reviewsReceived       Review[]              @relation("TargetReviews")
+  notifications         Notification[]
+  reportsSubmitted      Report[]              @relation("ReportedBy")
+  reportsAgainst        Report[]              @relation("ReportedTarget")
+  verificationRequests  VerificationRequest[]
+  auditLogs             AuditLog[]            @relation("UserAuditLogs")
+  communityNotices      CommunityNotice[]
+  chatParticipants      ChatParticipant[]
+  chatMessages          ChatMessage[]         @relation("UserChatMessages")
+  authorQAs             ProductQA[]           @relation("AuthorQAs")
+  answeredQAs           ProductQA[]           @relation("AnsweredQAs")
+  communityPosts        CommunityPost[]
+  communityComments     CommunityComment[]
+  communityUpvotes      CommunityUpvote[]
+}
+
+model ProviderProfile {
+  id                  String             @id @default(uuid())
+  userId              String             @unique
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName        String
+  slug                String             @unique
+  bio                 String
+  yearsExperience     Int                @default(1)
+  pricingHourly       Float?
+  pricingFixedStart   Float?
+  serviceArea         String             // e.g. "Sakasaka, Nyohini, Choggu, All Tamale"
+  verificationStatus   String             @default("UNVERIFIED") // UNVERIFIED, PENDING, VERIFIED, REJECTED
+  logoUrl             String?
+  websiteUrl          String?
+  idDocumentUrl       String?
+  businessCertUrl     String?
+  portfolioUrls       String             @default("[]") // JSON string array
+  ratingAverage       Float              @default(0.0)
+  reviewCount         Int                @default(0)
+  completedJobsCount  Int                @default(0)
+  responseRate        Float              @default(100.0)
+  responseTimeMinutes Int                @default(30)
+  isPromoted          Boolean            @default(false)
+  badges              String             @default("[\"PHONE_VERIFIED\"]") // JSON string array
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  services            ProviderService[]
+  products            Product[]
+  rentalTools         RentalTool[]
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  description String
+  icon        String
+  featured    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  services    Service[]
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String   @unique
+  description String
+  createdAt   DateTime @default(now())
+
+  providers   ProviderService[]
+  requests    ServiceRequest[]
+}
+
+model ProviderService {
+  id          String          @id @default(uuid())
+  providerId  String
+  provider    ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  serviceId   String
+  service     Service         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, serviceId])
+}
+
+model Location {
+  id        String   @id @default(uuid())
+  country   String   @default("Ghana")
+  region    String   @default("Northern Region")
+  city      String   @default("Tamale")
+  area      String   // e.g. Sakasaka, Choggu, Nyohini
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  requests  ServiceRequest[]
+}
+
+model ServiceRequest {
+  id                    String                @id @default(uuid())
+  customerId            String
+  customer              User                  @relation("CustomerRequests", fields: [customerId], references: [id], onDelete: Cascade)
+  serviceId             String?
+  service               Service?              @relation(fields: [serviceId], references: [id])
+  customCategory        String?               // Fallback for custom / unlisted service
+  tags                  String                @default("[]") // JSON string array
+  locationId            String?
+  location              Location?             @relation(fields: [locationId], references: [id])
+  communityPost         CommunityPost?
+  
+  // Dual Geolocation & Live GPS
+  streetAddress         String?
+  landmark              String?
+  latitude              Float?
+  longitude             Float?
+  accuracyRadius        Float?
+  isLiveTrackingOptIn   Boolean               @default(false)
+  
+  title                 String
+  description           String
+  images                String                @default("[]") // JSON string array
+  
+  // Urgency & Scheduling
+  urgency               String                @default("SAME_DAY") // EMERGENCY_ASAP, SAME_DAY, SCHEDULED, FLEXIBLE
+  scheduledDateTime     DateTime?
+  timezone              String                @default("Africa/Accra")
+  
+  // Budget & Pricing Structure
+  pricingType           String                @default("OPEN_FOR_QUOTES") // FIXED, RANGE, HOURLY, OPEN_FOR_QUOTES
+  budgetMin             Float?
+  budgetMax             Float?
+  currency              String                @default("GHS")
+  
+  // Guest Onboarding & Account Claiming
+  isGuestPost           Boolean               @default(false)
+  guestName             String?
+  guestPhone            String?
+  guestEmail            String?
+  guestClaimToken       String?               @unique
+  guestOtpCode          String?
+  isVerifiedGuest       Boolean               @default(false)
+  
+  // Safety, Access & Privacy Settings
+  accessInstructions    String?
+  preferredContactMethod String               @default("WHATSAPP_SMS") // CHAT, CALL, WHATSAPP_SMS
+  visibility            String                @default("PUBLIC_ALL") // PUBLIC_ALL, VERIFIED_ONLY, PRIVATE_INVITE
+  
+  // Lifecycle States: DRAFT, PENDING_VERIFICATION, PUBLISHED, OFFER_ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED, EXPIRED
+  status                String                @default("OPEN")
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  quotes                Quote[]
+  reviews               Review[]
+  media                 ServiceRequestMedia[]
+}
+
+model ServiceRequestMedia {
+  id          String         @id @default(uuid())
+  requestId   String
+  request     ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  mediaUrl    String
+  mediaType   String         // IMAGE, VIDEO, DOCUMENT
+  fileName    String?
+  fileSize    Int?
+  createdAt   DateTime       @default(now())
+}
+
+model Quote {
+  id             String      @id @default(uuid())
+  requestId      String
+  request        ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  providerId     String
+  provider       User        @relation("ProviderQuotes", fields: [providerId], references: [id], onDelete: Cascade)
+  price          Float
+  estimatedHours Int?
+  completionTime String
+  message        String
+  status         String      @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt      DateTime    @default(now())
+
+  conversation   Conversation?
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  quoteId   String?  @unique
+  quote     Quote?   @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages  Message[]
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  text           String
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+}
+
+model Review {
+  id         String         @id @default(uuid())
+  requestId  String
+  request    ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User           @relation("AuthorReviews", fields: [authorId], references: [id])
+  targetId   String
+  target     User           @relation("TargetReviews", fields: [targetId], references: [id])
+  rating     Int            // 1 to 5
+  comment    String
+  isApproved Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+}
+
+model VerificationRequest {
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  idType      String             // Ghana Card, Driver License, Passport
+  idNumber    String
+  documentUrl String
+  status      String             @default("PENDING") // PENDING, VERIFIED, REJECTED
+  adminNotes  String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model Report {
+  id         String   @id @default(uuid())
+  reporterId String
+  reporter   User     @relation("ReportedBy", fields: [reporterId], references: [id])
+  targetId   String?
+  target     User?    @relation("ReportedTarget", fields: [targetId], references: [id])
+  reason     String
+  details    String
+  isResolved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  isEnabled   Boolean  @default(false)
+  description String
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation("UserAuditLogs", fields: [userId], references: [id])
+  action    String
+  details   String
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id            String          @id @default(uuid())
+  providerId    String
+  provider      ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  title         String
+  slug          String          @unique
+  description   String
+  price         Float
+  originalPrice Float?        // Regular compare-at price before discount
+  stockQuantity Int           @default(1)
+  images        String          @default("[]") // JSON string array
+  category      String          // e.g. "Electronics", "Fashion & Fugu", "Electrical Supplies", "Tools"
+  isAvailable   Boolean         @default(true)
+  viewCount     Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  qaThreads     ProductQA[]
+}
+
+model RentalTool {
+  id          String          @id @default(uuid())
+  providerId  String
+  provider    ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  title       String
+  slug        String          @unique
+  description String
+  dailyRate   Float
+  images      String          @default("[]") // JSON string array
+  category    String          // e.g. "Power Tools", "Generators", "Scaffolding & Ladders"
+  isAvailable Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model CommunityNotice {
+  id        String   @id @default(uuid())
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  category  String   // e.g. "Urgent Request", "Artisan Meetup", "Equipment Needed", "Job Opportunity"
+  area      String   // e.g. Sakasaka, Aboabo, Nyohini
+  createdAt DateTime @default(now())
+}
+
+// =========================================================================
+// MULTI-ROLE CHAT & MESSAGING SUBSYSTEM MODELS
+// =========================================================================
+
+model ChatRoom {
+  id        String   @id @default(uuid())
+  scope     String   @default("C2B") // C2B, C2ADMIN_SUPPORT, B2ADMIN, B2B_WHOLESALE, DISPUTE_MEDIATION, LOGISTICS_COURIER, BOT_HELP
+  title     String?
+  productId String?
+  orderId   String?
+  status    String   @default("OPEN") // OPEN, TRIAGED, RESOLVED, CLOSED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ChatParticipant[]
+  messages     ChatMessage[]
+  moderation   ModerationLog[]
+}
+
+model ChatParticipant {
+  id          String    @id @default(uuid())
+  roomId      String
+  room        ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String    @default("BUYER") // BUYER, VENDOR, ADMIN_MEDIATOR, COURIER, BOT
+  unreadCount Int       @default(0)
+  lastReadAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([roomId, userId])
+}
+
+model ChatMessage {
+  id             String   @id @default(uuid())
+  roomId         String
+  room           ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User     @relation("UserChatMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  content        String
+  attachments    String   @default("[]") // JSON string array of Cloudinary URLs
+  status         String   @default("SENT") // SENT, DELIVERED, READ
+  isInternalNote Boolean  @default(false) // Staff-only internal note
+  createdAt      DateTime @default(now())
+}
+
+model ProductQA {
+  id              String   @id @default(uuid())
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User     @relation("AuthorQAs", fields: [authorId], references: [id], onDelete: Cascade)
+  question        String
+  answer          String?
+  answeredById    String?
+  answeredBy      User?    @relation("AnsweredQAs", fields: [answeredById], references: [id], onDelete: SetNull)
+  isVerifiedBuyer Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ModerationLog {
+  id          String    @id @default(uuid())
+  roomId      String?
+  room        ChatRoom? @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  senderId    String?
+  flaggedText String
+  reason      String    // PHONE_MASKED, OFF_PLATFORM_PAYMENT, PROFANITY
+  actionTaken String    // MASKED, BLOCKED, FLAGGED
+  createdAt   DateTime  @default(now())
+}
+
+model CommunityPost {
+  id               String             @id @default(uuid())
+  title            String
+  content          String
+  category         String             @default("NEIGHBORHOOD_NOTICE") // MEETUP, EQUIPMENT_RENTAL, ALERT, SKILL_SHARE, RECOMMENDATION, SERVICE_REQUEST, LOST_AND_FOUND, GENERAL
+  area             String             @default("ALL_TAMALE") // SAKASAKA, NYOHINI, CHOGGU, ABOABO, DUNGU_UDS, LAMASHEGU, VITTIN, GUMANI, KALPOHIN, CENTRAL_MARKET, DATOYILI, BILPELA, ALL_TAMALE
+  status           String             @default("OPEN") // OPEN, RESOLVED, EXPIRED
+  images           String             @default("[]") // JSON string array
+  
+  // Cross-linking to Service Requests
+  serviceRequestId String?            @unique
+  serviceRequest   ServiceRequest?    @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  
+  // Author & Contact
+  authorId         String?
+  author           User?              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  guestContact     String?            // JSON string: { name, phone, whatsapp }
+  allowDirectCall  Boolean            @default(false)
+  allowWhatsApp    Boolean            @default(true)
+  
+  // Engagement
+  upvotesCount     Int                @default(0)
+  commentsCount    Int                @default(0)
+  viewsCount       Int                @default(0)
+  reportsCount     Int                @default(0)
+  
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  comments         CommunityComment[]
+  upvotes          CommunityUpvote[]
+}
+
+model CommunityComment {
+  id        String        @id @default(uuid())
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime      @default(now())
+}
+
+model CommunityUpvote {
+  id        String        @id @default(uuid())
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([postId, userId])
+}
