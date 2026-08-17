@@ -32,6 +32,7 @@ import {
   Save,
   FileCheck,
   Globe,
+  User,
 } from "lucide-react";
 import { TrustBadge } from "@/components/TrustBadge";
 import { PostProductModal } from "@/components/PostProductModal";
