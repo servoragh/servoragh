@@ -43,6 +43,7 @@ import { LaunchModeWidget } from "@/components/LaunchModeWidget";
 import { TrustBadge } from "@/components/TrustBadge";
 import { UnifiedMessagingHub } from "@/components/UnifiedMessagingHub";
 import { CsvImporterModal } from "@/components/CsvImporterModal";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { formatDate, formatGHS } from "@/lib/utils";
 
 export default function AdminDashboardPage() {
@@ -90,16 +91,17 @@ export default function AdminDashboardPage() {
     fetchAdminStats();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("servora_theme", themeMode);
-    if (themeMode === "light") {
+  function handleSwitchTheme(newTheme: "dark" | "light") {
+    setThemeMode(newTheme);
+    localStorage.setItem("servora_theme", newTheme);
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      document.documentElement.classList.remove("light");
+    } else {
       document.documentElement.classList.remove("dark");
       document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-      document.documentElement.classList.add("dark");
     }
-  }, [themeMode]);
+  }
 
   async function fetchAdminStats() {
     try {
@@ -232,13 +234,13 @@ export default function AdminDashboardPage() {
 
   // Dynamic Theme Styling
   const isDark = themeMode === "dark";
-  const bgMain = isDark ? "bg-stone-950 text-white" : "bg-slate-50 text-slate-900";
-  const bgHeader = isDark ? "bg-stone-900 border-stone-800" : "bg-white border-slate-200 shadow-sm text-slate-900";
-  const bgSidebar = isDark ? "bg-stone-900/90 border-stone-800" : "bg-white border-slate-200";
-  const bgCard = isDark ? "bg-stone-900 border-stone-800 text-white" : "bg-white border-slate-200 shadow-sm text-slate-900";
-  const bgCardSecondary = isDark ? "bg-stone-950 border-stone-800 text-white" : "bg-slate-100 border-slate-200 text-slate-900";
-  const textSubtle = isDark ? "text-stone-400" : "text-slate-500";
-  const borderSubtle = isDark ? "border-stone-800" : "border-slate-200";
+  const bgMain = "bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100";
+  const bgHeader = "bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white shadow-xs";
+  const bgSidebar = "bg-white dark:bg-stone-900/90 border-stone-200 dark:border-stone-800";
+  const bgCard = "bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white shadow-xs";
+  const bgCardSecondary = "bg-stone-100 dark:bg-stone-950 border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white";
+  const textSubtle = "text-stone-500 dark:text-stone-400";
+  const borderSubtle = "border-stone-200 dark:border-stone-800";
 
   return (
     <div className={`min-h-screen ${bgMain} flex flex-col font-sans transition-colors duration-200`}>
@@ -247,7 +249,7 @@ export default function AdminDashboardPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className={`p-2 lg:hidden ${isDark ? "text-stone-300 bg-stone-800" : "text-slate-700 bg-slate-100"} rounded-xl`}
+            className="p-2 lg:hidden text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 rounded-xl"
             aria-label="Toggle Mobile Admin Menu"
           >
             <Menu className="w-5 h-5" />
@@ -256,25 +258,13 @@ export default function AdminDashboardPage() {
             <Wrench className="w-4 h-4" />
           </div>
           <div>
-            <span className={`font-black text-sm block leading-tight ${isDark ? "text-white" : "text-slate-900"}`}>Servora Admin IDE</span>
+            <span className="font-black text-sm block leading-tight text-stone-900 dark:text-white">Servora Admin IDE</span>
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold">Master Control Center</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Light / Dark Mode Quick Switcher */}
-          <button
-            onClick={() => setThemeMode(isDark ? "light" : "dark")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition ${
-              isDark
-                ? "bg-amber-950/80 border-amber-700/60 text-amber-300 hover:bg-amber-900"
-                : "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
-            }`}
-            title="Toggle Light / Dark Theme"
-          >
-            {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-600" />}
-            <span className="hidden sm:inline">{isDark ? "Light Mode" : "Dark Mode"}</span>
-          </button>
+          <ThemeToggle />
 
           <button
             onClick={() => setIsCsvModalOpen(true)}
@@ -285,7 +275,7 @@ export default function AdminDashboardPage() {
           </button>
           <button
             onClick={fetchAdminStats}
-            className={`p-1.5 ${isDark ? "bg-stone-800 text-stone-300 hover:bg-stone-700" : "bg-slate-100 text-slate-700 hover:bg-slate-200"} rounded-xl transition`}
+            className="p-1.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-xl transition"
             title="Refresh Admin Data"
           >
             <RefreshCw className="w-4 h-4" />
@@ -440,11 +430,11 @@ export default function AdminDashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <button
                       type="button"
-                      onClick={() => setThemeMode("dark")}
-                      className={`p-4 rounded-2xl border text-left flex items-center justify-between transition ${
+                      onClick={() => handleSwitchTheme("dark")}
+                      className={`p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer ${
                         themeMode === "dark"
                           ? "bg-stone-900 border-emerald-500 ring-2 ring-emerald-500/20 text-white"
-                          : "bg-stone-800/40 border-stone-700 text-stone-400"
+                          : "bg-stone-100 dark:bg-stone-800/40 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-400"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -452,8 +442,8 @@ export default function AdminDashboardPage() {
                           <Moon className="w-4 h-4 text-emerald-400" />
                         </div>
                         <div>
-                          <span className="font-bold text-xs block text-white">Dark Mode</span>
-                          <span className="text-[10px] text-stone-400">Default dark theme</span>
+                          <span className="font-bold text-xs block text-stone-900 dark:text-white">Dark Mode</span>
+                          <span className="text-[10px] text-stone-500 dark:text-stone-400">Default dark theme</span>
                         </div>
                       </div>
                       {themeMode === "dark" && <Check className="w-4 h-4 text-emerald-400" />}
@@ -461,11 +451,11 @@ export default function AdminDashboardPage() {
 
                     <button
                       type="button"
-                      onClick={() => setThemeMode("light")}
-                      className={`p-4 rounded-2xl border text-left flex items-center justify-between transition ${
+                      onClick={() => handleSwitchTheme("light")}
+                      className={`p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer ${
                         themeMode === "light"
-                          ? "bg-white border-emerald-500 ring-2 ring-emerald-500/20 text-slate-900 shadow-sm"
-                          : "bg-slate-100 border-slate-200 text-slate-600"
+                          ? "bg-white border-emerald-500 ring-2 ring-emerald-500/20 text-stone-900 shadow-xs"
+                          : "bg-stone-100 dark:bg-stone-800/40 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-400"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -473,8 +463,8 @@ export default function AdminDashboardPage() {
                           <Sun className="w-4 h-4 text-amber-600" />
                         </div>
                         <div>
-                          <span className="font-bold text-xs block text-slate-900">Light Mode</span>
-                          <span className="text-[10px] text-slate-500">Clean bright theme</span>
+                          <span className="font-bold text-xs block text-stone-900 dark:text-white">Light Mode</span>
+                          <span className="text-[10px] text-stone-500 dark:text-stone-400">Clean bright theme</span>
                         </div>
                       </div>
                       {themeMode === "light" && <Check className="w-4 h-4 text-emerald-600" />}
@@ -816,10 +806,10 @@ export default function AdminDashboardPage() {
         <aside className={`w-full lg:w-80 ${bgSidebar} border-t lg:border-t-0 lg:border-l p-4 space-y-6 shrink-0 overflow-y-auto`}>
           <div>
             <span className={`text-[10px] font-black uppercase tracking-wider ${textSubtle} block mb-2`}>LIVE INSPECTOR FEED</span>
-            <div className="bg-gradient-to-br from-emerald-950 via-stone-900 to-stone-900 border border-emerald-500/40 p-4 rounded-2xl space-y-1 text-white shadow-sm">
-              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">Weekly Connections</span>
+            <div className="bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 dark:from-emerald-950 dark:via-stone-900 dark:to-stone-900 border border-emerald-500/40 p-4 rounded-2xl space-y-1 text-white shadow-xs">
+              <span className="text-[10px] font-bold text-emerald-200 dark:text-emerald-400 uppercase tracking-widest block">Weekly Connections</span>
               <span className="text-2xl font-black block">{stats.northStarWeeklyConnections}</span>
-              <span className="text-[11px] text-emerald-300">Accepted Quotes + Jobs</span>
+              <span className="text-[11px] text-emerald-100 dark:text-emerald-300">Accepted Quotes + Jobs</span>
             </div>
           </div>
 
