@@ -100,13 +100,16 @@ export function Navbar() {
             <ThemeToggle />
 
             {session ? (
-              <div className="flex items-center gap-2 shrink-0">
-                <Link
-                  href="/business/portal"
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition shrink-0"
-                >
-                  Business Portal
-                </Link>
+              <div className="flex items-center gap-2.5 shrink-0">
+                {session.role === "PROVIDER" && (
+                  <Link
+                    href="/business/portal"
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition shrink-0 flex items-center gap-1.5"
+                  >
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Business Portal</span>
+                  </Link>
+                )}
 
                 {session.role === "ADMIN" && (
                   <Link
@@ -118,8 +121,9 @@ export function Navbar() {
                 )}
 
                 <Link
-                  href="/dashboard"
+                  href={session.role === "PROVIDER" ? "/business/portal" : session.role === "ADMIN" ? "/admin" : "/dashboard"}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white font-semibold text-xs border border-stone-200 dark:border-stone-700 hover:bg-stone-200 dark:hover:bg-stone-700 transition shrink-0"
+                  title="View Portal / Dashboard"
                 >
                   {session.avatarUrl || session.providerProfile?.logoUrl ? (
                     <img

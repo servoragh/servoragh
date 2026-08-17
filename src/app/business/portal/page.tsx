@@ -323,20 +323,27 @@ export default function BusinessOwnerPortalPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/dashboard"
+              className="px-4 py-2 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold rounded-xl border border-stone-300 dark:border-stone-700 transition flex items-center gap-1.5"
+            >
+              <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Customer Dashboard</span>
+            </Link>
             {profile.websiteUrl && (
               <a
                 href={profile.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white text-xs font-bold rounded-xl border border-emerald-500/40 transition flex items-center gap-1.5"
+                className="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-800 dark:text-emerald-300 hover:text-white text-xs font-bold rounded-xl border border-emerald-500/40 transition flex items-center gap-1.5"
               >
-                <Globe className="w-4 h-4 text-emerald-400" />
+                <Globe className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Visit External Website</span>
               </a>
             )}
             <Link
               href={`/provider/${profile.slug}`}
-              className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-white text-xs font-bold rounded-xl border border-stone-700 transition flex items-center gap-1.5"
+              className="px-4 py-2 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-white text-xs font-bold rounded-xl border border-stone-300 dark:border-stone-700 transition flex items-center gap-1.5"
             >
               <ExternalLink className="w-4 h-4" />
               <span>Public Storefront</span>
@@ -384,42 +391,42 @@ export default function BusinessOwnerPortalPage() {
           <div className="space-y-6">
             {/* Amazon/Shopify Seller Performance Summary Bar */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-stone-900 border border-stone-800 p-5 rounded-3xl">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block">TOTAL CATALOG ITEMS</span>
-                <span className="text-3xl font-black text-white block my-1">{totalProductsCount}</span>
-                <span className="text-xs text-emerald-400 font-semibold">{activeProductsCount} Active Listings</span>
+              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-5 rounded-3xl shadow-xs">
+                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">TOTAL CATALOG ITEMS</span>
+                <span className="text-3xl font-black text-stone-900 dark:text-white block my-1">{totalProductsCount}</span>
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{activeProductsCount} Active Listings</span>
               </div>
-              <div className="bg-stone-900 border border-stone-800 p-5 rounded-3xl">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block">INVENTORY VALUE</span>
-                <span className="text-3xl font-black text-emerald-400 block my-1">{formatGHS(totalInventoryValue)}</span>
-                <span className="text-xs text-stone-400">Total Stock Value</span>
+              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-5 rounded-3xl shadow-xs">
+                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">INVENTORY VALUE</span>
+                <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 block my-1">{formatGHS(totalInventoryValue)}</span>
+                <span className="text-xs text-stone-500 dark:text-stone-400">Total Stock Value</span>
               </div>
-              <div className="bg-stone-900 border border-stone-800 p-5 rounded-3xl">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block">PROMOTIONAL DISCOUNTS</span>
-                <span className="text-3xl font-black text-amber-400 block my-1">{discountedProductsCount}</span>
-                <span className="text-xs text-amber-300 font-semibold">Active Sale Prices</span>
+              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-5 rounded-3xl shadow-xs">
+                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">PROMOTIONAL DISCOUNTS</span>
+                <span className="text-3xl font-black text-amber-500 dark:text-amber-400 block my-1">{discountedProductsCount}</span>
+                <span className="text-xs text-amber-600 dark:text-amber-300 font-semibold">Active Sale Prices</span>
               </div>
-              <div className="bg-stone-900 border border-stone-800 p-5 rounded-3xl">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block">STOCK ALERTS</span>
-                <span className="text-3xl font-black text-rose-400 block my-1">{outOfStockCount}</span>
-                <span className="text-xs text-rose-300 font-semibold">Out of Stock / Draft</span>
+              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-5 rounded-3xl shadow-xs">
+                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">STOCK ALERTS</span>
+                <span className="text-3xl font-black text-rose-500 dark:text-rose-400 block my-1">{outOfStockCount}</span>
+                <span className="text-xs text-rose-600 dark:text-rose-300 font-semibold">Out of Stock / Draft</span>
               </div>
             </div>
 
             {/* Seller Control Toolbar: Search & Filter */}
-            <div className="bg-stone-900 border border-stone-800 rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xs">
               {/* Search Box */}
-              <div className="flex items-center gap-2 bg-stone-800/80 px-3.5 py-2 rounded-2xl border border-stone-700/60 w-full md:w-80">
-                <Search className="w-4 h-4 text-emerald-500 shrink-0" />
+              <div className="flex items-center gap-2 bg-stone-50 dark:bg-stone-800/80 px-3.5 py-2 rounded-2xl border border-stone-200 dark:border-stone-700/60 w-full md:w-80">
+                <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-500 shrink-0" />
                 <input
                   type="text"
                   placeholder="Search products by title or category..."
                   value={inventorySearch}
                   onChange={(e) => setInventorySearch(e.target.value)}
-                  className="bg-transparent text-xs text-white placeholder-stone-400 outline-none w-full font-medium"
+                  className="bg-transparent text-xs text-stone-900 dark:text-white placeholder-stone-400 outline-none w-full font-medium"
                 />
                 {inventorySearch && (
-                  <button onClick={() => setInventorySearch("")} className="text-stone-400 hover:text-white">
+                  <button onClick={() => setInventorySearch("")} className="text-stone-400 hover:text-stone-700 dark:hover:text-white">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -436,10 +443,10 @@ export default function BusinessOwnerPortalPage() {
                   <button
                     key={flt.id}
                     onClick={() => setInventoryFilter(flt.id as any)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
                       inventoryFilter === flt.id
                         ? "bg-emerald-600 text-white"
-                        : "bg-stone-800 text-stone-400 hover:bg-stone-700 hover:text-white"
+                        : "bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700"
                     }`}
                   >
                     {flt.label}
@@ -462,10 +469,10 @@ export default function BusinessOwnerPortalPage() {
 
             {/* Enterprise Amazon/Shopify Inventory Table */}
             {filteredProducts.length === 0 ? (
-              <div className="bg-stone-900 p-12 rounded-3xl border border-stone-800 text-center space-y-3">
-                <Package className="w-12 h-12 text-stone-600 mx-auto" />
-                <h3 className="text-base font-bold text-white">No Inventory Items Found</h3>
-                <p className="text-xs text-stone-400">
+              <div className="bg-white dark:bg-stone-900 p-12 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-3 shadow-xs">
+                <Package className="w-12 h-12 text-stone-400 dark:text-stone-600 mx-auto" />
+                <h3 className="text-base font-bold text-stone-900 dark:text-white">No Inventory Items Found</h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400">
                   {inventorySearch || inventoryFilter !== "all"
                     ? "No products match your current search or filter criteria."
                     : "You haven't posted any products for sale yet."}
@@ -482,10 +489,10 @@ export default function BusinessOwnerPortalPage() {
                 </button>
               </div>
             ) : (
-              <div className="bg-stone-900 border border-stone-800 rounded-3xl overflow-hidden shadow-xl">
+              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-stone-300">
-                    <thead className="bg-stone-850 text-[10px] font-black uppercase tracking-wider text-stone-400 border-b border-stone-800">
+                  <table className="w-full text-left text-xs text-stone-700 dark:text-stone-300">
+                    <thead className="bg-stone-50 dark:bg-stone-800/80 text-[10px] font-black uppercase tracking-wider text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-800">
                       <tr>
                         <th className="p-4">Product / Item</th>
                         <th className="p-4">Category</th>
@@ -495,7 +502,7 @@ export default function BusinessOwnerPortalPage() {
                         <th className="p-4 text-right">Manage Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-stone-800">
+                    <tbody className="divide-y divide-stone-200 dark:divide-stone-800">
                       {filteredProducts.map((prod: any) => {
                         let parsedImgs: string[] = [];
                         try {
@@ -509,7 +516,7 @@ export default function BusinessOwnerPortalPage() {
                         const stock = prod.stockQuantity !== undefined ? prod.stockQuantity : 1;
 
                         return (
-                          <tr key={prod.id} className="hover:bg-stone-850/60 transition">
+                          <tr key={prod.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/50 transition">
                             {/* Product Info */}
                             <td className="p-4">
                               <div className="flex items-center gap-3">
