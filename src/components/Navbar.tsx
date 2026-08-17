@@ -29,12 +29,12 @@ export function Navbar() {
       {/* 24/7 Emergency Ticker Banner */}
       <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white text-[11px] py-1 px-4 border-b border-emerald-900/40 flex items-center justify-between font-bold">
         <div className="flex items-center gap-2 max-w-7xl mx-auto w-full justify-between">
-          <span className="flex items-center gap-1.5 text-emerald-100">
-            <span className="relative flex h-2 w-2">
+          <span className="flex items-center gap-1.5 text-emerald-100 min-w-0 truncate">
+            <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
             </span>
-            <span>24/7 Northern Ghana Emergency Hotline & Dispatch Active</span>
+            <span className="truncate">24/7 Northern Ghana Emergency Hotline & Dispatch Active</span>
           </span>
           <div className="hidden sm:flex items-center gap-4 text-emerald-100 text-[10px]">
             <span>⚡ Electrical, Plumbing & Power Failures</span>

@@ -362,7 +362,7 @@ export function UnifiedEcommerceSearch({
   // -------------------------------------------------------------
   function renderAutocompleteResults(isCompact = false) {
     const popoverPositionClass = isCompact
-      ? "absolute top-full left-0 sm:-left-32 w-full sm:w-[520px] lg:w-[580px] max-w-[94vw]"
+      ? "absolute top-full left-0 right-0 sm:left-auto sm:right-0 w-full sm:w-[520px] lg:w-[580px] max-w-[calc(100vw-32px)]"
       : "absolute top-full left-0 right-0 w-full";
 
     return (
