@@ -13,13 +13,15 @@ export async function POST(request: Request) {
     }
 
     const cleanInput = phoneOrEmail.trim();
+    const cleanLower = cleanInput.toLowerCase();
     const phoneVariants = getPhoneVariants(cleanInput);
 
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { phone: { in: phoneVariants } },
-          { email: cleanInput },
+          { email: cleanLower },
+          { email: { equals: cleanLower, mode: "insensitive" } },
         ],
       },
       include: {
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
 
     const isValid = await comparePassword(password, user.passwordHash);
     if (!isValid) {
-      return NextResponse.json({ error: "Incorrect password. Please try again." }, { status: 401 });
+      return NextResponse.json({ error: "Incorrect password. Please check your password and try again." }, { status: 401 });
     }
 
     const sessionUser: SessionUser = {
@@ -53,6 +55,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, user: sessionUser });
   } catch (error: any) {
     console.error("Login Error:", error);
-    return NextResponse.json({ error: "Login failed. Please check your credentials and network connection." }, { status: 500 });
+    return NextResponse.json({ error: "Login failed. Please check your network connection and credentials." }, { status: 500 });
   }
 }
