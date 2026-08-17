@@ -61,7 +61,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-stone-900 text-stone-100">
       {/* 1. HERO SECTION */}
-      <section className="relative overflow-hidden pt-12 pb-20 bg-gradient-to-b from-stone-950 via-stone-900 to-stone-900 border-b border-stone-800">
+      <section className="relative pt-12 pb-20 bg-gradient-to-b from-stone-950 via-stone-900 to-stone-900 border-b border-stone-800 z-30">
         <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
