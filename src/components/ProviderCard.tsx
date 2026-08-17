@@ -53,30 +53,30 @@ export function ProviderCard({ provider, onRequestQuote }: ProviderCardProps) {
   const whatsappMessage = `Hello ${provider.businessName}, I found your artisan profile on Servora Tamale and I would like to inquire about your local service availability.`;
 
   return (
-    <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+    <div className="bg-white border border-stone-200 rounded-3xl p-5 shadow-xs hover:shadow-md hover:border-emerald-300 transition flex flex-col justify-between">
       <div>
         {/* Header: Name, Verified Indicator & Trust Score */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-lg flex items-center justify-center border border-emerald-300 dark:border-emerald-700">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 font-extrabold text-lg flex items-center justify-center border border-emerald-300 shadow-xs">
               {provider.businessName.charAt(0)}
             </div>
             <div>
               <Link
                 href={`/provider/${provider.slug}`}
-                className="font-bold text-stone-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 transition line-clamp-1"
+                className="font-bold text-stone-900 hover:text-emerald-700 transition line-clamp-1 text-base"
               >
                 {provider.businessName}
               </Link>
-              <p className="text-xs text-stone-500 dark:text-stone-400">
+              <p className="text-xs text-stone-500 font-medium">
                 {provider.user?.name} &bull; {provider.yearsExperience} yrs exp
               </p>
             </div>
           </div>
 
           <div className="flex flex-col items-end">
-            <div className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs px-2 py-1 rounded-full font-bold border border-emerald-200 dark:border-emerald-800">
-              <ShieldCheck className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold border border-emerald-200">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
               <span>{trustScore}% Trust</span>
             </div>
           </div>
@@ -96,28 +96,28 @@ export function ProviderCard({ provider, onRequestQuote }: ProviderCardProps) {
         </div>
 
         {/* Description / Bio */}
-        <p className="text-stone-600 dark:text-stone-300 text-sm line-clamp-2 mb-3">
+        <p className="text-stone-600 text-xs font-medium line-clamp-2 mb-3 leading-relaxed">
           {provider.bio}
         </p>
 
         {/* Location & Stats */}
-        <div className="grid grid-cols-2 gap-2 text-xs text-stone-500 dark:text-stone-400 bg-stone-50 dark:bg-stone-800/50 p-2.5 rounded-xl mb-4">
+        <div className="grid grid-cols-2 gap-2 text-xs text-stone-600 bg-stone-50 p-2.5 rounded-2xl mb-4 border border-stone-100">
           <div className="flex items-center gap-1.5 truncate">
             <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span className="truncate">{provider.serviceArea}</span>
+            <span className="truncate font-semibold">{provider.serviceArea}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
-            <span className="font-semibold text-stone-800 dark:text-stone-200">
-              {provider.ratingAverage > 0 ? provider.ratingAverage : "New"} ({provider.reviewCount} reviews)
+            <span className="font-bold text-stone-900">
+              {provider.ratingAverage > 0 ? provider.ratingAverage : "New"} ({provider.reviewCount})
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <Briefcase className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span>{provider.completedJobsCount} jobs completed</span>
+            <span className="font-medium">{provider.completedJobsCount} jobs done</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+            <span className="font-bold text-emerald-700">
               {provider.pricingFixedStart
                 ? `From ${formatGHS(provider.pricingFixedStart)}`
                 : provider.pricingHourly
@@ -129,10 +129,10 @@ export function ProviderCard({ provider, onRequestQuote }: ProviderCardProps) {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center gap-2 pt-2 border-t border-stone-100 dark:border-stone-800">
+      <div className="flex items-center gap-2 pt-3 border-t border-stone-100">
         <Link
           href={`/provider/${provider.slug}`}
-          className="flex-1 py-2 text-center text-xs font-semibold text-stone-700 dark:text-stone-200 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-xl transition"
+          className="flex-1 py-2 text-center text-xs font-bold text-stone-800 bg-stone-100 hover:bg-stone-200 rounded-xl transition"
         >
           View Profile
         </Link>
@@ -141,7 +141,7 @@ export function ProviderCard({ provider, onRequestQuote }: ProviderCardProps) {
           phone={provider.user?.phone}
           text={whatsappMessage}
           label="WhatsApp"
-          className="py-2 px-3 text-xs"
+          className="py-2 px-3 text-xs font-bold"
         />
       </div>
     </div>

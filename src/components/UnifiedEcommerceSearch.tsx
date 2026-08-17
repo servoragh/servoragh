@@ -163,15 +163,15 @@ export function UnifiedEcommerceSearch({
     (results.providers?.length || 0);
 
   // -------------------------------------------------------------
-  // 1. HEADER COMPACT VARIANT (Strict Overflow Visible Dropdown)
+  // 1. HEADER COMPACT VARIANT (Light Theme)
   // -------------------------------------------------------------
   if (variant === "compact") {
     return (
       <div ref={searchContainerRef} className={`relative w-full ${className}`}>
         <form
           onSubmit={handleFormSubmit}
-          className={`flex items-center bg-stone-100 dark:bg-stone-800 border ${
-            isOpen ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-stone-300 dark:border-stone-700"
+          className={`flex items-center bg-stone-100 border ${
+            isOpen ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-stone-300"
           } rounded-full h-10 px-2 transition-all duration-200 relative z-30 w-full`}
         >
           {/* Scope Dropdown */}
@@ -184,10 +184,10 @@ export function UnifiedEcommerceSearch({
             ]}
             value={scope}
             onChange={(val) => setScope(val as any)}
-            buttonClassName="border-0 bg-transparent text-stone-800 dark:text-stone-200 px-1.5 hover:bg-transparent text-xs shrink-0"
+            buttonClassName="border-0 bg-transparent text-stone-800 px-1.5 hover:bg-transparent text-xs shrink-0 font-bold"
           />
 
-          <div className="h-4 w-px bg-stone-300 dark:bg-stone-700 mx-1 shrink-0" />
+          <div className="h-4 w-px bg-stone-300 mx-1 shrink-0" />
 
           {/* Typable Input Field */}
           <div
@@ -210,7 +210,7 @@ export function UnifiedEcommerceSearch({
               placeholder={placeholder}
               autoComplete="off"
               spellCheck={false}
-              className="bg-transparent text-xs text-stone-900 dark:text-white placeholder-stone-400 outline-none w-full min-w-0 py-1 font-medium pointer-events-auto cursor-text"
+              className="bg-transparent text-xs text-stone-900 placeholder-stone-400 outline-none w-full min-w-0 py-1 font-medium pointer-events-auto cursor-text"
             />
             {query && (
               <button
@@ -221,7 +221,7 @@ export function UnifiedEcommerceSearch({
                   setIsOpen(false);
                   inputRef.current?.focus();
                 }}
-                className="p-0.5 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-full text-stone-400 shrink-0"
+                className="p-0.5 hover:bg-stone-200 rounded-full text-stone-400 shrink-0 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -230,7 +230,7 @@ export function UnifiedEcommerceSearch({
 
           <button
             type="submit"
-            className="px-3.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-full transition shrink-0 shadow-sm ml-1"
+            className="px-3.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full transition shrink-0 shadow-sm ml-1 cursor-pointer"
           >
             Search
           </button>
@@ -243,19 +243,19 @@ export function UnifiedEcommerceSearch({
   }
 
   // -------------------------------------------------------------
-  // 2. HERO VARIANT (High Impact E-Commerce Search Bar)
+  // 2. HERO VARIANT (Light Theme High-Impact Search Bar)
   // -------------------------------------------------------------
   return (
     <div ref={searchContainerRef} className={`relative w-full ${className}`}>
       <form
         onSubmit={handleFormSubmit}
-        className={`bg-white dark:bg-stone-900 border ${
-          isOpen ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-2xl" : "border-stone-200 dark:border-stone-800 shadow-xl"
+        className={`bg-white border ${
+          isOpen ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-2xl" : "border-stone-200 shadow-xl"
         } rounded-3xl p-3 transition-all duration-200 space-y-2.5 relative z-30`}
       >
         {/* Scope Selector Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 border-b border-stone-100 dark:border-stone-800">
-          <span className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-widest mr-1 shrink-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 border-b border-stone-100">
+          <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest mr-1 shrink-0">
             SEARCH:
           </span>
           {scopeOptions.map((tab) => {
@@ -266,10 +266,10 @@ export function UnifiedEcommerceSearch({
                 key={tab.value}
                 type="button"
                 onClick={() => setScope(tab.value as any)}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
                   active
                     ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700"
+                    : "bg-stone-100 text-stone-600 hover:bg-stone-200"
                 }`}
               >
                 {Icon && <Icon className="w-3.5 h-3.5" />}
@@ -283,13 +283,13 @@ export function UnifiedEcommerceSearch({
         <div className="flex flex-col sm:flex-row items-center gap-2">
           {/* Main Query Input */}
           <div
-            className="flex items-center gap-2.5 flex-1 w-full bg-stone-50 dark:bg-stone-800/80 px-3.5 py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700/60 cursor-text min-w-0"
+            className="flex items-center gap-2.5 flex-1 w-full bg-stone-50 px-3.5 py-2.5 rounded-2xl border border-stone-200 cursor-text min-w-0"
             onClick={() => {
               inputRef.current?.focus();
               setIsOpen(true);
             }}
           >
-            <Search className="w-4 h-4 text-emerald-500 shrink-0 pointer-events-none" />
+            <Search className="w-4 h-4 text-emerald-600 shrink-0 pointer-events-none" />
             <input
               ref={inputRef}
               type="text"
@@ -302,7 +302,7 @@ export function UnifiedEcommerceSearch({
               placeholder={placeholder}
               autoComplete="off"
               spellCheck={false}
-              className="bg-transparent text-xs sm:text-sm text-stone-900 dark:text-white placeholder-stone-400 outline-none w-full min-w-0 font-medium pointer-events-auto cursor-text"
+              className="bg-transparent text-xs sm:text-sm text-stone-900 placeholder-stone-400 outline-none w-full min-w-0 font-semibold pointer-events-auto cursor-text"
             />
             {query && (
               <button
@@ -313,7 +313,7 @@ export function UnifiedEcommerceSearch({
                   setIsOpen(false);
                   inputRef.current?.focus();
                 }}
-                className="p-1 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-full text-stone-400 shrink-0"
+                className="p-1 hover:bg-stone-200 rounded-full text-stone-400 shrink-0 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -325,7 +325,7 @@ export function UnifiedEcommerceSearch({
             options={categoryOptions}
             value={selectedCategory}
             onChange={(val) => setSelectedCategory(val)}
-            buttonClassName="w-full sm:w-auto bg-stone-50 dark:bg-stone-800 py-2.5 rounded-2xl"
+            buttonClassName="w-full sm:w-auto bg-stone-50 py-2.5 rounded-2xl border-stone-200"
           />
 
           {/* Area Dropdown */}
@@ -333,12 +333,12 @@ export function UnifiedEcommerceSearch({
             options={areaOptions}
             value={selectedArea}
             onChange={(val) => setSelectedArea(val)}
-            buttonClassName="w-full sm:w-auto bg-stone-50 dark:bg-stone-800 py-2.5 rounded-2xl"
+            buttonClassName="w-full sm:w-auto bg-stone-50 py-2.5 rounded-2xl border-stone-200"
           />
 
           <button
             type="submit"
-            className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-2xl shadow transition shrink-0"
+            className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-sm transition shrink-0 cursor-pointer"
           >
             Search
           </button>
@@ -351,7 +351,7 @@ export function UnifiedEcommerceSearch({
   );
 
   // -------------------------------------------------------------
-  // 3. Shared Autocomplete Results Dropdown Popover
+  // 3. Shared Autocomplete Results Dropdown Popover (Light Theme)
   // -------------------------------------------------------------
   function renderAutocompleteResults(isCompact = false) {
     const popoverPositionClass = isCompact
@@ -359,12 +359,12 @@ export function UnifiedEcommerceSearch({
       : "absolute top-full left-0 right-0 w-full";
 
     return (
-      <div className={`${popoverPositionClass} mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl z-50 max-h-[75vh] overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800 text-stone-900 dark:text-white transition pointer-events-auto`}>
+      <div className={`${popoverPositionClass} mt-2 bg-white border border-stone-200 rounded-3xl shadow-2xl z-50 max-h-[75vh] overflow-y-auto divide-y divide-stone-100 text-stone-900 transition pointer-events-auto`}>
         
         {/* POPULAR QUICK SEARCH SUGGESTIONS (When Query is empty) */}
         {!query.trim() && totalResultsCount === 0 && (
           <div className="p-4 space-y-2.5">
-            <span className="text-[10px] font-black uppercase tracking-wider text-stone-400 dark:text-stone-500 flex items-center gap-1">
+            <span className="text-[10px] font-black uppercase tracking-wider text-stone-400 flex items-center gap-1">
               <Zap className="w-3.5 h-3.5 text-amber-500" /> Popular Quick Searches
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -376,7 +376,7 @@ export function UnifiedEcommerceSearch({
                     setQuery(sug.query);
                     performSearch(sug.query);
                   }}
-                  className="px-3 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 text-stone-700 dark:text-stone-300 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs font-bold rounded-xl border border-stone-200 dark:border-stone-700 transition"
+                  className="px-3 py-1.5 bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 text-xs font-bold rounded-xl border border-stone-200 transition cursor-pointer"
                 >
                   {sug.label}
                 </button>
@@ -387,13 +387,13 @@ export function UnifiedEcommerceSearch({
 
         {/* LOADING INDICATOR */}
         {loading ? (
-          <div className="p-6 text-center text-xs text-stone-500 dark:text-stone-400 flex items-center justify-center gap-2">
+          <div className="p-6 text-center text-xs text-stone-500 flex items-center justify-center gap-2">
             <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
             <span>Searching products, artisans & services across Northern Ghana...</span>
           </div>
         ) : query.trim() && totalResultsCount === 0 ? (
           <div className="p-6 text-center space-y-2">
-            <p className="text-xs font-bold text-stone-800 dark:text-stone-200">No matching items found for "{query}"</p>
+            <p className="text-xs font-bold text-stone-800">No matching items found for "{query}"</p>
             <p className="text-[11px] text-stone-400">
               Try searching for "Fugu", "Solar", "Generator", "Repair", or choose from popular suggestions above.
             </p>
@@ -401,28 +401,28 @@ export function UnifiedEcommerceSearch({
         ) : totalResultsCount > 0 && (
           <>
             {/* Header result stats */}
-            <div className="px-5 py-2.5 bg-stone-50 dark:bg-stone-800/80 flex items-center justify-between text-[11px] font-bold text-stone-500 border-b border-stone-200 dark:border-stone-800">
+            <div className="px-5 py-2.5 bg-stone-50 flex items-center justify-between text-[11px] font-bold text-stone-500 border-b border-stone-200">
               {isFallback ? (
-                <span className="text-amber-600 dark:text-amber-400 font-bold">
+                <span className="text-amber-700 font-bold">
                   No exact match for "{query}". Showing popular recommendations:
                 </span>
               ) : (
                 <span>MATCHING RESULTS ({totalResultsCount})</span>
               )}
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black">NORTHERN MARKETPLACE</span>
+              <span className="text-[10px] text-emerald-700 font-black">NORTHERN MARKETPLACE</span>
             </div>
 
             {/* PRODUCTS SECTION */}
             {results.products && results.products.length > 0 && (
               <div className="p-3 space-y-2">
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
                     <ShoppingBag className="w-3.5 h-3.5" /> Products ({results.products.length})
                   </span>
                   <Link
                     href={`/products?q=${encodeURIComponent(query)}`}
                     onClick={() => setIsOpen(false)}
-                    className="text-[11px] text-stone-400 hover:text-emerald-600 font-bold flex items-center gap-0.5"
+                    className="text-[11px] text-stone-400 hover:text-emerald-700 font-bold flex items-center gap-0.5"
                   >
                     View All <ChevronRight className="w-3 h-3" />
                   </Link>
@@ -434,21 +434,21 @@ export function UnifiedEcommerceSearch({
                       key={item.id}
                       href={`/products/${item.slug}`}
                       onClick={() => setIsOpen(false)}
-                      className="p-2.5 bg-stone-50 dark:bg-stone-800/80 hover:bg-emerald-50 dark:hover:bg-stone-750 rounded-2xl border border-stone-200 dark:border-stone-700/60 transition group flex items-center justify-between gap-2"
+                      className="p-2.5 bg-stone-50 hover:bg-emerald-50 rounded-2xl border border-stone-200 transition group flex items-center justify-between gap-2"
                     >
                       <div className="min-w-0 flex-1">
-                        <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full inline-block">
+                        <span className="text-[9px] font-bold text-emerald-800 uppercase tracking-wider bg-emerald-100 px-2 py-0.5 rounded-full inline-block">
                           {item.category}
                         </span>
-                        <h4 className="text-xs font-bold text-stone-900 dark:text-white mt-0.5 group-hover:text-emerald-600 truncate">
+                        <h4 className="text-xs font-bold text-stone-900 mt-0.5 group-hover:text-emerald-700 truncate">
                           {item.title}
                         </h4>
-                        <span className="text-[10px] text-stone-400 block truncate">
+                        <span className="text-[10px] text-stone-500 block truncate">
                           {item.provider?.businessName}
                         </span>
                       </div>
 
-                      <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 shrink-0">
+                      <span className="text-xs font-black text-emerald-700 shrink-0">
                         {formatGHS(item.price)}
                       </span>
                     </Link>
@@ -461,7 +461,7 @@ export function UnifiedEcommerceSearch({
             {results.services && results.services.length > 0 && (
               <div className="p-3 space-y-2">
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
                     <Wrench className="w-3.5 h-3.5" /> Services ({results.services.length})
                   </span>
                 </div>
@@ -472,18 +472,18 @@ export function UnifiedEcommerceSearch({
                       key={item.id}
                       href={`/requests?category=${encodeURIComponent(item.name)}`}
                       onClick={() => setIsOpen(false)}
-                      className="p-2.5 bg-stone-50 dark:bg-stone-800/80 hover:bg-amber-50 dark:hover:bg-stone-750 rounded-2xl border border-stone-200 dark:border-stone-700/60 transition group flex items-center justify-between gap-2"
+                      className="p-2.5 bg-stone-50 hover:bg-amber-50 rounded-2xl border border-stone-200 transition group flex items-center justify-between gap-2"
                     >
                       <div className="min-w-0 flex-1">
-                        <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded-full inline-block">
+                        <span className="text-[9px] font-bold text-amber-800 uppercase tracking-wider bg-amber-100 px-2 py-0.5 rounded-full inline-block">
                           {item.category?.name || "General Service"}
                         </span>
-                        <h4 className="text-xs font-bold text-stone-900 dark:text-white mt-0.5 group-hover:text-amber-600 truncate">
+                        <h4 className="text-xs font-bold text-stone-900 mt-0.5 group-hover:text-amber-700 truncate">
                           {item.name}
                         </h4>
                       </div>
 
-                      <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-amber-500 shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-amber-600 shrink-0" />
                     </Link>
                   ))}
                 </div>
@@ -494,7 +494,7 @@ export function UnifiedEcommerceSearch({
             {results.providers && results.providers.length > 0 && (
               <div className="p-3 space-y-2">
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
                     <Building2 className="w-3.5 h-3.5" /> Shops & Artisans ({results.providers.length})
                   </span>
                 </div>
@@ -505,22 +505,22 @@ export function UnifiedEcommerceSearch({
                       key={item.id}
                       href={`/provider/${item.slug}`}
                       onClick={() => setIsOpen(false)}
-                      className="p-2.5 bg-stone-50 dark:bg-stone-800/80 hover:bg-purple-50 dark:hover:bg-stone-750 rounded-2xl border border-stone-200 dark:border-stone-700/60 transition group flex items-center justify-between gap-2"
+                      className="p-2.5 bg-stone-50 hover:bg-purple-50 rounded-2xl border border-stone-200 transition group flex items-center justify-between gap-2"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                          <h4 className="text-xs font-bold text-stone-900 dark:text-white group-hover:text-purple-600 truncate">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <h4 className="text-xs font-bold text-stone-900 group-hover:text-purple-700 truncate">
                             {item.businessName}
                           </h4>
                         </div>
-                        <span className="text-[10px] text-stone-400 flex items-center gap-1 mt-0.5 truncate">
-                          <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <span className="text-[10px] text-stone-500 flex items-center gap-1 mt-0.5 truncate">
+                          <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
                           {item.serviceArea || "Northern Ghana"}
                         </span>
                       </div>
 
-                      <span className="px-2 py-0.5 bg-stone-200 dark:bg-stone-700 text-[10px] font-bold text-stone-700 dark:text-stone-300 rounded-lg shrink-0">
+                      <span className="px-2 py-0.5 bg-stone-200 text-[10px] font-bold text-stone-700 rounded-lg shrink-0">
                         ⭐️ {item.ratingAverage || 5.0}
                       </span>
                     </Link>
