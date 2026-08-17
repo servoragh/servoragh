@@ -61,21 +61,23 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 transition-colors duration-200 max-w-full overflow-x-hidden">
       {/* 1. HERO SECTION */}
-      <section className="relative pt-8 sm:pt-12 pb-16 sm:pb-20 bg-gradient-to-b from-emerald-50/60 via-stone-50 to-stone-50 dark:from-stone-900 dark:via-stone-900 dark:to-stone-950 border-b border-stone-200 dark:border-stone-800 z-30 transition-colors duration-200 overflow-hidden">
-        <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-72 sm:w-96 h-72 sm:h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative pt-6 sm:pt-12 pb-14 sm:pb-20 bg-gradient-to-b from-emerald-50/70 via-stone-50 to-stone-50 dark:from-stone-900 dark:via-stone-900 dark:to-stone-950 border-b border-stone-200 dark:border-stone-800 z-30 transition-colors duration-200 overflow-hidden">
+        {/* Modern Ambient Blur Orbs */}
+        <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-72 sm:w-96 h-72 sm:h-96 bg-gradient-to-tr from-emerald-500/15 to-teal-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 translate-y-12 -translate-x-12 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-5 sm:space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100/80 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-700/60 text-emerald-800 dark:text-emerald-300 text-[11px] sm:text-xs font-bold shadow-xs max-w-full">
-                <ShieldCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 dark:from-emerald-950/80 dark:to-teal-950/80 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[11px] sm:text-xs font-extrabold shadow-xs backdrop-blur-md max-w-full">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span className="truncate">Zero-Capital Local Marketplace for Northern Ghana</span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15] text-stone-900 dark:text-white">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.12] text-stone-900 dark:text-white">
                 Find trusted local services in{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 dark:from-emerald-400 dark:via-teal-300 dark:to-amber-300">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 dark:from-emerald-400 dark:via-teal-300 dark:to-amber-300">
                   Northern Ghana.
                 </span>
               </h1>
@@ -89,11 +91,11 @@ export default function HomePage() {
                 <UnifiedEcommerceSearch variant="hero" />
               </div>
 
-              {/* CTAs */}
+              {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
                 <button
                   onClick={() => setIsWizardOpen(true)}
-                  className="w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-sm sm:text-base rounded-2xl shadow-lg hover:shadow-emerald-600/30 active:scale-98 transition flex items-center justify-center gap-2 group cursor-pointer"
+                  className="w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-600 hover:from-emerald-800 hover:to-teal-700 text-white font-black text-sm sm:text-base rounded-2xl shadow-lg shadow-emerald-600/20 active:scale-98 transition flex items-center justify-center gap-2 group cursor-pointer"
                 >
                   <PlusCircle className="w-5 h-5 group-hover:rotate-90 transition duration-300" />
                   <span>Find a Service</span>
@@ -101,24 +103,24 @@ export default function HomePage() {
 
                 <Link
                   href="/provider/register"
-                  className="w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-white font-bold text-sm sm:text-base rounded-2xl shadow-xs transition flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-white/90 dark:bg-stone-800/90 hover:bg-stone-100 dark:hover:bg-stone-700 border border-stone-300/80 dark:border-stone-700/80 text-stone-900 dark:text-white font-bold text-sm sm:text-base rounded-2xl shadow-xs backdrop-blur-md transition flex items-center justify-center gap-2"
                 >
                   <Users className="w-5 h-5 text-emerald-600 dark:text-amber-400" />
                   <span>Join as a Provider</span>
                 </Link>
               </div>
 
-              {/* Responsive Trust Badges Bar */}
-              <div className="pt-5 border-t border-stone-200 dark:border-stone-800 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-stone-600 dark:text-stone-400">
-                <div className="flex items-center gap-1.5 shrink-0">
+              {/* Trust Badges Bar */}
+              <div className="pt-4 border-t border-stone-200/80 dark:border-stone-800/80 flex flex-wrap items-center justify-start gap-2.5 sm:gap-4 text-xs font-semibold text-stone-600 dark:text-stone-400">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 dark:bg-stone-900/80 border border-stone-200/80 dark:border-stone-800/80 shadow-xs backdrop-blur-xs text-[11px] font-bold text-stone-800 dark:text-stone-200">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Phone & ID Verified</span>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 dark:bg-stone-900/80 border border-stone-200/80 dark:border-stone-800/80 shadow-xs backdrop-blur-xs text-[11px] font-bold text-stone-800 dark:text-stone-200">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Direct WhatsApp Bids</span>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 dark:bg-stone-900/80 border border-stone-200/80 dark:border-stone-800/80 shadow-xs backdrop-blur-xs text-[11px] font-bold text-stone-800 dark:text-stone-200">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>WhatsApp Enabled</span>
                 </div>
@@ -127,13 +129,13 @@ export default function HomePage() {
 
             {/* Right Card / Interactive Quick Request Box */}
             <div className="lg:col-span-5">
-              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 shadow-xl dark:shadow-2xl">
+              <div className="bg-white/90 dark:bg-stone-900/90 border border-stone-200/80 dark:border-stone-800/80 rounded-3xl p-5 sm:p-6 shadow-2xl backdrop-blur-xl">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <h3 className="font-extrabold text-sm sm:text-base text-stone-900 dark:text-white flex items-center gap-2">
                     <Zap className="w-5 h-5 text-amber-500 shrink-0" />
                     <span>Quick Service Request</span>
                   </h3>
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/90 text-emerald-800 dark:text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                     Live in Northern Ghana
                   </span>
                 </div>
@@ -155,10 +157,10 @@ export default function HomePage() {
                     <button
                       key={loc.name}
                       onClick={() => setSelectedNeighborhood(loc.name)}
-                      className={`p-2.5 rounded-xl text-left border text-xs transition cursor-pointer ${
+                      className={`p-2.5 rounded-2xl text-left border text-xs transition cursor-pointer active:scale-95 duration-150 ${
                         selectedNeighborhood === loc.name
-                          ? "bg-emerald-50 dark:bg-emerald-950 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold shadow-xs"
-                          : "bg-stone-50 dark:bg-stone-800/80 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700"
+                          ? "bg-emerald-50 dark:bg-emerald-950/80 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold shadow-sm ring-2 ring-emerald-500/20"
+                          : "bg-stone-50/90 dark:bg-stone-800/80 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700"
                       }`}
                     >
                       <div className="flex items-center gap-1 font-bold text-stone-900 dark:text-white truncate">
@@ -172,7 +174,7 @@ export default function HomePage() {
 
                 <button
                   onClick={() => setIsWizardOpen(true)}
-                  className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-extrabold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                 >
                   <span>Post Job & Get Quotes</span>
                   <ArrowRight className="w-4 h-4" />
@@ -197,8 +199,8 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
             {/* Category 1: Electrical */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-700 transition group">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 hover:shadow-xl hover:border-emerald-300 dark:hover:border-emerald-700 transition duration-200 group">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4 group-hover:scale-110 transition duration-200">
                 <Zap className="w-6 h-6" />
               </div>
               <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-2">
@@ -217,8 +219,8 @@ export default function HomePage() {
             </div>
 
             {/* Category 2: Electronics */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-700 transition group">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 hover:shadow-xl hover:border-emerald-300 dark:hover:border-emerald-700 transition duration-200 group">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-110 transition duration-200">
                 <Smartphone className="w-6 h-6" />
               </div>
               <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-2">
@@ -237,8 +239,8 @@ export default function HomePage() {
             </div>
 
             {/* Category 3: Tailoring */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-700 transition group">
-              <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/80 border border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 hover:shadow-xl hover:border-emerald-300 dark:hover:border-emerald-700 transition duration-200 group">
+              <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/80 border border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition duration-200">
                 <Scissors className="w-6 h-6" />
               </div>
               <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-2">

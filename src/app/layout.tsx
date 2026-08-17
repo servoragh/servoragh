@@ -4,6 +4,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { AIAssistantWidget } from "@/components/AIAssistantWidget";
 import { PwaInstallBanner } from "@/components/PwaInstallBanner";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export const metadata: Metadata = {
   title: "Servora — Local Services & Business Marketplace | Northern Ghana",
@@ -44,12 +45,13 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="flex flex-col min-h-screen max-w-full overflow-x-hidden bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-sans antialiased selection:bg-emerald-500 selection:text-white">
+      <body className="flex flex-col min-h-screen max-w-full overflow-x-hidden bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-sans antialiased selection:bg-emerald-500 selection:text-white pb-16 lg:pb-0">
         <Navbar />
         <main className="flex-1 w-full max-w-full overflow-x-hidden">{children}</main>
         <Footer />
         <AIAssistantWidget />
         <PwaInstallBanner />
+        <MobileBottomNav />
       </body>
     </html>
   );
