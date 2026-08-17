@@ -16,6 +16,7 @@ import {
   Zap,
   Tag,
   ArrowRight,
+  SlidersHorizontal,
 } from "lucide-react";
 import { CustomDropdown, CustomDropdownOption } from "@/components/CustomDropdown";
 import { formatGHS } from "@/lib/utils";
@@ -36,7 +37,7 @@ const POPULAR_SUGGESTIONS = [
 ];
 
 export function UnifiedEcommerceSearch({
-  placeholder = "Search products or services in Northern Ghana...",
+  placeholder = "Search products, electricians, solar, tailors in Northern Ghana...",
   variant = "hero",
   className = "",
 }: UnifiedEcommerceSearchProps) {
@@ -45,6 +46,7 @@ export function UnifiedEcommerceSearch({
   const [scope, setScope] = useState<"all" | "products" | "services" | "providers">("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedArea, setSelectedArea] = useState("all");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isFallback, setIsFallback] = useState(false);
@@ -132,7 +134,6 @@ export function UnifiedEcommerceSearch({
       const prov = data.providers || [];
 
       if (prod.length === 0 && serv.length === 0 && prov.length === 0) {
-        // Fallback recommendations if query yields 0 exact matches
         const fallbackRes = await fetch(`/api/search?q=a&limit=4`);
         const fallbackData = await fallbackRes.json();
         setResults({
@@ -170,7 +171,7 @@ export function UnifiedEcommerceSearch({
     (results.providers?.length || 0);
 
   // -------------------------------------------------------------
-  // 1. HEADER COMPACT VARIANT (Responsive Light/Dark Theme)
+  // 1. HEADER COMPACT VARIANT
   // -------------------------------------------------------------
   if (variant === "compact") {
     return (
@@ -181,7 +182,6 @@ export function UnifiedEcommerceSearch({
             isOpen ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-stone-300 dark:border-stone-700"
           } rounded-full h-10 px-2 transition-all duration-200 relative z-30 w-full`}
         >
-          {/* Scope Dropdown */}
           <CustomDropdown
             options={[
               { value: "all", label: "All" },
@@ -196,7 +196,6 @@ export function UnifiedEcommerceSearch({
 
           <div className="h-4 w-px bg-stone-300 dark:bg-stone-700 mx-1 shrink-0" />
 
-          {/* Typable Input Field */}
           <div
             className="flex items-center gap-1.5 flex-1 min-w-0 px-1 cursor-text"
             onClick={() => {
@@ -237,120 +236,130 @@ export function UnifiedEcommerceSearch({
 
           <button
             type="submit"
-            className="px-3.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full transition shrink-0 shadow-sm ml-1 cursor-pointer"
+            className="px-3.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full transition shrink-0 shadow-xs ml-1 cursor-pointer"
           >
             Search
           </button>
         </form>
 
-        {/* Custom Autocomplete Results Dropdown Popover */}
         {isOpen && renderAutocompleteResults(true)}
       </div>
     );
   }
 
   // -------------------------------------------------------------
-  // 2. HERO VARIANT (Responsive Light/Dark Theme High-Impact Search Bar)
+  // 2. HERO VARIANT (Minimalist, Super-Modern Pill Search Bar)
   // -------------------------------------------------------------
   return (
     <div ref={searchContainerRef} className={`relative w-full ${className}`}>
       <form
         onSubmit={handleFormSubmit}
-        className={`bg-white dark:bg-stone-900 border ${
-          isOpen ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-2xl" : "border-stone-200 dark:border-stone-800 shadow-xl"
-        } rounded-3xl p-3 transition-all duration-200 space-y-2.5 relative z-30`}
+        className={`bg-white/90 dark:bg-stone-900/90 border ${
+          isOpen ? "border-emerald-500 ring-4 ring-emerald-500/15 shadow-2xl" : "border-stone-200/90 dark:border-stone-800/90 shadow-xl"
+        } rounded-full p-2 backdrop-blur-xl transition-all duration-200 relative z-30 flex items-center gap-2`}
       >
-        {/* Scope Selector Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 border-b border-stone-100 dark:border-stone-800">
-          <span className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-widest mr-1 shrink-0">
-            SEARCH:
-          </span>
-          {scopeOptions.map((tab) => {
-            const Icon = tab.icon;
-            const active = scope === tab.value;
-            return (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setScope(tab.value as any)}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                  active
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700"
-                }`}
-              >
-                {Icon && <Icon className="w-3.5 h-3.5" />}
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Input Bar & Multi-Filters */}
-        <div className="flex flex-col sm:flex-row items-center gap-2">
-          {/* Main Query Input */}
-          <div
-            className="flex items-center gap-2.5 flex-1 w-full bg-stone-50 dark:bg-stone-800/80 px-3.5 py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700 cursor-text min-w-0"
-            onClick={() => {
-              inputRef.current?.focus();
+        {/* Main Input Box */}
+        <div
+          className="flex items-center gap-3 flex-1 min-w-0 px-3 py-1.5 cursor-text"
+          onClick={() => {
+            inputRef.current?.focus();
+            setIsOpen(true);
+          }}
+        >
+          <Search className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 pointer-events-none" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
               setIsOpen(true);
             }}
-          >
-            <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 pointer-events-none" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setIsOpen(true);
+            onFocus={() => setIsOpen(true)}
+            placeholder={placeholder}
+            autoComplete="off"
+            spellCheck={false}
+            className="bg-transparent text-xs sm:text-sm text-stone-900 dark:text-white placeholder-stone-400 outline-none w-full min-w-0 font-semibold pointer-events-auto cursor-text"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setQuery("");
+                setIsOpen(false);
+                inputRef.current?.focus();
               }}
-              onFocus={() => setIsOpen(true)}
-              placeholder={placeholder}
-              autoComplete="off"
-              spellCheck={false}
-              className="bg-transparent text-xs sm:text-sm text-stone-900 dark:text-white placeholder-stone-400 outline-none w-full min-w-0 font-semibold pointer-events-auto cursor-text"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setQuery("");
-                  setIsOpen(false);
-                  inputRef.current?.focus();
-                }}
-                className="p-1 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-full text-stone-400 shrink-0 cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+              className="p-1 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-full text-stone-400 shrink-0 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Filter Toggle Button */}
+        <button
+          type="button"
+          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+          className={`p-2.5 rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition shrink-0 cursor-pointer ${
+            showAdvancedFilters || selectedCategory !== "all" || selectedArea !== "all"
+              ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60"
+              : ""
+          }`}
+          title="Filter search"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+        </button>
+
+        {/* Search Submit Action Button */}
+        <button
+          type="submit"
+          className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm rounded-full shadow-md hover:shadow-emerald-600/20 active:scale-95 transition-all duration-150 shrink-0 cursor-pointer flex items-center gap-1.5"
+        >
+          <span>Search</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </form>
+
+      {/* Advanced Filters Expandable Drawer */}
+      {showAdvancedFilters && (
+        <div className="mt-2 p-3 bg-white/95 dark:bg-stone-900/95 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xl backdrop-blur-xl space-y-2 animate-in fade-in slide-in-from-top-2 duration-150 relative z-30">
+          <div className="flex items-center justify-between text-[11px] font-bold text-stone-400 uppercase tracking-wider px-1">
+            <span>Filter Search Catalog</span>
+            <button
+              onClick={() => {
+                setSelectedCategory("all");
+                setSelectedArea("all");
+                setScope("all");
+              }}
+              className="text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+            >
+              Reset Filters
+            </button>
           </div>
 
-          {/* Category Dropdown */}
-          <CustomDropdown
-            options={categoryOptions}
-            value={selectedCategory}
-            onChange={(val) => setSelectedCategory(val)}
-            buttonClassName="w-full sm:w-auto bg-stone-50 dark:bg-stone-800 py-2.5 rounded-2xl border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100"
-          />
-
-          {/* Area Dropdown */}
-          <CustomDropdown
-            options={areaOptions}
-            value={selectedArea}
-            onChange={(val) => setSelectedArea(val)}
-            buttonClassName="w-full sm:w-auto bg-stone-50 dark:bg-stone-800 py-2.5 rounded-2xl border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100"
-          />
-
-          <button
-            type="submit"
-            className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-sm transition shrink-0 cursor-pointer"
-          >
-            Search
-          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <CustomDropdown
+              options={scopeOptions}
+              value={scope}
+              onChange={(val) => setScope(val as any)}
+              buttonClassName="w-full bg-stone-50 dark:bg-stone-800 py-2 rounded-xl border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 text-xs"
+            />
+            <CustomDropdown
+              options={categoryOptions}
+              value={selectedCategory}
+              onChange={(val) => setSelectedCategory(val)}
+              buttonClassName="w-full bg-stone-50 dark:bg-stone-800 py-2 rounded-xl border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 text-xs"
+            />
+            <CustomDropdown
+              options={areaOptions}
+              value={selectedArea}
+              onChange={(val) => setSelectedArea(val)}
+              buttonClassName="w-full bg-stone-50 dark:bg-stone-800 py-2 rounded-xl border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 text-xs"
+            />
+          </div>
         </div>
-      </form>
+      )}
 
       {/* Live Dropdown Preview */}
       {isOpen && renderAutocompleteResults(false)}
@@ -358,7 +367,7 @@ export function UnifiedEcommerceSearch({
   );
 
   // -------------------------------------------------------------
-  // 3. Shared Autocomplete Results Dropdown Popover (Responsive Light/Dark Theme)
+  // 3. Shared Autocomplete Results Dropdown Popover
   // -------------------------------------------------------------
   function renderAutocompleteResults(isCompact = false) {
     const popoverPositionClass = isCompact
@@ -368,7 +377,7 @@ export function UnifiedEcommerceSearch({
     return (
       <div className={`${popoverPositionClass} mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl z-50 max-h-[75vh] overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800 text-stone-900 dark:text-stone-100 transition pointer-events-auto`}>
         
-        {/* POPULAR QUICK SEARCH SUGGESTIONS (When Query is empty) */}
+        {/* POPULAR QUICK SEARCH SUGGESTIONS */}
         {!query.trim() && totalResultsCount === 0 && (
           <div className="p-4 space-y-2.5">
             <span className="text-[10px] font-black uppercase tracking-wider text-stone-400 dark:text-stone-400 flex items-center gap-1">
