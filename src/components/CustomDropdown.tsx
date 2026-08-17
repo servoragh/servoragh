@@ -52,17 +52,17 @@ export function CustomDropdown({
         className={`flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition outline-none border cursor-pointer ${
           isOpen
             ? "border-emerald-500 ring-2 ring-emerald-500/20"
-            : "border-stone-300 bg-stone-100 text-stone-800 hover:bg-stone-200"
+            : "border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700"
         } ${buttonClassName}`}
       >
         <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
-        <ChevronDown className={`w-3.5 h-3.5 text-stone-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-stone-400 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {/* Custom Modern Dropdown Menu */}
       {isOpen && (
         <div
-          className={`absolute top-full left-0 mt-1.5 w-48 bg-white border border-stone-200 rounded-2xl shadow-2xl z-[60] py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 ${menuClassName}`}
+          className={`absolute top-full left-0 mt-1.5 w-48 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 rounded-2xl shadow-2xl z-[60] py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 ${menuClassName}`}
         >
           {options.map((opt) => {
             const isSelected = opt.value === value;
@@ -77,15 +77,15 @@ export function CustomDropdown({
                 }}
                 className={`w-full px-3 py-2 text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
                   isSelected
-                    ? "bg-emerald-50 text-emerald-700 font-bold"
-                    : "text-stone-700 hover:bg-stone-100"
+                    ? "bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 font-bold"
+                    : "text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"
                 }`}
               >
                 <div className="flex items-center gap-2 truncate">
-                  {Icon && <Icon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                  {Icon && <Icon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
                   <span className="truncate">{opt.label}</span>
                 </div>
-                {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-2" />}
+                {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 ml-2" />}
               </button>
             );
           })}

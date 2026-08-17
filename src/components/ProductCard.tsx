@@ -44,16 +44,16 @@ export function ProductCard({ product }: ProductCardProps) {
   const whatsappMessage = `Hello ${product.provider?.businessName}, I saw your product "${product.title}" (${formatGHS(product.price)}) listed on Servora Tamale and I would like to purchase/inquire. https://servora.vercel.app/products/${product.slug}`;
 
   return (
-    <div className="bg-white border border-stone-200 rounded-3xl overflow-hidden shadow-xs hover:shadow-md hover:border-emerald-300 transition flex flex-col justify-between group">
+    <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl overflow-hidden shadow-xs hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700 transition flex flex-col justify-between group">
       <div>
         {/* Product Image */}
-        <div className="relative h-48 w-full bg-stone-100 overflow-hidden">
+        <div className="relative h-48 w-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
           <img
             src={mainImage}
             alt={product.title}
             className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
           />
-          <div className="absolute top-3 left-3 bg-white/90 backdrop-blur text-stone-900 text-[10px] font-bold px-2.5 py-1 rounded-full border border-stone-200 shadow-xs">
+          <div className="absolute top-3 left-3 bg-white/90 dark:bg-stone-900/90 backdrop-blur text-stone-900 dark:text-white text-[10px] font-bold px-2.5 py-1 rounded-full border border-stone-200 dark:border-stone-700 shadow-xs">
             {product.category}
           </div>
 
@@ -70,14 +70,14 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="p-5">
           <Link
             href={`/products/${product.slug}`}
-            className="font-bold text-stone-900 text-base hover:text-emerald-700 transition line-clamp-1 mb-1 block"
+            className="font-bold text-stone-900 dark:text-white text-base hover:text-emerald-700 dark:hover:text-emerald-400 transition line-clamp-1 mb-1 block"
           >
             {product.title}
           </Link>
 
           {/* Price & Compare Price */}
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg font-black text-emerald-700">
+            <span className="text-lg font-black text-emerald-700 dark:text-emerald-400">
               {formatGHS(product.price)}
             </span>
             {hasDiscount && (
@@ -87,15 +87,15 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
 
-          <p className="text-xs text-stone-600 font-medium line-clamp-2 mb-3 leading-relaxed">
+          <p className="text-xs text-stone-600 dark:text-stone-300 font-medium line-clamp-2 mb-3 leading-relaxed">
             {product.description}
           </p>
 
           {/* Seller Business Info */}
-          <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-500 font-medium">
+          <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 font-medium">
             <Link
               href={`/provider/${product.provider?.slug}`}
-              className="font-bold text-stone-800 hover:text-emerald-700 hover:underline flex items-center gap-1.5 min-w-0"
+              className="font-bold text-stone-800 dark:text-stone-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:underline flex items-center gap-1.5 min-w-0"
             >
               <div className="w-5 h-5 rounded-full bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center overflow-hidden shrink-0">
                 {sellerLogo ? (
@@ -107,7 +107,7 @@ export function ProductCard({ product }: ProductCardProps) {
               <span className="truncate max-w-[120px]">{product.provider?.businessName}</span>
             </Link>
             <div className="flex items-center gap-1 shrink-0 font-semibold">
-              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+              <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>{product.provider?.serviceArea?.split(",")[0]}</span>
             </div>
           </div>
@@ -118,7 +118,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <div className="p-5 pt-0 flex items-center gap-2">
         <Link
           href={`/products/${product.slug}`}
-          className="flex-1 py-2 text-center text-xs font-bold text-stone-800 bg-stone-100 hover:bg-stone-200 rounded-xl transition"
+          className="flex-1 py-2 text-center text-xs font-bold text-stone-800 dark:text-stone-200 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-xl transition"
         >
           View Details
         </Link>

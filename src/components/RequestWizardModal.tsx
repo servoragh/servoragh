@@ -257,9 +257,9 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-stone-900 border border-stone-800 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl transition-all text-white text-xs">
+      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl transition-all text-stone-900 dark:text-white text-xs">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-stone-900 p-6 flex items-center justify-between border-b border-stone-800">
+        <div className="bg-gradient-to-r from-emerald-700 via-emerald-800 to-teal-900 dark:from-emerald-950 dark:via-emerald-900 dark:to-stone-900 p-6 flex items-center justify-between border-b border-emerald-800 dark:border-stone-800 text-white">
           <div>
             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block mb-1">
               Step {step} of 4 &bull; Universal Service Request Engine
