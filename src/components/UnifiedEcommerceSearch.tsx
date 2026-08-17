@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
   ShoppingBag,
@@ -12,6 +13,9 @@ import {
   ChevronRight,
   CheckCircle2,
   Sparkles,
+  Zap,
+  Tag,
+  ArrowRight,
 } from "lucide-react";
 import { CustomDropdown, CustomDropdownOption } from "@/components/CustomDropdown";
 import { formatGHS } from "@/lib/utils";
@@ -22,11 +26,21 @@ interface UnifiedEcommerceSearchProps {
   className?: string;
 }
 
+const POPULAR_SUGGESTIONS = [
+  { label: "Fugu & Smocks 🥻", query: "Fugu" },
+  { label: "Solar & Electrical ⚡", query: "Electrical" },
+  { label: "Phone & Screen Repair 📱", query: "Phone" },
+  { label: "Heavy Equipment Rentals 🚜", query: "Generator" },
+  { label: "AC & Refrigerator ❄️", query: "AC" },
+  { label: "Plumbing & Water 🚰", query: "Plumbing" },
+];
+
 export function UnifiedEcommerceSearch({
   placeholder = "Search products or services in Northern Ghana...",
   variant = "hero",
   className = "",
 }: UnifiedEcommerceSearchProps) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<"all" | "products" | "services" | "providers">("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -60,12 +74,13 @@ export function UnifiedEcommerceSearch({
   ];
 
   const areaOptions: CustomDropdownOption[] = [
-    { value: "all", label: "All Tamale Areas" },
+    { value: "all", label: "All Northern Ghana" },
+    { value: "Tamale", label: "Tamale Metro" },
+    { value: "Bolgatanga", label: "Bolgatanga" },
+    { value: "Wa", label: "Wa" },
+    { value: "Yendi", label: "Yendi" },
     { value: "Sakasaka", label: "Sakasaka" },
     { value: "Aboabo", label: "Aboabo" },
-    { value: "Choggu", label: "Choggu" },
-    { value: "Nyohini", label: "Nyohini" },
-    { value: "Lamashegu", label: "Lamashegu" },
   ];
 
   useEffect(() => {
@@ -82,9 +97,18 @@ export function UnifiedEcommerceSearch({
   }, []);
 
   useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
     if (!query.trim() && selectedCategory === "all" && selectedArea === "all") {
       setResults({ products: [], services: [], providers: [] });
-      setIsOpen(false);
       return;
     }
 
@@ -95,13 +119,13 @@ export function UnifiedEcommerceSearch({
     return () => clearTimeout(timer);
   }, [query, scope, selectedCategory, selectedArea]);
 
-  async function performSearch() {
-    if (!query.trim() && selectedCategory === "all" && selectedArea === "all") return;
+  async function performSearch(overrideQuery?: string) {
+    const q = overrideQuery !== undefined ? overrideQuery : query;
     setLoading(true);
     setIsOpen(true);
     try {
       const params = new URLSearchParams();
-      if (query) params.set("q", query);
+      if (q.trim()) params.set("q", q.trim());
       if (scope) params.set("scope", scope);
       if (selectedCategory !== "all") params.set("category", selectedCategory);
       if (selectedArea !== "all") params.set("area", selectedArea);
@@ -118,25 +142,35 @@ export function UnifiedEcommerceSearch({
     }
   }
 
+  function handleFormSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!query.trim()) return;
+
+    if (scope === "products") {
+      router.push(`/products?q=${encodeURIComponent(query)}`);
+    } else if (scope === "services") {
+      router.push(`/requests?q=${encodeURIComponent(query)}`);
+    } else {
+      performSearch();
+    }
+  }
+
   const totalResultsCount =
     (results.products?.length || 0) +
     (results.services?.length || 0) +
     (results.providers?.length || 0);
 
   // -------------------------------------------------------------
-  // 1. HEADER COMPACT VARIANT (Strict Overflow-Hidden Pill Box)
+  // 1. HEADER COMPACT VARIANT (Strict Overflow Visible Dropdown)
   // -------------------------------------------------------------
   if (variant === "compact") {
     return (
       <div ref={searchContainerRef} className={`relative w-full ${className}`}>
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            performSearch();
-          }}
+          onSubmit={handleFormSubmit}
           className={`flex items-center bg-stone-100 dark:bg-stone-800 border ${
             isOpen ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-stone-300 dark:border-stone-700"
-          } rounded-full h-10 px-2 transition-all duration-200 relative z-20 w-full overflow-hidden`}
+          } rounded-full h-10 px-2 transition-all duration-200 relative z-30 w-full`}
         >
           {/* Scope Dropdown */}
           <CustomDropdown
@@ -156,7 +190,10 @@ export function UnifiedEcommerceSearch({
           {/* Typable Input Field */}
           <div
             className="flex items-center gap-1.5 flex-1 min-w-0 px-1 cursor-text"
-            onClick={() => inputRef.current?.focus()}
+            onClick={() => {
+              inputRef.current?.focus();
+              setIsOpen(true);
+            }}
           >
             <Search className="w-3.5 h-3.5 text-stone-400 shrink-0 pointer-events-none" />
             <input
@@ -165,11 +202,9 @@ export function UnifiedEcommerceSearch({
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
-                if (e.target.value.trim()) setIsOpen(true);
+                setIsOpen(true);
               }}
-              onFocus={() => {
-                if (query.trim()) setIsOpen(true);
-              }}
+              onFocus={() => setIsOpen(true)}
               placeholder={placeholder}
               autoComplete="off"
               spellCheck={false}
@@ -206,18 +241,15 @@ export function UnifiedEcommerceSearch({
   }
 
   // -------------------------------------------------------------
-  // 2. HERO VARIANT (High Impact E-Commerce Search)
+  // 2. HERO VARIANT (High Impact E-Commerce Search Bar)
   // -------------------------------------------------------------
   return (
     <div ref={searchContainerRef} className={`relative w-full ${className}`}>
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          performSearch();
-        }}
+        onSubmit={handleFormSubmit}
         className={`bg-white dark:bg-stone-900 border ${
           isOpen ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-2xl" : "border-stone-200 dark:border-stone-800 shadow-xl"
-        } rounded-3xl p-3 transition-all duration-200 space-y-2.5 relative z-20`}
+        } rounded-3xl p-3 transition-all duration-200 space-y-2.5 relative z-30`}
       >
         {/* Scope Selector Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 border-b border-stone-100 dark:border-stone-800">
@@ -250,7 +282,10 @@ export function UnifiedEcommerceSearch({
           {/* Main Query Input */}
           <div
             className="flex items-center gap-2.5 flex-1 w-full bg-stone-50 dark:bg-stone-800/80 px-3.5 py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700/60 cursor-text min-w-0"
-            onClick={() => inputRef.current?.focus()}
+            onClick={() => {
+              inputRef.current?.focus();
+              setIsOpen(true);
+            }}
           >
             <Search className="w-4 h-4 text-emerald-500 shrink-0 pointer-events-none" />
             <input
@@ -259,11 +294,9 @@ export function UnifiedEcommerceSearch({
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
-                if (e.target.value.trim()) setIsOpen(true);
+                setIsOpen(true);
               }}
-              onFocus={() => {
-                if (query.trim()) setIsOpen(true);
-              }}
+              onFocus={() => setIsOpen(true)}
               placeholder={placeholder}
               autoComplete="off"
               spellCheck={false}
@@ -324,20 +357,46 @@ export function UnifiedEcommerceSearch({
       : "absolute top-full left-0 right-0 w-full";
 
     return (
-      <div className={`${popoverPositionClass} mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl z-50 max-h-[70vh] overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800 text-stone-900 dark:text-white transition pointer-events-auto`}>
+      <div className={`${popoverPositionClass} mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl z-50 max-h-[75vh] overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800 text-stone-900 dark:text-white transition pointer-events-auto`}>
+        
+        {/* POPULAR QUICK SEARCH SUGGESTIONS (When Query is empty) */}
+        {!query.trim() && totalResultsCount === 0 && (
+          <div className="p-4 space-y-2.5">
+            <span className="text-[10px] font-black uppercase tracking-wider text-stone-400 dark:text-stone-500 flex items-center gap-1">
+              <Zap className="w-3.5 h-3.5 text-amber-500" /> Popular Quick Searches
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {POPULAR_SUGGESTIONS.map((sug) => (
+                <button
+                  key={sug.query}
+                  type="button"
+                  onClick={() => {
+                    setQuery(sug.query);
+                    performSearch(sug.query);
+                  }}
+                  className="px-3 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 text-stone-700 dark:text-stone-300 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs font-bold rounded-xl border border-stone-200 dark:border-stone-700 transition"
+                >
+                  {sug.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* LOADING INDICATOR */}
         {loading ? (
           <div className="p-6 text-center text-xs text-stone-500 dark:text-stone-400 flex items-center justify-center gap-2">
             <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-            <span>Searching products & services across Tamale...</span>
+            <span>Searching products, artisans & services across Northern Ghana...</span>
           </div>
-        ) : totalResultsCount === 0 ? (
-          <div className="p-6 text-center">
-            <p className="text-xs font-bold text-stone-800 dark:text-stone-200">No matching items found</p>
-            <p className="text-[11px] text-stone-400 mt-1">
-              Try searching for "Fugu", "Solar", "Electrician", or "Phone".
+        ) : query.trim() && totalResultsCount === 0 ? (
+          <div className="p-6 text-center space-y-2">
+            <p className="text-xs font-bold text-stone-800 dark:text-stone-200">No matching items found for "{query}"</p>
+            <p className="text-[11px] text-stone-400">
+              Try searching for "Fugu", "Solar", "Generator", "Repair", or choose from popular suggestions above.
             </p>
           </div>
-        ) : (
+        ) : totalResultsCount > 0 && (
           <>
             {/* Header result stats */}
             <div className="px-5 py-2.5 bg-stone-50 dark:bg-stone-800/80 flex items-center justify-between text-[11px] font-bold text-stone-500 border-b border-stone-200 dark:border-stone-800">
@@ -400,61 +459,62 @@ export function UnifiedEcommerceSearch({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {results.services.map((serv) => (
-                    <div
-                      key={serv.id}
-                      className="p-2.5 bg-stone-50 dark:bg-stone-800/80 rounded-2xl border border-stone-200 dark:border-stone-700/60 flex items-center justify-between gap-2"
+                  {results.services.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/requests?category=${encodeURIComponent(item.name)}`}
+                      onClick={() => setIsOpen(false)}
+                      className="p-2.5 bg-stone-50 dark:bg-stone-800/80 hover:bg-amber-50 dark:hover:bg-stone-750 rounded-2xl border border-stone-200 dark:border-stone-700/60 transition group flex items-center justify-between gap-2"
                     >
-                      <div>
-                        <h4 className="text-xs font-bold text-stone-900 dark:text-white">{serv.name}</h4>
-                        <p className="text-[10px] text-stone-400">{serv.category?.name || "General"}</p>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded-full inline-block">
+                          {item.category?.name || "General Service"}
+                        </span>
+                        <h4 className="text-xs font-bold text-stone-900 dark:text-white mt-0.5 group-hover:text-amber-600 truncate">
+                          {item.name}
+                        </h4>
                       </div>
 
-                      <Link
-                        href={`/services/${serv.category?.slug || "general"}/tamale`}
-                        onClick={() => setIsOpen(false)}
-                        className="px-2.5 py-1 bg-amber-600 text-white font-bold text-[10px] rounded-xl hover:bg-amber-500 shrink-0"
-                      >
-                        Book
-                      </Link>
-                    </div>
+                      <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-amber-500 shrink-0" />
+                    </Link>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* PROVIDERS / BUSINESSES SECTION */}
+            {/* PROVIDERS / SHOPS / ARTISANS SECTION */}
             {results.providers && results.providers.length > 0 && (
               <div className="p-3 space-y-2">
                 <div className="flex items-center justify-between px-1">
                   <span className="text-[11px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5" /> Businesses ({results.providers.length})
+                    <Building2 className="w-3.5 h-3.5" /> Shops & Artisans ({results.providers.length})
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {results.providers.map((prov) => (
+                  {results.providers.map((item) => (
                     <Link
-                      key={prov.id}
-                      href={`/provider/${prov.slug}`}
+                      key={item.id}
+                      href={`/provider/${item.slug}`}
                       onClick={() => setIsOpen(false)}
-                      className="p-2.5 bg-stone-50 dark:bg-stone-800/80 hover:bg-purple-50 dark:hover:bg-stone-750 rounded-2xl border border-stone-200 dark:border-stone-700/60 transition group flex items-center gap-2.5"
+                      className="p-2.5 bg-stone-50 dark:bg-stone-800/80 hover:bg-purple-50 dark:hover:bg-stone-750 rounded-2xl border border-stone-200 dark:border-stone-700/60 transition group flex items-center justify-between gap-2"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-purple-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                        {prov.businessName.charAt(0)}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                          <h4 className="text-xs font-bold text-stone-900 dark:text-white group-hover:text-purple-600 truncate">
+                            {item.businessName}
+                          </h4>
+                        </div>
+                        <span className="text-[10px] text-stone-400 flex items-center gap-1 mt-0.5 truncate">
+                          <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
+                          {item.serviceArea || "Northern Ghana"}
+                        </span>
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <h4 className="text-xs font-bold text-stone-900 dark:text-white group-hover:text-purple-600 truncate">
-                            {prov.businessName}
-                          </h4>
-                          {prov.verificationStatus === "VERIFIED" && (
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                          )}
-                        </div>
-                        <p className="text-[10px] text-stone-400 truncate">{prov.serviceArea}</p>
-                      </div>
+                      <span className="px-2 py-0.5 bg-stone-200 dark:bg-stone-700 text-[10px] font-bold text-stone-700 dark:text-stone-300 rounded-lg shrink-0">
+                        ⭐️ {item.ratingAverage || 5.0}
+                      </span>
                     </Link>
                   ))}
                 </div>

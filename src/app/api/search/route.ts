@@ -4,12 +4,11 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get("q") || "";
+    const rawQuery = searchParams.get("q") || "";
+    const query = rawQuery.trim();
     const scope = searchParams.get("scope") || "all"; // all, products, services, providers
     const category = searchParams.get("category");
     const area = searchParams.get("area");
-    const minPrice = searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : undefined;
-    const maxPrice = searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : undefined;
 
     const results: {
       products: any[];
@@ -21,26 +20,30 @@ export async function GET(request: Request) {
       providers: [],
     };
 
+    // Variations for SQLite case-insensitive fallback matching
+    const qLower = query.toLowerCase();
+    const qUpper = query.toUpperCase();
+    const qCap = query ? query.charAt(0).toUpperCase() + query.slice(1).toLowerCase() : "";
+
     // 1. Search Products
     if (scope === "all" || scope === "products") {
       const productWhere: any = { isAvailable: true };
 
-      if (query.trim()) {
+      if (query) {
         productWhere.OR = [
           { title: { contains: query } },
+          { title: { contains: qLower } },
+          { title: { contains: qUpper } },
+          { title: { contains: qCap } },
           { description: { contains: query } },
+          { description: { contains: qLower } },
           { category: { contains: query } },
+          { category: { contains: qLower } },
         ];
       }
 
       if (category && category !== "all") {
         productWhere.category = { contains: category };
-      }
-
-      if (minPrice !== undefined || maxPrice !== undefined) {
-        productWhere.price = {};
-        if (minPrice !== undefined) productWhere.price.gte = minPrice;
-        if (maxPrice !== undefined) productWhere.price.lte = maxPrice;
       }
 
       if (area && area !== "all") {
@@ -58,16 +61,11 @@ export async function GET(request: Request) {
               serviceArea: true,
               verificationStatus: true,
               ratingAverage: true,
-              user: {
-                select: {
-                  name: true,
-                  phone: true,
-                },
-              },
+              user: { select: { name: true, phone: true } },
             },
           },
         },
-        take: 12,
+        take: 15,
         orderBy: { createdAt: "desc" },
       });
     }
@@ -76,11 +74,16 @@ export async function GET(request: Request) {
     if (scope === "all" || scope === "services") {
       const serviceWhere: any = {};
 
-      if (query.trim()) {
+      if (query) {
         serviceWhere.OR = [
           { name: { contains: query } },
+          { name: { contains: qLower } },
+          { name: { contains: qUpper } },
+          { name: { contains: qCap } },
           { description: { contains: query } },
+          { description: { contains: qLower } },
           { category: { name: { contains: query } } },
+          { category: { name: { contains: qLower } } },
         ];
       }
 
@@ -106,19 +109,24 @@ export async function GET(request: Request) {
             },
           },
         },
-        take: 12,
+        take: 15,
       });
     }
 
-    // 3. Search Providers / Businesses
+    // 3. Search Providers / Businesses / Artisans
     if (scope === "all" || scope === "providers") {
       const providerWhere: any = {};
 
-      if (query.trim()) {
+      if (query) {
         providerWhere.OR = [
           { businessName: { contains: query } },
+          { businessName: { contains: qLower } },
+          { businessName: { contains: qUpper } },
+          { businessName: { contains: qCap } },
           { bio: { contains: query } },
+          { bio: { contains: qLower } },
           { serviceArea: { contains: query } },
+          { serviceArea: { contains: qLower } },
         ];
       }
 
@@ -129,23 +137,11 @@ export async function GET(request: Request) {
       results.providers = await prisma.providerProfile.findMany({
         where: providerWhere,
         include: {
-          user: {
-            select: {
-              name: true,
-              phone: true,
-              avatarUrl: true,
-            },
-          },
-          services: {
-            include: {
-              service: true,
-            },
-          },
-          products: {
-            take: 3,
-          },
+          user: { select: { name: true, phone: true, avatarUrl: true } },
+          services: { include: { service: true } },
+          products: { take: 3 },
         },
-        take: 12,
+        take: 15,
         orderBy: { ratingAverage: "desc" },
       });
     }
