@@ -44,7 +44,7 @@ export function CustomDropdown({
   }, []);
 
   return (
-    <div ref={dropdownRef} className={`relative inline-block ${className}`}>
+    <div ref={dropdownRef} className={`relative inline-block ${isOpen ? "z-[60]" : ""} ${className}`}>
       {/* Trigger Button */}
       <button
         type="button"
@@ -62,7 +62,7 @@ export function CustomDropdown({
       {/* Custom Modern Dropdown Menu */}
       {isOpen && (
         <div
-          className={`absolute top-full left-0 mt-1.5 w-44 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-2xl z-50 py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 ${menuClassName}`}
+          className={`absolute top-full left-0 mt-1.5 w-44 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-2xl z-[60] py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 ${menuClassName}`}
         >
           {options.map((opt) => {
             const isSelected = opt.value === value;
