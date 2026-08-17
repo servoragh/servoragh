@@ -99,15 +99,15 @@ export function DisputeResolutionRoom({
 
       {/* Case Details Summary Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-        <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800">
+        <div className="bg-stone-100 dark:bg-stone-800 p-4 rounded-2xl border border-stone-800">
           <span className="text-stone-400 block text-[10px] font-bold uppercase mb-1">CLAIMANT (BUYER)</span>
           <span className="font-bold text-white text-sm">{buyerName}</span>
         </div>
-        <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800">
+        <div className="bg-stone-100 dark:bg-stone-800 p-4 rounded-2xl border border-stone-800">
           <span className="text-stone-400 block text-[10px] font-bold uppercase mb-1">RESPONDENT (VENDOR)</span>
           <span className="font-bold text-white text-sm">{vendorName}</span>
         </div>
-        <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800">
+        <div className="bg-stone-100 dark:bg-stone-800 p-4 rounded-2xl border border-stone-800">
           <span className="text-stone-400 block text-[10px] font-bold uppercase mb-1">PLATFORM MEDIATOR</span>
           <span className="font-bold text-rose-400 text-sm">Servora Disputes Team</span>
         </div>

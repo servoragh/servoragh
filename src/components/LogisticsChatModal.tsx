@@ -62,7 +62,7 @@ export function LogisticsChatModal({
         </div>
 
         {/* Courier Info Bar */}
-        <div className="bg-stone-850 p-3 rounded-2xl border border-stone-800 flex items-center justify-between">
+        <div className="bg-stone-100 dark:bg-stone-800 p-3 rounded-2xl border border-stone-200 dark:border-stone-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-emerald-600 font-bold flex items-center justify-center text-xs">
               {courierName.charAt(0)}

@@ -616,7 +616,7 @@ export default function CommunityPage() {
                   </div>
 
                   {/* Threaded Comments Section */}
-                  <div className="bg-stone-50 dark:bg-stone-850 p-4 rounded-2xl space-y-3 border border-stone-100 dark:border-stone-800">
+                  <div className="bg-stone-50 dark:bg-stone-800 p-4 rounded-2xl space-y-3 border border-stone-100 dark:border-stone-800">
                     {post.comments && post.comments.length > 0 && (
                       <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                         {post.comments.map((cm: any) => (
@@ -762,7 +762,7 @@ export default function CommunityPage() {
               </div>
 
               {/* Direct Contact Options */}
-              <div className="p-3 bg-stone-850 border border-stone-800 rounded-xl flex items-center justify-between gap-4">
+              <div className="p-3 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-800 rounded-xl flex items-center justify-between gap-4">
                 <span className="font-bold text-stone-300">Contact Preferences:</span>
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-1.5 text-stone-300 font-bold cursor-pointer">

@@ -69,7 +69,7 @@ export default function ProviderRegisterPage() {
 
   return (
     <div className="min-h-screen py-12 bg-stone-900 text-white flex items-center justify-center p-4">
-      <div className="bg-stone-850 border border-stone-800 rounded-3xl p-8 max-w-lg w-full shadow-2xl">
+      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-8 max-w-lg w-full shadow-2xl">
         <div className="text-center mb-6">
           <div className="w-12 h-12 rounded-2xl bg-amber-500 text-stone-950 flex items-center justify-center mx-auto mb-3 font-bold">
             <Users className="w-6 h-6" />

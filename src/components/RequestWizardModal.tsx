@@ -309,7 +309,7 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
                   placeholder="Enter 4-digit code"
                   value={otpCodeInput}
                   onChange={(e) => setOtpCodeInput(e.target.value)}
-                  className="w-full p-3.5 bg-stone-50 dark:bg-stone-850 border border-stone-300 dark:border-stone-700 rounded-xl text-center text-lg font-mono font-bold tracking-widest text-emerald-600 dark:text-emerald-400 outline-none"
+                  className="w-full p-3.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-center text-lg font-mono font-bold tracking-widest text-emerald-600 dark:text-emerald-400 outline-none"
                   required
                 />
                 <button
@@ -380,7 +380,7 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
                           className={`p-2.5 rounded-xl text-left font-bold transition border cursor-pointer ${
                             (isCustomCategory && cat.id === "custom") || selectedServiceId === cat.id
                               ? "bg-emerald-50 dark:bg-emerald-950 border-emerald-500 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300"
-                              : "bg-stone-50 dark:bg-stone-850 border-stone-300 dark:border-stone-800 text-stone-700 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white"
+                              : "bg-stone-50 dark:bg-stone-800 border-stone-300 dark:border-stone-800 text-stone-700 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-750 hover:text-stone-900 dark:hover:text-white"
                           }`}
                         >
                           {cat.name}
@@ -446,7 +446,7 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
                   {/* Multi-file Attachments */}
                   <div>
                     <label className="block text-stone-700 dark:text-stone-300 font-semibold mb-1">Upload Diagnostic Media (Photos, Video, PDF)</label>
-                    <div className="border border-dashed border-stone-300 dark:border-stone-700 p-4 rounded-xl text-center bg-stone-50 dark:bg-stone-850 flex items-center justify-between">
+                    <div className="border border-dashed border-stone-300 dark:border-stone-700 p-4 rounded-xl text-center bg-stone-50 dark:bg-stone-800 flex items-center justify-between">
                       <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
                         <Upload className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         <span>{uploadingFile ? "Uploading file..." : "Attach photo, short video or invoice PDF"}</span>
@@ -504,7 +504,7 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
                   </div>
 
                   {/* Live Tracking Opt-in Toggle */}
-                  <div className="p-3 bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-800 rounded-2xl flex items-center justify-between">
+                  <div className="p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-800 rounded-2xl flex items-center justify-between">
                     <div>
                       <span className="font-bold text-stone-900 dark:text-white block">Live GPS Tracking Opt-In 🛰️</span>
                       <span className="text-[10px] text-stone-500 dark:text-stone-400">Stream position to provider while en route for emergency response.</span>
@@ -574,7 +574,7 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
                           type="button"
                           onClick={() => setUrgency(urg.id as any)}
                           className={`p-2.5 rounded-xl font-bold border text-left transition cursor-pointer ${
-                            urgency === urg.id ? urg.color : "bg-stone-50 dark:bg-stone-850 border-stone-300 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800"
+                            urgency === urg.id ? urg.color : "bg-stone-50 dark:bg-stone-800 border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700"
                           }`}
                         >
                           {urg.label}
@@ -613,7 +613,7 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
                           className={`p-2.5 rounded-xl font-bold border text-left transition cursor-pointer ${
                             pricingType === pr.id
                               ? "bg-emerald-50 dark:bg-emerald-950 border-emerald-500 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300"
-                              : "bg-stone-50 dark:bg-stone-850 border-stone-300 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800"
+                              : "bg-stone-50 dark:bg-stone-800 border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700"
                           }`}
                         >
                           {pr.label}

@@ -823,7 +823,7 @@ export default function BusinessOwnerPortalPage() {
 
             <form onSubmit={handleSaveProfile} className="space-y-6 text-xs">
               {/* Business Logo Upload Section */}
-              <div className="bg-stone-50 dark:bg-stone-850 p-6 rounded-2xl border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-6">
+              <div className="bg-stone-50 dark:bg-stone-800 p-6 rounded-2xl border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-6">
                 <div className="relative w-24 h-24 rounded-2xl bg-emerald-100 dark:bg-emerald-950 border-2 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 font-black text-4xl flex items-center justify-center overflow-hidden shrink-0 shadow-md">
                   {currentLogo ? (
                     <img src={currentLogo} alt={profBusinessName} className="w-full h-full object-cover" />

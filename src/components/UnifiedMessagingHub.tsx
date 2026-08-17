@@ -208,7 +208,7 @@ export function UnifiedMessagingHub({
                 className={`px-2.5 py-1 rounded-lg font-bold transition shrink-0 cursor-pointer ${
                   activeScopeFilter === f.id
                     ? "bg-emerald-600 text-white"
-                    : "bg-stone-200 dark:bg-stone-850 text-stone-700 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white"
+                    : "bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white"
                 }`}
               >
                 {f.label}
@@ -218,7 +218,7 @@ export function UnifiedMessagingHub({
         </div>
 
         {/* Room List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-stone-200 dark:divide-stone-850/60">
+        <div className="flex-1 overflow-y-auto divide-y divide-stone-200 dark:divide-stone-800">
           {loadingRooms ? (
             <div className="p-8 text-center text-stone-500">Loading messaging threads...</div>
           ) : filteredRooms.length === 0 ? (
@@ -235,7 +235,7 @@ export function UnifiedMessagingHub({
                   key={room.id}
                   onClick={() => setActiveRoomId(room.id)}
                   className={`w-full text-left p-3.5 transition flex items-start gap-3 cursor-pointer ${
-                    isActive ? "bg-emerald-50 dark:bg-stone-850 border-l-4 border-emerald-600 dark:border-emerald-500" : "hover:bg-stone-100 dark:hover:bg-stone-900"
+                    isActive ? "bg-emerald-50 dark:bg-stone-800 border-l-4 border-emerald-600 dark:border-emerald-500" : "hover:bg-stone-100 dark:hover:bg-stone-900"
                   }`}
                 >
                   <div className="w-10 h-10 rounded-xl bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-white font-bold flex items-center justify-center shrink-0 border border-stone-300 dark:border-stone-700">
@@ -278,7 +278,7 @@ export function UnifiedMessagingHub({
         {activeRoomData ? (
           <>
             {/* Active Thread Header */}
-            <div className="p-4 bg-stone-50 dark:bg-stone-850 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+            <div className="p-4 bg-stone-50 dark:bg-stone-800 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <h4 className="font-bold text-sm text-stone-900 dark:text-white">{activeRoomData.title || "Conversation Thread"}</h4>
@@ -373,7 +373,7 @@ export function UnifiedMessagingHub({
             </div>
 
             {/* Message Input Box */}
-            <form onSubmit={handleSendMessage} className="p-3 bg-stone-50 dark:bg-stone-850 border-t border-stone-200 dark:border-stone-800 space-y-2">
+            <form onSubmit={handleSendMessage} className="p-3 bg-stone-50 dark:bg-stone-800 border-t border-stone-200 dark:border-stone-800 space-y-2">
               {isInternalNote && (
                 <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
                   <Lock className="w-3 h-3" /> Posting as private staff note (hidden from customer & vendor)

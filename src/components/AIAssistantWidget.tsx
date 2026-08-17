@@ -64,7 +64,7 @@ export function AIAssistantWidget() {
       ) : (
         <div className="bg-stone-900 border border-stone-800 rounded-3xl w-80 sm:w-96 shadow-2xl overflow-hidden flex flex-col h-96 text-white animate-in fade-in zoom-in-95 duration-150">
           {/* Header */}
-          <div className="p-4 bg-stone-850 border-b border-stone-800 flex items-center justify-between">
+          <div className="p-4 bg-stone-800 border-b border-stone-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold">
                 <Bot className="w-4 h-4" />
@@ -98,7 +98,7 @@ export function AIAssistantWidget() {
           </div>
 
           {/* Input Box */}
-          <form onSubmit={handleSend} className="p-3 bg-stone-850 border-t border-stone-800 flex gap-2">
+          <form onSubmit={handleSend} className="p-3 bg-stone-800 border-t border-stone-800 flex gap-2">
             <input
               type="text"
               placeholder="Ask about orders, refunds, or support..."

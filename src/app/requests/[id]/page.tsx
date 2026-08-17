@@ -200,7 +200,7 @@ export default function RequestDetailPage() {
           </div>
 
           {/* Budget & Pricing Card */}
-          <div className="p-4 bg-stone-850 dark:bg-stone-800/60 rounded-2xl border border-stone-200 dark:border-stone-700 flex flex-wrap items-center justify-between gap-4">
+          <div className="p-4 bg-stone-100 dark:bg-stone-800/60 rounded-2xl border border-stone-200 dark:border-stone-700 flex flex-wrap items-center justify-between gap-4">
             <div>
               <span className="text-[10px] uppercase font-bold text-stone-400 block mb-0.5">Pricing Structure & Budget</span>
               <span className="text-xl font-black text-emerald-400 block">

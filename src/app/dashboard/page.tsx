@@ -286,7 +286,7 @@ export default function UserDashboardPage() {
                     type="text"
                     value={user.phone}
                     disabled
-                    className="w-full p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-850 text-stone-500 font-bold outline-none cursor-not-allowed"
+                    className="w-full p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-800 text-stone-500 font-bold outline-none cursor-not-allowed"
                   />
                 </div>
               </div>
