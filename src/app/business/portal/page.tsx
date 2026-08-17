@@ -359,7 +359,7 @@ export default function BusinessOwnerPortalPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-stone-800 pb-2 overflow-x-auto">
+        <div className="flex items-center gap-2 border-b border-stone-200 dark:border-stone-800 pb-2 overflow-x-auto">
           {[
             { id: "products", label: `Inventory & Price Manager (${totalProductsCount})`, icon: Package },
             { id: "messages", label: "Messages & Support Hub 💬", icon: MessageSquare },
@@ -372,10 +372,10 @@ export default function BusinessOwnerPortalPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition shrink-0 ${
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition shrink-0 cursor-pointer ${
                   activeTab === tab.id
-                    ? "bg-emerald-600 text-white shadow-lg"
-                    : "bg-stone-900 text-stone-400 hover:bg-stone-800 hover:text-white"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -671,40 +671,40 @@ export default function BusinessOwnerPortalPage() {
         {activeTab === "overview" && (
           <div className="space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-stone-900 border border-stone-800 p-6 rounded-3xl">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block">Trust Score</span>
-                <span className="text-3xl font-black text-emerald-400 block my-1">{trustScore}%</span>
-                <span className="text-xs text-stone-400">{profile.verificationStatus} Profile</span>
+              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 rounded-3xl shadow-xs">
+                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">Trust Score</span>
+                <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 block my-1">{trustScore}%</span>
+                <span className="text-xs text-stone-500 dark:text-stone-400">{profile.verificationStatus} Profile</span>
               </div>
-              <div className="bg-stone-900 border border-stone-800 p-6 rounded-3xl">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block">Completed Jobs</span>
-                <span className="text-3xl font-black text-white block my-1">{profile.completedJobsCount}</span>
-                <span className="text-xs text-stone-400">{profile.reviewCount} Ratings ({profile.ratingAverage} avg)</span>
+              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 rounded-3xl shadow-xs">
+                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">Completed Jobs</span>
+                <span className="text-3xl font-black text-stone-900 dark:text-white block my-1">{profile.completedJobsCount}</span>
+                <span className="text-xs text-stone-500 dark:text-stone-400">{profile.reviewCount} Ratings ({profile.ratingAverage} avg)</span>
               </div>
-              <div className="bg-stone-900 border border-stone-800 p-6 rounded-3xl">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block">Products Listed</span>
-                <span className="text-3xl font-black text-amber-400 block my-1">{totalProductsCount}</span>
-                <span className="text-xs text-stone-400">Available in Tamale</span>
+              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 rounded-3xl shadow-xs">
+                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">Products Listed</span>
+                <span className="text-3xl font-black text-amber-500 dark:text-amber-400 block my-1">{totalProductsCount}</span>
+                <span className="text-xs text-stone-500 dark:text-stone-400">Available in Tamale</span>
               </div>
-              <div className="bg-stone-900 border border-stone-800 p-6 rounded-3xl">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block">Response Rate</span>
-                <span className="text-3xl font-black text-purple-400 block my-1">{profile.responseRate}%</span>
-                <span className="text-xs text-stone-400">Avg &lt; 15 mins</span>
+              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 rounded-3xl shadow-xs">
+                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">Response Rate</span>
+                <span className="text-3xl font-black text-purple-600 dark:text-purple-400 block my-1">{profile.responseRate}%</span>
+                <span className="text-xs text-stone-500 dark:text-stone-400">Avg &lt; 15 mins</span>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
               <div>
-                <h3 className="font-bold text-base text-white">Post New Inventory Product</h3>
-                <p className="text-xs text-stone-400">List items for sale to customers in Tamale.</p>
+                <h3 className="font-bold text-base text-stone-900 dark:text-white">Post New Inventory Product</h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400">List items for sale to customers in Tamale.</p>
               </div>
               <button
                 onClick={() => {
                   setEditingProduct(null);
                   setIsPostProductOpen(true);
                 }}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow flex items-center gap-2"
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-2 cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Add Product</span>
@@ -716,40 +716,40 @@ export default function BusinessOwnerPortalPage() {
         {/* TAB 3: LEADS & QUOTES */}
         {activeTab === "leads" && (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold">Incoming Customer Job Requests in Tamale</h2>
+            <h2 className="text-xl font-bold text-stone-900 dark:text-white">Incoming Customer Job Requests in Tamale</h2>
             {incomingRequests.length === 0 ? (
-              <div className="bg-stone-900 p-8 rounded-3xl border border-stone-800 text-center text-xs text-stone-500">
+              <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 text-center text-xs text-stone-500 dark:text-stone-400 shadow-xs">
                 No open job requests in your service categories right now. Check back soon!
               </div>
             ) : (
               <div className="space-y-4">
                 {incomingRequests.map((req: any) => (
-                  <div key={req.id} className="bg-stone-900 border border-stone-800 p-6 rounded-3xl space-y-3">
+                  <div key={req.id} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 rounded-3xl space-y-3 shadow-xs">
                     <div className="flex justify-between items-start">
                       <div>
-                        <span className="px-2.5 py-0.5 bg-emerald-950 text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-800">
+                        <span className="px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-200 dark:border-emerald-800">
                           {req.service?.name}
                         </span>
-                        <h3 className="text-lg font-bold text-white mt-1">{req.title}</h3>
-                        <p className="text-xs text-stone-400">{req.location?.area}, Tamale &bull; Urgency: {req.urgency}</p>
+                        <h3 className="text-lg font-bold text-stone-900 dark:text-white mt-1">{req.title}</h3>
+                        <p className="text-xs text-stone-500 dark:text-stone-400">{req.location?.area}, Tamale &bull; Urgency: {req.urgency}</p>
                       </div>
-                      <span className="text-xs font-bold text-amber-400">
+                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
                         {req.budgetMax ? `Budget: GH₵ ${req.budgetMax}` : "Open Budget"}
                       </span>
                     </div>
 
-                    <p className="text-xs text-stone-300 bg-stone-800/60 p-3 rounded-xl">{req.description}</p>
+                    <p className="text-xs text-stone-700 dark:text-stone-300 bg-stone-50 dark:bg-stone-800/60 p-3 rounded-xl border border-stone-200 dark:border-stone-700/60">{req.description}</p>
 
                     {/* Submit Quote Section */}
                     {selectedRequestId === req.id ? (
-                      <form onSubmit={handleQuoteSubmit} className="bg-stone-800 p-4 rounded-2xl space-y-3 border border-stone-700">
+                      <form onSubmit={handleQuoteSubmit} className="bg-stone-50 dark:bg-stone-800 p-4 rounded-2xl space-y-3 border border-stone-200 dark:border-stone-700">
                         <div className="grid grid-cols-2 gap-3">
                           <input
                             type="number"
                             placeholder="Your Price in GH₵"
                             value={quotePrice}
                             onChange={(e) => setQuotePrice(e.target.value)}
-                            className="p-2.5 bg-stone-900 text-white rounded-xl text-xs outline-none border border-stone-700"
+                            className="p-2.5 bg-white dark:bg-stone-900 text-stone-900 dark:text-white rounded-xl text-xs outline-none border border-stone-300 dark:border-stone-700 font-medium"
                             required
                           />
                           <input
@@ -757,15 +757,15 @@ export default function BusinessOwnerPortalPage() {
                             placeholder="Message / Turnaround"
                             value={quoteMessage}
                             onChange={(e) => setQuoteMessage(e.target.value)}
-                            className="p-2.5 bg-stone-900 text-white rounded-xl text-xs outline-none border border-stone-700"
+                            className="p-2.5 bg-white dark:bg-stone-900 text-stone-900 dark:text-white rounded-xl text-xs outline-none border border-stone-300 dark:border-stone-700 font-medium"
                             required
                           />
                         </div>
                         <div className="flex gap-2">
-                          <button type="submit" disabled={quoteLoading} className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl">
+                          <button type="submit" disabled={quoteLoading} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl cursor-pointer">
                             {quoteLoading ? "Sending..." : "Submit Quote"}
                           </button>
-                          <button type="button" onClick={() => setSelectedRequestId(null)} className="px-4 py-2 text-xs text-stone-400">
+                          <button type="button" onClick={() => setSelectedRequestId(null)} className="px-4 py-2 text-xs text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white cursor-pointer">
                             Cancel
                           </button>
                         </div>
@@ -773,7 +773,7 @@ export default function BusinessOwnerPortalPage() {
                     ) : (
                       <button
                         onClick={() => setSelectedRequestId(req.id)}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition"
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition cursor-pointer"
                       >
                         Submit Price Quote
                       </button>
@@ -804,26 +804,27 @@ export default function BusinessOwnerPortalPage() {
         )}
 
         {/* TAB 4: PROFILE & LOGO MANAGEMENT SETTINGS */}
+        {/* TAB 4: PROFILE & LOGO MANAGEMENT SETTINGS */}
         {activeTab === "profile" && (
-          <div className="bg-stone-900 border border-stone-800 p-6 lg:p-8 rounded-3xl space-y-6">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-4">
+          <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 lg:p-8 rounded-3xl space-y-6 shadow-xs">
+            <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-4">
               <div>
-                <h2 className="text-xl font-bold text-white">Business Profile & Logo Settings</h2>
-                <p className="text-xs text-stone-400">
+                <h2 className="text-xl font-bold text-stone-900 dark:text-white">Business Profile & Logo Settings</h2>
+                <p className="text-xs text-stone-500 dark:text-stone-400">
                   Upload your business logo, edit display name, bio, website link, service coverage in Tamale, and verification documents.
                 </p>
               </div>
               {profSavedMessage && (
-                <div className="px-4 py-2 bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold text-xs rounded-xl flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Profile Changes Saved!
+                <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold text-xs rounded-xl flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Profile Changes Saved!
                 </div>
               )}
             </div>
 
             <form onSubmit={handleSaveProfile} className="space-y-6 text-xs">
               {/* Business Logo Upload Section */}
-              <div className="bg-stone-850 p-6 rounded-2xl border border-stone-800 flex flex-col sm:flex-row items-center gap-6">
-                <div className="relative w-24 h-24 rounded-2xl bg-emerald-950 border-2 border-emerald-500/40 text-emerald-400 font-black text-4xl flex items-center justify-center overflow-hidden shrink-0 shadow-lg">
+              <div className="bg-stone-50 dark:bg-stone-850 p-6 rounded-2xl border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-6">
+                <div className="relative w-24 h-24 rounded-2xl bg-emerald-100 dark:bg-emerald-950 border-2 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 font-black text-4xl flex items-center justify-center overflow-hidden shrink-0 shadow-md">
                   {currentLogo ? (
                     <img src={currentLogo} alt={profBusinessName} className="w-full h-full object-cover" />
                   ) : (
@@ -832,8 +833,8 @@ export default function BusinessOwnerPortalPage() {
                 </div>
 
                 <div className="space-y-2 text-center sm:text-left flex-1">
-                  <h4 className="font-bold text-sm text-white">Business Logo / Profile Avatar</h4>
-                  <p className="text-stone-400 text-xs">
+                  <h4 className="font-bold text-sm text-stone-900 dark:text-white">Business Logo / Profile Avatar</h4>
+                  <p className="text-stone-500 dark:text-stone-400 text-xs">
                     Upload your high-res logo or photo. Automatically compressed & served via CDN.
                   </p>
 
@@ -843,7 +844,7 @@ export default function BusinessOwnerPortalPage() {
                       placeholder="https://... or choose photo"
                       value={profAvatarUrl}
                       onChange={(e) => setProfAvatarUrl(e.target.value)}
-                      className="p-2.5 bg-stone-900 border border-stone-700 text-white rounded-xl outline-none flex-1 max-w-sm"
+                      className="p-2.5 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-white rounded-xl outline-none flex-1 max-w-sm font-medium"
                     />
                     <label className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl cursor-pointer shrink-0 flex items-center gap-1.5">
                       <Camera className="w-4 h-4" />
@@ -874,63 +875,63 @@ export default function BusinessOwnerPortalPage() {
               {/* Form Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-stone-300 mb-1">Business Name</label>
+                  <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Business Name</label>
                   <input
                     type="text"
                     value={profBusinessName}
                     onChange={(e) => setProfBusinessName(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-stone-700 bg-stone-800 text-white font-bold outline-none text-sm"
+                    className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white font-bold outline-none text-sm"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-stone-300 mb-1">Existing Business Website URL</label>
-                  <div className="flex items-center gap-2 bg-stone-800 border border-stone-700 rounded-xl px-3 py-1">
-                    <Globe className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Existing Business Website URL</label>
+                  <div className="flex items-center gap-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl px-3 py-1">
+                    <Globe className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <input
                       type="text"
                       placeholder="https://mybusiness.com"
                       value={profWebsiteUrl}
                       onChange={(e) => setProfWebsiteUrl(e.target.value)}
-                      className="w-full py-2 bg-transparent text-white outline-none"
+                      className="w-full py-2 bg-transparent text-stone-900 dark:text-white outline-none font-medium"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-stone-300 mb-1">Service Coverage Area (Tamale)</label>
+                  <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Service Coverage Area (Tamale)</label>
                   <input
                     type="text"
                     value={profServiceArea}
                     onChange={(e) => setProfServiceArea(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-stone-700 bg-stone-800 text-white font-bold outline-none text-sm"
+                    className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white font-bold outline-none text-sm"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-stone-300 mb-1">Hourly Rate (GH₵)</label>
+                  <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Hourly Rate (GH₵)</label>
                   <input
                     type="number"
                     value={profPricingHourly}
                     onChange={(e) => setProfPricingHourly(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-stone-700 bg-stone-800 text-emerald-400 font-bold outline-none text-sm"
+                    className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-emerald-600 dark:text-emerald-400 font-bold outline-none text-sm"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block font-bold text-stone-300 mb-1">Ghana Card / Verification Document</label>
+                  <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Ghana Card / Verification Document</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       placeholder="Document URL or upload"
                       value={profIdDocumentUrl}
                       onChange={(e) => setProfIdDocumentUrl(e.target.value)}
-                      className="flex-1 p-3 rounded-xl border border-stone-700 bg-stone-800 text-stone-300 outline-none"
+                      className="flex-1 p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-300 outline-none font-medium"
                     />
-                    <label className="px-3 py-3 bg-stone-800 hover:bg-stone-700 text-white font-bold rounded-xl cursor-pointer border border-stone-700 flex items-center gap-1 shrink-0">
-                      <Upload className="w-4 h-4 text-emerald-400" />
+                    <label className="px-3 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-white font-bold rounded-xl cursor-pointer border border-stone-300 dark:border-stone-700 flex items-center gap-1 shrink-0">
+                      <Upload className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>ID File</span>
                       <input
                         type="file"
@@ -956,21 +957,21 @@ export default function BusinessOwnerPortalPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-stone-300 mb-1">About / Business Bio</label>
+                <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">About / Business Bio</label>
                 <textarea
                   rows={4}
                   value={profBio}
                   onChange={(e) => setProfBio(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-stone-700 bg-stone-800 text-white outline-none"
+                  className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white outline-none font-medium"
                   required
                 />
               </div>
 
-              <div className="flex justify-end pt-4 border-t border-stone-800">
+              <div className="flex justify-end pt-4 border-t border-stone-200 dark:border-stone-800">
                 <button
                   type="submit"
                   disabled={profSaving}
-                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-2"
+                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-2 cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>{profSaving ? "Saving Changes..." : "Save Business Profile"}</span>
@@ -994,75 +995,75 @@ export default function BusinessOwnerPortalPage() {
 
       {/* Quick Price & Discount Update Modal */}
       {quickDiscountProduct && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-stone-900/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-3">
               <div className="flex items-center gap-2">
                 <Tag className="w-5 h-5 text-amber-500" />
-                <h3 className="font-bold text-sm text-white">Quick Price & Discount Manager</h3>
+                <h3 className="font-bold text-sm text-stone-900 dark:text-white">Quick Price & Discount Manager</h3>
               </div>
-              <button onClick={() => setQuickDiscountProduct(null)} className="text-stone-400 hover:text-white">
+              <button onClick={() => setQuickDiscountProduct(null)} className="text-stone-400 hover:text-stone-700 dark:hover:text-white cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-stone-400">
-              Updating pricing & discount for <strong className="text-white">{quickDiscountProduct.title}</strong>
+            <p className="text-xs text-stone-500 dark:text-stone-400">
+              Updating pricing & discount for <strong className="text-stone-900 dark:text-white">{quickDiscountProduct.title}</strong>
             </p>
 
             <form onSubmit={handleSaveQuickDiscount} className="space-y-3 text-xs">
               <div>
-                <label className="block font-semibold text-stone-300 mb-1">Sale Price (GH₵)</label>
+                <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Sale Price (GH₵)</label>
                 <input
                   type="number"
                   value={quickSalePrice}
                   onChange={(e) => setQuickSalePrice(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-stone-700 bg-stone-800 text-emerald-400 font-bold outline-none"
+                  className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-emerald-600 dark:text-emerald-400 font-bold outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-stone-300 mb-1">Regular Compare Price (GH₵)</label>
+                <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Regular Compare Price (GH₵)</label>
                 <input
                   type="number"
                   placeholder="Optional regular price for discount tag"
                   value={quickOriginalPrice}
                   onChange={(e) => setQuickOriginalPrice(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-stone-700 bg-stone-800 text-stone-400 font-semibold line-through outline-none"
+                  className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-500 dark:text-stone-400 font-semibold line-through outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-stone-300 mb-1">Stock Quantity</label>
+                <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Stock Quantity</label>
                 <input
                   type="number"
                   value={quickStockQuantity}
                   onChange={(e) => setQuickStockQuantity(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-stone-700 bg-stone-800 text-white font-bold outline-none"
+                  className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-white font-bold outline-none"
                   required
                 />
               </div>
 
               {quickOriginalPrice && quickSalePrice && Number(quickOriginalPrice) > Number(quickSalePrice) && (
-                <div className="p-2.5 bg-amber-950/80 border border-amber-800 text-amber-300 rounded-xl text-xs font-bold text-center">
+                <div className="p-2.5 bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 rounded-xl text-xs font-bold text-center">
                   SAVE GH₵ {(Number(quickOriginalPrice) - Number(quickSalePrice)).toFixed(2)} (
                   {Math.round(((Number(quickOriginalPrice) - Number(quickSalePrice)) / Number(quickOriginalPrice)) * 100)}% OFF)
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-stone-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-stone-200 dark:border-stone-800">
                 <button
                   type="button"
                   onClick={() => setQuickDiscountProduct(null)}
-                  className="px-4 py-2 text-stone-400 hover:text-white"
+                  className="px-4 py-2 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={quickUpdating}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow transition"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow transition cursor-pointer"
                 >
                   {quickUpdating ? "Updating..." : "Save Discount Pricing"}
                 </button>
