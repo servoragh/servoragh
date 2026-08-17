@@ -299,10 +299,10 @@ export default function BusinessOwnerPortalPage() {
   const currentLogo = profAvatarUrl || profile.logoUrl || profile.user?.avatarUrl;
 
   return (
-    <div className="min-h-screen py-10 bg-stone-950 text-white">
+    <div className="min-h-screen py-10 bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Header Business Card */}
-        <div className="bg-gradient-to-r from-stone-900 via-stone-850 to-stone-900 border border-stone-800 rounded-3xl p-6 lg:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-6 lg:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-2xl bg-emerald-600 text-white font-black text-2xl flex items-center justify-center shrink-0 overflow-hidden border border-emerald-500/40">
               {currentLogo ? (

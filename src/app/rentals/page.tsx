@@ -135,22 +135,22 @@ export default function ToolRentalsPage() {
     <div className="min-h-screen py-10 bg-stone-50 dark:bg-stone-950 text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-stone-900 via-amber-950 to-stone-900 border border-stone-800 rounded-3xl p-6 lg:p-8 shadow-xl text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="bg-gradient-to-r from-amber-500/10 via-stone-50 to-amber-500/5 dark:from-stone-900 dark:via-amber-950 dark:to-stone-900 border border-amber-200 dark:border-stone-800 rounded-3xl p-6 lg:p-8 shadow-sm text-stone-900 dark:text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-900/80 text-amber-300 text-xs font-bold rounded-full mb-2 border border-amber-700">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-full mb-2 border border-amber-300 dark:border-amber-700">
               <Wrench className="w-3.5 h-3.5" /> Northern Marketplace Equipment Hub
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-stone-900 dark:text-white">
               Tool & Heavy Equipment Rentals
             </h1>
-            <p className="text-xs text-stone-300 mt-1 max-w-xl">
+            <p className="text-xs text-stone-600 dark:text-stone-300 mt-1 max-w-xl font-medium">
               Rent generators, scaffolding frames, concrete mixers, arc welders, and power demolition tools directly from verified Northern businesses & artisans.
             </p>
           </div>
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-5 py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-2xl shadow-lg transition flex items-center gap-2 shrink-0 border border-amber-400"
+            className="px-5 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-2xl shadow transition flex items-center gap-2 shrink-0 border border-amber-500 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>List Equipment for Rent</span>

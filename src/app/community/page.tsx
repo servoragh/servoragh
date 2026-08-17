@@ -301,22 +301,22 @@ export default function CommunityPage() {
     <div className="min-h-screen py-10 bg-stone-50 dark:bg-stone-950 text-xs">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Header Banner */}
-        <div className="bg-gradient-to-r from-stone-900 via-purple-950 to-stone-900 border border-stone-800 rounded-3xl p-6 lg:p-8 shadow-xl text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="bg-gradient-to-r from-purple-500/10 via-stone-50 to-purple-500/5 dark:from-stone-900 dark:via-purple-950 dark:to-stone-900 border border-purple-200 dark:border-stone-800 rounded-3xl p-6 lg:p-8 shadow-sm text-stone-900 dark:text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-900/80 text-purple-300 text-xs font-bold rounded-full mb-2 border border-purple-700">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-100 dark:bg-purple-900/80 text-purple-800 dark:text-purple-300 text-xs font-bold rounded-full mb-2 border border-purple-300 dark:border-purple-700">
               <Users className="w-3.5 h-3.5" /> Northern Ghana Trade & Community Ecosystem
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-stone-900 dark:text-white">
               Northern Ghana Community Hub & Trade Board
             </h1>
-            <p className="text-xs text-stone-300 mt-1 max-w-xl">
+            <p className="text-xs text-stone-600 dark:text-stone-300 mt-1 max-w-xl font-medium">
               Real-time feed connecting local artisans, contractors, suppliers, and residents across Northern Ghana. Explore tool rentals, live service calls, and grid alerts.
             </p>
           </div>
 
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="px-5 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-2xl shadow-lg transition flex items-center gap-2 shrink-0 border border-purple-400"
+            className="px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-2xl shadow transition flex items-center gap-2 shrink-0 border border-purple-500 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Post Notice / Equipment Call</span>

@@ -53,7 +53,7 @@ export default function AdminDashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Theme Mode: "dark" | "light"
-  const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
+  const [themeMode, setThemeMode] = useState<"dark" | "light">("light");
 
   // Active View in 3-Panel Dashboard
   const [activeView, setActiveView] = useState<
