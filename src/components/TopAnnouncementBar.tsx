@@ -188,14 +188,14 @@ export function TopAnnouncementBar({
               </span>
             )}
 
-            {/* Main Message Text - Auto-scrolls horizontally on mobile/long text so ENTIRE message is revealed */}
+            {/* Main Message Text */}
             <div className="min-w-0 flex-1 overflow-hidden relative flex items-center">
               <p className="text-[11px] sm:text-xs font-semibold text-stone-100 whitespace-nowrap animate-ticker-scroll max-w-none">
                 {currentItem.text}
               </p>
             </div>
 
-            {/* Optional Call To Action Button (Visible on Mobile & Desktop) */}
+            {/* Optional Call To Action Button */}
             {currentItem.ctaLabel && currentItem.ctaUrl && (
               <Link
                 href={currentItem.ctaUrl}
@@ -210,14 +210,12 @@ export function TopAnnouncementBar({
 
         {/* Right Side Navigation Controls & Dismiss */}
         <div className="flex items-center gap-1 shrink-0">
-          {/* Pause Badge indicator */}
           {isPaused && tickers.length > 1 && (
             <span className="hidden lg:inline-block text-[9px] font-mono text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-1.5 py-0.2 rounded-md">
               PAUSED
             </span>
           )}
 
-          {/* Up / Down Navigation buttons */}
           {tickers.length > 1 && (
             <div className="flex flex-col -space-y-1">
               <button

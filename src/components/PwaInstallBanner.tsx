@@ -5,54 +5,57 @@ import { Download, X, Smartphone } from "lucide-react";
 
 export function PwaInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showBanner, setShowBanner] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setShowBanner(true);
+      setIsVisible(true);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+    };
   }, []);
 
-  async function handleInstall() {
+  async function handleInstallClick() {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === "accepted") {
-      setShowBanner(false);
+      setIsVisible(false);
     }
     setDeferredPrompt(null);
   }
 
-  if (!showBanner) return null;
+  if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 bg-stone-900 text-white p-4 rounded-2xl shadow-2xl border border-emerald-500/40 flex items-center justify-between gap-3 animate-slide-up">
+    <div className="fixed bottom-20 sm:bottom-6 left-4 sm:left-6 z-40 max-w-sm bg-stone-900 text-white p-4 rounded-3xl shadow-2xl border border-stone-800 flex items-center justify-between gap-3 animate-in slide-in-from-bottom duration-300">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black shadow-md shrink-0">
           <Smartphone className="w-5 h-5" />
         </div>
         <div>
-          <h4 className="font-bold text-xs">Install Servora App</h4>
-          <p className="text-[10px] text-stone-300">Fast local service booking in Northern Ghana</p>
+          <h4 className="font-extrabold text-xs text-white">Install Servora App</h4>
+          <p className="text-[10px] text-stone-400">Fast access to Northern Ghana services & tools!</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 shrink-0">
         <button
-          onClick={handleInstall}
-          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-stone-950 font-bold text-xs rounded-xl transition flex items-center gap-1"
+          onClick={handleInstallClick}
+          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer flex items-center gap-1"
         >
           <Download className="w-3.5 h-3.5" />
           <span>Install</span>
         </button>
         <button
-          onClick={() => setShowBanner(false)}
-          className="p-1 text-stone-400 hover:text-white"
+          onClick={() => setIsVisible(false)}
+          className="p-1 text-stone-400 hover:text-white rounded-full transition cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
