@@ -38,12 +38,14 @@ import {
   Save,
   Menu,
   Scale,
+  Megaphone,
 } from "lucide-react";
 import { LaunchModeWidget } from "@/components/LaunchModeWidget";
 import { TrustBadge } from "@/components/TrustBadge";
 import { UnifiedMessagingHub } from "@/components/UnifiedMessagingHub";
 import { CsvImporterModal } from "@/components/CsvImporterModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AdminTickersManager } from "@/components/AdminTickersManager";
 import { formatDate, formatGHS } from "@/lib/utils";
 
 export default function AdminDashboardPage() {
@@ -58,7 +60,7 @@ export default function AdminDashboardPage() {
 
   // Active View in 3-Panel Dashboard
   const [activeView, setActiveView] = useState<
-    "overview" | "members" | "businesses" | "services" | "products" | "requests" | "disputes" | "storage" | "verification" | "flags" | "settings"
+    "overview" | "tickers" | "members" | "businesses" | "services" | "products" | "requests" | "disputes" | "storage" | "verification" | "flags" | "settings"
   >("overview");
 
   const [searchFilter, setSearchFilter] = useState("");
@@ -237,6 +239,7 @@ export default function AdminDashboardPage() {
 
   const navItems = [
     { id: "overview", label: "Dashboard Overview", icon: Rocket, count: null, group: "PEOPLE & BUSINESSES" },
+    { id: "tickers", label: "Announcement Tickers 📣", icon: Megaphone, count: "Live", group: "PEOPLE & BUSINESSES" },
     { id: "members", label: "Members Directory", icon: Users, count: users.length, group: "PEOPLE & BUSINESSES" },
     { id: "businesses", label: "Business Profiles", icon: Building2, count: providers.length, group: "PEOPLE & BUSINESSES" },
     { id: "verification", label: "ID Verification", icon: ShieldCheck, count: stats.pendingVerifications, group: "PEOPLE & BUSINESSES" },
@@ -545,6 +548,9 @@ export default function AdminDashboardPage() {
               </form>
             </div>
           )}
+
+          {/* ANNOUNCEMENT TICKERS & PROMOS */}
+          {activeView === "tickers" && <AdminTickersManager isDark={isDark} />}
 
           {/* MEMBERS DIRECTORY */}
           {activeView === "members" && (

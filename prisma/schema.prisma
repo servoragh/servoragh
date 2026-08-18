@@ -468,3 +468,22 @@ model CommunityUpvote {
 
   @@unique([postId, userId])
 }
+
+// =========================================================================
+// TOP TICKER & PROMOTIONAL ANNOUNCEMENT BAR SUBSYSTEM
+// =========================================================================
+
+model TickerAnnouncement {
+  id           String   @id @default(uuid())
+  text         String
+  tag          String   @default("ANNOUNCEMENT") // JOB_SEEKER, BUSINESS_OWNER, EXPERT_ARTISAN, EMERGENCY, PROMO, RENTAL
+  badgeText    String?
+  badgeColor   String   @default("emerald") // emerald, amber, indigo, purple, rose, teal, cyan
+  ctaLabel     String?
+  ctaUrl       String?
+  isActive     Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+

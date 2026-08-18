@@ -21,6 +21,7 @@ import {
 import { UnifiedEcommerceSearch } from "@/components/UnifiedEcommerceSearch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RequestWizardModal } from "@/components/RequestWizardModal";
+import { TopAnnouncementBar } from "@/components/TopAnnouncementBar";
 
 export function Navbar() {
   const [session, setSession] = useState<any>(null);
@@ -46,22 +47,8 @@ export function Navbar() {
 
   return (
     <>
-      {/* 24/7 Emergency Ticker Banner */}
-      <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white text-[11px] py-1 px-4 border-b border-emerald-900/40 flex items-center justify-between font-bold">
-        <div className="flex items-center gap-2 max-w-7xl mx-auto w-full justify-between">
-          <span className="flex items-center gap-1.5 text-emerald-100 min-w-0 truncate">
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-            </span>
-            <span className="truncate">24/7 Northern Ghana Emergency Hotline & Dispatch Active</span>
-          </span>
-          <div className="hidden sm:flex items-center gap-4 text-emerald-100 text-[10px]">
-            <span>⚡ Electrical, Plumbing & Power Failures</span>
-            <span className="text-emerald-200 font-mono font-bold">GHANA EMERGENCY DISPATCH</span>
-          </div>
-        </div>
-      </div>
+      {/* Modern Dynamic Vertical Swipe-Up Ticker Banner */}
+      <TopAnnouncementBar />
 
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border-b border-stone-200 dark:border-stone-800 shadow-xs transition duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
