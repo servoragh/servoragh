@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     let reply = "";
     let shouldEscalate = false;
 
-    // 1. Check if Google Gemini Real AI Key is available
+    // 1. Try Google Gemini Real AI API if API key exists
     const geminiApiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
     if (geminiApiKey) {
@@ -67,19 +67,59 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. High-Accuracy Intelligence Engine Fallback
+    // 2. High-Accuracy Conversational NLP Engine Fallback
     if (!reply) {
+      // Identity & Name Questions
       if (
-        lowerText.includes("support") ||
-        lowerText.includes("help") ||
-        lowerText.includes("contact") ||
+        lowerText.includes("name") ||
+        lowerText.includes("who are you") ||
+        lowerText.includes("what are you")
+      ) {
+        reply = `I am Servora AI, your 24/7 virtual assistant for Servora in Northern Ghana! I help you find verified local artisans, post service jobs, track active requests, and explain Mobile Money escrow safety.`;
+      }
+      // Affirmative Follow-ups ("yes", "sure", "okay", "yep")
+      else if (
+        lowerText === "yes" ||
+        lowerText === "yes please" ||
+        lowerText === "sure" ||
+        lowerText === "okay" ||
+        lowerText === "yep" ||
+        lowerText === "yeah"
+      ) {
+        reply = `Awesome! To post a job right now in Tamale and get instant quotes from verified artisans via WhatsApp, simply click the green "Post Job & Get Quotes" button at the top of your screen, or tell me what service you need (e.g. "I need an electrician in Sakasaka")!`;
+      }
+      // General Capability ("can you help", "what can you do", "help me")
+      else if (
+        lowerText.includes("can you help") ||
+        lowerText.includes("what can you do") ||
+        lowerText.includes("how can you help") ||
+        lowerText === "can you help"
+      ) {
+        reply = `Yes, I certainly can! I can help you: 1) Post a new job & get quotes from verified artisans, 2) Track your active service requests, 3) Explain our 100% Mobile Money Escrow refund protection, or 4) Connect you directly to our human support team on WhatsApp at +233500710610.`;
+      }
+      // Greetings
+      else if (
+        lowerText === "hi" ||
+        lowerText === "hello" ||
+        lowerText === "hey" ||
+        lowerText.startsWith("good morning") ||
+        lowerText.startsWith("good afternoon")
+      ) {
+        reply = `Hello! 👋 Welcome to Servora. How can I help you today? You can ask me to find local artisans in Tamale, track your orders, or post a new job request.`;
+      }
+      // Live Human Escalation Intent
+      else if (
         lowerText.includes("agent") ||
         lowerText.includes("human") ||
-        lowerText.includes("complaint")
+        lowerText.includes("live support") ||
+        lowerText.includes("speak to human") ||
+        lowerText.includes("customer service")
       ) {
-        reply = `Our Servora Customer Helpdesk is active 24/7 across Northern Ghana! You can reach our team directly via WhatsApp at +233500710610, submit a dispute ticket under your dashboard, or click "Post Job & Get Quotes" to match with top-rated local artisans.`;
+        reply = `Connecting you to our live Platform Support team! You can chat directly with our helpdesk team via WhatsApp at +233500710610 or submit a support ticket in your dashboard.`;
         shouldEscalate = true;
-      } else if (
+      }
+      // Order Status / Request Tracking Intent
+      else if (
         lowerText.includes("order") ||
         lowerText.includes("request") ||
         lowerText.includes("track") ||
@@ -102,32 +142,31 @@ export async function POST(request: Request) {
         } else {
           reply = `Please sign in to check your active orders and service requests across Northern Ghana.`;
         }
-      } else if (
+      }
+      // Return & Refund / Escrow Safety Intent
+      else if (
         lowerText.includes("return") ||
         lowerText.includes("refund") ||
         lowerText.includes("cancel") ||
-        lowerText.includes("dispute")
-      ) {
-        reply = `Servora offers 100% Buyer Protection in Tamale! If an artisan fails to fulfill a job or a delivered product is damaged, you can open a Dispute Ticket within 48 hours for a full escrow refund mediation.`;
-      } else if (
-        lowerText.includes("payment") ||
-        lowerText.includes("momo") ||
-        lowerText.includes("mtn") ||
-        lowerText.includes("telecel") ||
-        lowerText.includes("pay") ||
+        lowerText.includes("dispute") ||
         lowerText.includes("escrow")
       ) {
-        reply = `We support all major Ghanaian Mobile Money networks (MTN MoMo, Telecel Cash, AT Money). Always keep payments inside Servora Escrow for 100% money-back protection!`;
-      } else if (
+        reply = `Servora offers 100% Buyer Protection in Tamale! Payments are safely held in Mobile Money Escrow (MTN MoMo, Telecel Cash, AT Money) and only released after you confirm job completion.`;
+      }
+      // Finding Artisans / Categories
+      else if (
         lowerText.includes("electrician") ||
         lowerText.includes("plumber") ||
         lowerText.includes("fugu") ||
         lowerText.includes("repair") ||
-        lowerText.includes("artisan")
+        lowerText.includes("artisan") ||
+        lowerText.includes("tailor")
       ) {
         reply = `We have verified local artisans available across Tamale, Bolga, and Wa! Click "Post Job & Get Quotes" at the top of the page or browse top-rated providers directly from our homepage.`;
-      } else {
-        reply = `Welcome to Servora AI! I can help you find verified local electricians, plumbers, and tailors in Tamale, track active orders, explain Mobile Money escrow safety, or connect you to live support. How can I assist you today?`;
+      }
+      // Default Helpful Fallback
+      else {
+        reply = `I'm Servora AI! I can help you find verified local electricians, plumbers, and tailors in Tamale, track active orders, explain Mobile Money escrow safety, or connect you to live support. How can I assist you today?`;
       }
     }
 
