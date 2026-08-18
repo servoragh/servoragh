@@ -1,0 +1,112 @@
+[
+  {
+    "id": "post-101",
+    "title": "Urgent: 5.5KVA Heavy Duty Generator Needed for Site Work",
+    "content": "Looking for an artisan or equipment supplier in Sakasaka to rent a 5.5KVA diesel generator for 2 days. Needed for commercial wiring job.",
+    "category": "TOOL_RENTAL",
+    "zone": "SAKASAKA",
+    "status": "OPEN_ACTIVE",
+    "budget": 250,
+    "currency": "GHS",
+    "urgency": "Immediate",
+    "photos": [
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80"
+    ],
+    "authorId": "user-102",
+    "authorName": "Kwame Electrical & Solar",
+    "authorPhone": "+233244889900",
+    "authorWhatsApp": "+233244889900",
+    "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+    "isVerifiedArtisan": true,
+    "upvotesCount": 14,
+    "commentsCount": 3,
+    "viewsCount": 185,
+    "comments": [
+      {
+        "id": "c-1",
+        "postId": "post-101",
+        "authorName": "Salifu Equipment Rentals",
+        "content": "I have a Honda 6KVA generator available right now at Sakasaka Market. Call me on +233245678901.",
+        "createdAt": "2026-08-18T10:15:00Z"
+      }
+    ],
+    "createdAt": "2026-08-18T09:30:00Z",
+    "updatedAt": "2026-08-18T09:30:00Z"
+  },
+  {
+    "id": "post-102",
+    "title": "GRID ALERT: Planned Power Outage in Nyohini & Lamashegu Zone",
+    "content": "Grid maintenance team working on main transformer near Nyohini roundabout. Expected downtime from 10:00 AM to 4:00 PM today. Keep solar backups ready.",
+    "category": "GRID_ALERT",
+    "zone": "NYOHINI",
+    "status": "OPEN_ACTIVE",
+    "budget": null,
+    "currency": "GHS",
+    "urgency": "Today",
+    "photos": [
+      "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=600&auto=format&fit=crop&q=80"
+    ],
+    "authorName": "Tamale Community Dispatch",
+    "authorPhone": "+233501234567",
+    "authorWhatsApp": "+233501234567",
+    "authorAvatar": null,
+    "isVerifiedArtisan": true,
+    "upvotesCount": 38,
+    "commentsCount": 7,
+    "viewsCount": 420,
+    "comments": [],
+    "createdAt": "2026-08-18T08:00:00Z",
+    "updatedAt": "2026-08-18T08:00:00Z"
+  },
+  {
+    "id": "post-103",
+    "title": "Master Artisan Apprenticeship: Traditional Dagbon Fugu Weaving",
+    "content": "Opening 3 slots for youth apprentices interested in learning handloom Fugu weaving and embroidery at Nyohini Center.",
+    "category": "SKILL_SHARE",
+    "zone": "NYOHINI",
+    "status": "OPEN_ACTIVE",
+    "budget": 0,
+    "currency": "GHS",
+    "urgency": "Scheduled",
+    "photos": [
+      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&auto=format&fit=crop&q=80"
+    ],
+    "authorName": "Fatima Abdul-Rahman",
+    "authorPhone": "+233501234567",
+    "authorWhatsApp": "+233501234567",
+    "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    "isVerifiedArtisan": true,
+    "upvotesCount": 52,
+    "commentsCount": 12,
+    "viewsCount": 650,
+    "comments": [],
+    "createdAt": "2026-08-17T15:00:00Z",
+    "updatedAt": "2026-08-17T15:00:00Z"
+  },
+  {
+    "id": "post-104",
+    "title": "Urgent Service Call: Borehole Submersible Pump Wiring Repair",
+    "content": "Borehole pump motor tripped at Choggu Hilltop residence. Need a certified electrical artisan with insulation tester today.",
+    "category": "SERVICE_CALL",
+    "zone": "CHOGGU",
+    "status": "OPEN_ACTIVE",
+    "budget": 350,
+    "currency": "GHS",
+    "urgency": "Immediate",
+    "photos": [
+      "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&auto=format&fit=crop&q=80"
+    ],
+    "authorName": "Alhassan Ibrahim",
+    "authorPhone": "+233240112233",
+    "authorWhatsApp": "+233240112233",
+    "authorAvatar": null,
+    "isVerifiedArtisan": false,
+    "upvotesCount": 10,
+    "commentsCount": 2,
+    "viewsCount": 140,
+    "comments": [],
+    "createdAt": "2026-08-18T11:00:00Z",
+    "updatedAt": "2026-08-18T11:00:00Z",
+    "hasUpvoted": true
+  }
+]

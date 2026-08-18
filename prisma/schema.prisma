@@ -657,5 +657,108 @@ model ProductListing {
   @@index([area, category])
 }
 
+// =========================================================================
+// STANDARDIZED COMMUNITY HUB & TRADE BOARD SUBSYSTEM
+// =========================================================================
+
+enum RegionZone {
+  ALL_NORTHERN_GH
+  SAKASAKA
+  NYOHINI
+  CHOGGU
+  ABOABO
+  DUNGU_UDS
+  LAMASHEGU
+  VITTIN
+  GUMANI
+  KALPOHIN
+  CENTRAL_MARKET
+  DATOYILI
+  BILPELA
+}
+
+enum PostCategory {
+  ALL_DISCUSSIONS
+  SERVICE_CALL
+  TOOL_RENTAL
+  ARTISAN_MEETUP
+  GRID_ALERT
+  SKILL_SHARE
+  RECOMMENDATION
+  LOST_AND_FOUND
+}
+
+enum ItemStatus {
+  OPEN_ACTIVE
+  RESOLVED
+  EXPIRED
+}
+
+model CommunityPost {
+  id               String          @id @default(cuid())
+  title            String
+  content          String          @db.Text
+  category         PostCategory    @default(ALL_DISCUSSIONS)
+  zone             RegionZone      @default(ALL_NORTHERN_GH)
+  status           ItemStatus      @default(OPEN_ACTIVE)
+  
+  // Pricing / Budget (Optional for gigs & rentals)
+  budget           Decimal?        @db.Decimal(10, 2)
+  currency         String          @default("GHS")
+  urgency          String?         // "Immediate", "Today", "Scheduled"
+  
+  photos           String[]
+  
+  // Author Relationships
+  authorId         String?
+  author           User?           @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  guestName        String?
+  guestPhone       String?
+  guestWhatsApp    String?
+  
+  // Cross-linking with Service Engine
+  serviceRequestId String?         @unique
+  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id])
+  
+  // Engagement
+  upvotesCount     Int             @default(0)
+  commentsCount    Int             @default(0)
+  viewsCount       Int             @default(0)
+  
+  comments         CommunityComment[]
+  upvotes          CommunityUpvote[]
+  
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([zone, category])
+  @@index([status])
+}
+
+model CommunityComment {
+  id        String        @id @default(cuid())
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?         @relation(fields: [authorId], references: [id])
+  guestName String?
+  content   String        @db.Text
+  createdAt DateTime      @default(now())
+
+  @@index([postId])
+}
+
+model CommunityUpvote {
+  id        String        @id @default(cuid())
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String?
+  userIp    String?       // Fallback for guest upvote deduplication
+  createdAt DateTime      @default(now())
+
+  @@unique([postId, userId, userIp])
+}
+
+
 
 
