@@ -670,6 +670,7 @@ model CommunityPost {
   upvotesCount     Int             @default(0)
   commentsCount    Int             @default(0)
   viewsCount       Int             @default(0)
+  reportsCount     Int             @default(0)
   
   comments         CommunityComment[]
   upvotes          CommunityUpvote[]

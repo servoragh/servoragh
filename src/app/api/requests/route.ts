@@ -299,14 +299,13 @@ export async function POST(request: Request) {
         await prisma.communityPost.create({
           data: {
             serviceRequestId: newRequest.id,
-            category: "SERVICE_REQUEST",
+            category: "SERVICE_CALL" as any,
             title: title,
             content: description,
-            area: landmark || "ALL_TAMALE",
+            zone: "ALL_NORTHERN_GH" as any,
             authorId: session ? session.id : null,
-            guestContact: isGuestPost ? JSON.stringify({ name: guestName, phone: guestPhone }) : null,
-            allowWhatsApp: true,
-            allowDirectCall: true,
+            guestName: isGuestPost ? guestName : null,
+            guestPhone: isGuestPost ? guestPhone : null,
           },
         });
       } catch (err) {

@@ -41,16 +41,16 @@ export async function POST(request: Request) {
     try {
       await prisma.communityPost.upsert({
         where: { serviceRequestId: updatedReq.id },
-        update: { status: "OPEN" },
+        update: { status: "OPEN_ACTIVE" as any },
         create: {
           serviceRequestId: updatedReq.id,
-          category: "SERVICE_REQUEST",
+          category: "SERVICE_CALL" as any,
           title: updatedReq.title,
           content: updatedReq.description,
-          area: updatedReq.landmark || "ALL_TAMALE",
+          zone: "ALL_NORTHERN_GH" as any,
           authorId: serviceReq.customer.id,
-          allowWhatsApp: true,
-          allowDirectCall: true,
+          guestName: serviceReq.customer.name,
+          guestPhone: serviceReq.customer.phone,
         },
       });
     } catch (e) {}

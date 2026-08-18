@@ -16,12 +16,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Post ID is required." }, { status: 400 });
     }
 
-    const existingUpvote = await prisma.communityUpvote.findUnique({
+    const existingUpvote = await prisma.communityUpvote.findFirst({
       where: {
-        postId_userId: {
-          postId,
-          userId: session.id,
-        },
+        postId,
+        userId: session.id,
       },
     });
 
@@ -51,14 +49,9 @@ export async function POST(request: Request) {
       hasUpvoted = true;
     }
 
-    const post = await prisma.communityPost.findUnique({
-      where: { id: postId },
-      select: { upvotesCount: true },
-    });
-
-    return NextResponse.json({ success: true, hasUpvoted, upvotesCount: post?.upvotesCount || 0 });
+    return NextResponse.json({ success: true, hasUpvoted });
   } catch (error: any) {
-    console.error("Community Upvote Error:", error);
+    console.error("Upvote Error:", error);
     return NextResponse.json({ error: "Failed to process upvote." }, { status: 500 });
   }
 }
