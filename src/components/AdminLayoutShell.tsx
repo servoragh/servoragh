@@ -81,8 +81,6 @@ export function AdminLayoutShell({
     window.location.href = "/login";
   }
 
-  const isDark = themeMode === "dark";
-
   // Sidebar Grouped Sections
   const navGroups = [
     {
@@ -127,29 +125,30 @@ export function AdminLayoutShell({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 font-sans antialiased flex flex-col transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 font-sans antialiased flex flex-col transition-colors duration-200 relative">
       {/* ------------------------------------------------------------- */}
       {/* UNIFIED ADMIN TOPBAR */}
       {/* ------------------------------------------------------------- */}
-      <header className="h-16 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+      <header className="h-16 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
         {/* Left: Brand Badge & Env Tag */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-white md:hidden cursor-pointer"
+            className="p-2 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl md:hidden cursor-pointer"
+            aria-label="Toggle Mobile Sidebar"
           >
             <Menu className="w-5 h-5" />
           </button>
 
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black shadow-sm">
+          <Link href="/admin" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black shadow-sm shrink-0">
               <Wrench className="w-4 h-4" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
                 Servora Admin
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
                 {process.env.NODE_ENV === "production" ? "Production" : "Local"}
               </span>
             </div>
@@ -173,7 +172,16 @@ export function AdminLayoutShell({
         </div>
 
         {/* Right Actions Toolbar */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Mobile Search Button */}
+          <button
+            onClick={() => setIsCmdOpen(true)}
+            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition md:hidden cursor-pointer"
+            title="Search Commands"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+
           {/* Theme Toggle Button */}
           <ThemeToggle />
 
@@ -224,10 +232,10 @@ export function AdminLayoutShell({
           </div>
 
           {/* Admin Avatar & Menu */}
-          <div className="relative pl-2 border-l border-slate-200 dark:border-zinc-800">
+          <div className="relative pl-1 sm:pl-2 border-l border-slate-200 dark:border-zinc-800">
             <button
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-              className="flex items-center gap-2 p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition cursor-pointer"
+              className="flex items-center gap-1.5 p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition cursor-pointer"
             >
               <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-black flex items-center justify-center text-xs">
                 {session?.name ? session.name[0] : "A"}
@@ -261,15 +269,41 @@ export function AdminLayoutShell({
       </header>
 
       {/* ------------------------------------------------------------- */}
+      {/* MOBILE DRAWER BACKDROP */}
+      {/* ------------------------------------------------------------- */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-zinc-950/60 backdrop-blur-xs z-40 md:hidden transition-opacity duration-200"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
+      {/* ------------------------------------------------------------- */}
       {/* MAIN CONTAINER: SIDEBAR + CONTENT AREA */}
       {/* ------------------------------------------------------------- */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
         <aside
-          className={`w-64 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 flex flex-col justify-between shrink-0 fixed md:static inset-y-0 left-0 z-20 transition-transform duration-200 ${
+          className={`w-72 md:w-64 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 flex flex-col justify-between shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-20 transition-transform duration-200 ease-in-out shadow-2xl md:shadow-none ${
             mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           }`}
         >
+          {/* Header inside mobile drawer */}
+          <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between md:hidden">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black">
+                <Wrench className="w-3.5 h-3.5" />
+              </div>
+              <span className="font-black text-sm text-slate-900 dark:text-white">Servora Admin</span>
+            </div>
+            <button
+              onClick={() => setMobileSidebarOpen(false)}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
           <div className="p-4 space-y-6 overflow-y-auto flex-1 text-xs">
             {navGroups.map((group, idx) => (
               <div key={idx} className="space-y-1">
@@ -289,7 +323,7 @@ export function AdminLayoutShell({
                           onSelectView(item.id);
                           setMobileSidebarOpen(false);
                         }}
-                        className={`w-full px-3 py-2 rounded-xl font-bold flex items-center justify-between transition cursor-pointer ${
+                        className={`w-full px-3 py-2.5 rounded-xl font-bold flex items-center justify-between transition cursor-pointer ${
                           isActive
                             ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
                             : "text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-white"
@@ -297,7 +331,7 @@ export function AdminLayoutShell({
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"}`} />
-                          <span className="truncate">{item.label}</span>
+                          <span className="truncate text-xs">{item.label}</span>
                         </div>
 
                         {item.count !== null && item.count !== undefined && (
