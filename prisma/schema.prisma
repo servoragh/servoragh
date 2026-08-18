@@ -419,60 +419,6 @@ model ModerationLog {
   createdAt   DateTime  @default(now())
 }
 
-model CommunityPost {
-  id               String             @id @default(uuid())
-  title            String
-  content          String
-  category         String             @default("NEIGHBORHOOD_NOTICE") // MEETUP, EQUIPMENT_RENTAL, ALERT, SKILL_SHARE, RECOMMENDATION, SERVICE_REQUEST, LOST_AND_FOUND, GENERAL
-  area             String             @default("ALL_TAMALE") // SAKASAKA, NYOHINI, CHOGGU, ABOABO, DUNGU_UDS, LAMASHEGU, VITTIN, GUMANI, KALPOHIN, CENTRAL_MARKET, DATOYILI, BILPELA, ALL_TAMALE
-  status           String             @default("OPEN") // OPEN, RESOLVED, EXPIRED
-  images           String             @default("[]") // JSON string array
-  
-  // Cross-linking to Service Requests
-  serviceRequestId String?            @unique
-  serviceRequest   ServiceRequest?    @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
-  
-  // Author & Contact
-  authorId         String?
-  author           User?              @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  guestContact     String?            // JSON string: { name, phone, whatsapp }
-  allowDirectCall  Boolean            @default(false)
-  allowWhatsApp    Boolean            @default(true)
-  
-  // Engagement
-  upvotesCount     Int                @default(0)
-  commentsCount    Int                @default(0)
-  viewsCount       Int                @default(0)
-  reportsCount     Int                @default(0)
-  
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-
-  comments         CommunityComment[]
-  upvotes          CommunityUpvote[]
-}
-
-model CommunityComment {
-  id        String        @id @default(uuid())
-  postId    String
-  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  content   String
-  createdAt DateTime      @default(now())
-}
-
-model CommunityUpvote {
-  id        String        @id @default(uuid())
-  postId    String
-  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime      @default(now())
-
-  @@unique([postId, userId])
-}
-
 // =========================================================================
 // TOP TICKER & PROMOTIONAL ANNOUNCEMENT BAR SUBSYSTEM
 // =========================================================================
@@ -753,6 +699,7 @@ model CommunityUpvote {
   postId    String
   post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String?
+  user      User?         @relation(fields: [userId], references: [id])
   userIp    String?       // Fallback for guest upvote deduplication
   createdAt DateTime      @default(now())
 
