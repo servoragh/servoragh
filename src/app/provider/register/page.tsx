@@ -16,6 +16,7 @@ import {
   Lock,
   UserCheck,
 } from "lucide-react";
+import { SocialAuthButtons } from "@/components/SocialAuthButtons";
 
 export default function ProviderRegisterPage() {
   const [step, setStep] = useState(1);
@@ -111,7 +112,7 @@ export default function ProviderRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex items-center justify-center p-4 transition-colors duration-200">
+    <div className="py-6 sm:py-12 bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex items-center justify-center p-4 min-h-[calc(100vh-140px)] transition-colors duration-200">
       <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl transition-all">
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-emerald-700 via-emerald-800 to-teal-900 dark:from-emerald-950 dark:via-emerald-900 dark:to-stone-900 p-6 text-white">
@@ -171,6 +172,9 @@ export default function ProviderRegisterPage() {
                   </h3>
                   <p className="text-[11px] text-stone-500 dark:text-stone-400">Enter your official name & WhatsApp contact for instant client leads.</p>
                 </div>
+
+                {/* Social Authentication */}
+                <SocialAuthButtons actionLabel="Sign up" />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
