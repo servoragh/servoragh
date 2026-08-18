@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Wrench,
   Search,
@@ -24,9 +25,12 @@ import { RequestWizardModal } from "@/components/RequestWizardModal";
 import { TopAnnouncementBar } from "@/components/TopAnnouncementBar";
 
 export function Navbar() {
+  const pathname = usePathname();
   const [session, setSession] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+
+  if (pathname.startsWith("/admin")) return null;
 
   useEffect(() => {
     fetch("/api/auth/me")

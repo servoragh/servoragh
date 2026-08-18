@@ -18,6 +18,8 @@ import { RequestWizardModal } from "@/components/RequestWizardModal";
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  if (pathname.startsWith("/admin")) return null;
+
   const [session, setSession] = useState<any>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 

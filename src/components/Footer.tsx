@@ -1,8 +1,12 @@
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Wrench, ShieldCheck, Heart } from "lucide-react";
 
 export function Footer() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/admin")) return null;
+
   return (
     <footer className="bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 pt-12 pb-8 border-t border-stone-200 dark:border-stone-800 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
