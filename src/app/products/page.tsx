@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ShoppingBag, PlusCircle, Search, Filter, MapPin } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
-import { PostProductModal } from "@/components/PostProductModal";
+import { ProductSubmissionModal } from "@/components/ProductSubmissionModal";
 import { CategoryGridSection } from "@/components/CategoryGridSection";
 
 export default function ProductsMarketplacePage() {
@@ -134,7 +134,7 @@ export default function ProductsMarketplacePage() {
         )}
       </div>
 
-      <PostProductModal
+      <ProductSubmissionModal
         isOpen={isPostModalOpen}
         onClose={() => setIsPostModalOpen(false)}
         onSuccess={fetchProducts}

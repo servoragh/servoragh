@@ -47,6 +47,7 @@ import { CsvImporterModal } from "@/components/CsvImporterModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AdminTickersManager } from "@/components/AdminTickersManager";
 import { CustomerCrmDashboard } from "@/components/CustomerCrmDashboard";
+import { AdminProductModerationHub } from "@/components/AdminProductModerationHub";
 import { formatDate, formatGHS } from "@/lib/utils";
 
 export default function AdminDashboardPage() {
@@ -245,7 +246,7 @@ export default function AdminDashboardPage() {
     { id: "members", label: "Members Directory", icon: Users, count: users.length, group: "PEOPLE & BUSINESSES" },
     { id: "businesses", label: "Business Profiles", icon: Building2, count: providers.length, group: "PEOPLE & BUSINESSES" },
     { id: "verification", label: "ID Verification", icon: ShieldCheck, count: stats.pendingVerifications, group: "PEOPLE & BUSINESSES" },
-    { id: "products", label: "Product Catalog", icon: ShoppingBag, count: products.length, group: "MARKETPLACE & SERVICES" },
+    { id: "products", label: "Product Moderation 📦", icon: ShoppingBag, count: "Queue", group: "MARKETPLACE & SERVICES" },
     { id: "services", label: "Services Catalog", icon: Wrench, count: categories.length, group: "MARKETPLACE & SERVICES" },
     { id: "requests", label: "Customer Requests", icon: MessageSquare, count: serviceRequests.length, group: "MARKETPLACE & SERVICES" },
     { id: "disputes", label: "Disputes & Helpdesk Hub ⚖️", icon: Scale, count: "Live", group: "MARKETPLACE & SERVICES" },
@@ -647,43 +648,8 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* PRODUCTS CATALOG */}
-          {activeView === "products" && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold">Product Catalog Moderation</h2>
-              <div className={`${bgCard} border rounded-3xl overflow-hidden`}>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs min-w-[500px]">
-                    <thead className={`${bgCardSecondary} ${textSubtle} uppercase tracking-wider text-[10px] font-bold border-b ${borderSubtle}`}>
-                      <tr>
-                        <th className="p-3 sm:p-4">Product Title</th>
-                        <th className="p-3 sm:p-4">Merchant</th>
-                        <th className="p-3 sm:p-4">Price</th>
-                        <th className="p-3 sm:p-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className={`divide-y ${borderSubtle}`}>
-                      {filteredProducts.map((prod: any) => (
-                        <tr key={prod.id} className={isDark ? "hover:bg-stone-800/30" : "hover:bg-slate-100/50"}>
-                          <td className="p-3 sm:p-4 font-bold text-xs sm:text-sm">{prod.title}</td>
-                          <td className="p-3 sm:p-4 font-medium">{prod.provider?.businessName}</td>
-                          <td className="p-3 sm:p-4 font-black text-emerald-600 dark:text-emerald-400">{formatGHS(prod.price)}</td>
-                          <td className="p-3 sm:p-4 text-right space-x-2">
-                            <button onClick={() => handleAdminAction("TOGGLE_PRODUCT_AVAILABILITY", prod.id)} className={`px-2.5 py-1 ${isDark ? "bg-stone-800 text-stone-200" : "bg-slate-200 text-slate-800"} text-[11px] font-semibold rounded-xl`}>
-                              Toggle Status
-                            </button>
-                            <button onClick={() => confirm(`Delete product "${prod.title}"?`) && handleAdminAction("DELETE_PRODUCT", prod.id)} className="p-1.5 bg-red-950/80 text-red-400 rounded-xl">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* PRODUCTS CATALOG & MODERATION HUB */}
+          {activeView === "products" && <AdminProductModerationHub isDark={isDark} />}
 
           {/* SERVICES CATALOG */}
           {activeView === "services" && (

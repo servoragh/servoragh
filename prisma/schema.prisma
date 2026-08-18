@@ -43,6 +43,8 @@ model User {
   communityUpvotes      CommunityUpvote[]
   customerProfile       CustomerProfile?
   adminCustomerNotes    AdminCustomerNote[]   @relation("AdminNotes")
+  productListings       ProductListing[]      @relation("UserListings")
+  approvedProducts      ProductListing[]      @relation("ApprovedProducts")
 }
 
 model ProviderProfile {
@@ -574,5 +576,86 @@ model CustomerAuditLog {
 
   @@index([customerId])
 }
+
+// =========================================================================
+// GUEST & REGISTERED PRODUCT LISTINGS & CLASSIFIEDS SUBSYSTEM
+// =========================================================================
+
+enum ProductListingStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ACTIVE
+  REJECTED
+  EXPIRED
+  SOLD
+  SUSPENDED
+}
+
+enum ItemCondition {
+  BRAND_NEW
+  REFURBISHED
+  USED_LIKE_NEW
+  USED_GOOD
+  USED_FAIR
+}
+
+enum SellerType {
+  REGISTERED_USER
+  GUEST
+}
+
+model ProductListing {
+  id               String               @id @default(cuid())
+  title            String
+  slug             String               @unique
+  description      String               @db.Text
+  category         String
+  subCategory      String?
+  condition        ItemCondition        @default(USED_GOOD)
+  
+  // Pricing
+  price            Decimal              @db.Decimal(12, 2)
+  isNegotiable     Boolean              @default(false)
+  currency         String               @default("GHS")
+  
+  // Media & Location
+  images           String[]
+  videoUrl         String?
+  area             String               // e.g. "Sakasaka", "Tamale Central"
+  deliveryOptions  String[]             // ["PICKUP", "LOCAL_DELIVERY"]
+  
+  // Seller Ownership
+  sellerType       SellerType           @default(REGISTERED_USER)
+  sellerId         String?
+  seller           User?                @relation("UserListings", fields: [sellerId], references: [id], onDelete: SetNull)
+  
+  // Guest Seller Data (Populated if sellerType == GUEST)
+  guestName        String?
+  guestPhone       String?
+  guestWhatsApp    String?
+  guestEmail       String?
+  isGuestVerified  Boolean              @default(false)
+  guestAccessKey   String?              // For magic link editing
+  
+  // Moderation & Status
+  status           ProductListingStatus @default(PENDING_APPROVAL)
+  isFeatured       Boolean              @default(false)
+  rejectionReason  String?
+  approvedById     String?
+  approvedBy       User?                @relation("ApprovedProducts", fields: [approvedById], references: [id])
+  approvedAt       DateTime?
+  
+  // Engagement
+  viewsCount       Int                  @default(0)
+  inquiriesCount   Int                  @default(0)
+  expiresAt        DateTime?
+  
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([status, sellerType])
+  @@index([area, category])
+}
+
 
 
