@@ -41,6 +41,8 @@ model User {
   communityPosts        CommunityPost[]
   communityComments     CommunityComment[]
   communityUpvotes      CommunityUpvote[]
+  customerProfile       CustomerProfile?
+  adminCustomerNotes    AdminCustomerNote[]   @relation("AdminNotes")
 }
 
 model ProviderProfile {
@@ -486,4 +488,91 @@ model TickerAnnouncement {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+// =========================================================================
+// ENTERPRISE CUSTOMER MANAGEMENT & CRM SUBSYSTEM MODELS
+// =========================================================================
+
+enum CustomerStatus {
+  ACTIVE
+  PENDING_VERIFICATION
+  SUSPENDED
+  FROZEN_ESCROW
+  BANNED
+  ARCHIVED
+}
+
+enum VerificationTier {
+  UNVERIFIED
+  TIER_1_BASIC      // Phone/Email verified
+  TIER_2_IDENTITY   // National ID / Passport verified
+  TIER_3_ENTERPRISE // Business registration / Tax verified
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model CustomerProfile {
+  id                String            @id @default(cuid())
+  userId            String            @unique
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Status & Verification
+  status            CustomerStatus    @default(ACTIVE)
+  verificationTier  VerificationTier  @default(UNVERIFIED)
+  riskLevel         RiskLevel         @default(LOW)
+  riskScore         Float             @default(0.0) // 0-100 score
+  
+  // Financial Metrics Cache
+  lifetimeValue     Decimal           @default(0.0) @db.Decimal(12, 2)
+  totalOrdersCount  Int               @default(0)
+  disputeCount      Int               @default(0)
+  walletBalance     Decimal           @default(0.0) @db.Decimal(12, 2)
+  rewardPoints      Int               @default(0)
+
+  // Custom Metadata & Segmentation
+  tags              String[]          @default([])
+  customAttributes  Json?             // Key-value metadata
+  
+  // Notes & Logs
+  internalNotes     AdminCustomerNote[]
+  activityLogs      CustomerAuditLog[]
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([status, riskLevel])
+  @@index([verificationTier])
+}
+
+model AdminCustomerNote {
+  id          String          @id @default(cuid())
+  customerId  String
+  customer    CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  adminId     String
+  admin       User            @relation("AdminNotes", fields: [adminId], references: [id])
+  content     String
+  isPinned    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+
+  @@index([customerId])
+}
+
+model CustomerAuditLog {
+  id          String          @id @default(cuid())
+  customerId  String
+  customer    CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  performedBy String          // Admin ID or 'SYSTEM'
+  action      String          // e.g. "SUSPEND_ACCOUNT", "MANUAL_WALLET_CREDIT"
+  metadata    Json?
+  ipAddress   String?
+  createdAt   DateTime        @default(now())
+
+  @@index([customerId])
+}
+
 
