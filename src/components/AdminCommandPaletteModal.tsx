@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
   Users,
@@ -18,6 +18,8 @@ import {
   ChevronRight,
   X,
   Command,
+  Activity,
+  Zap,
 } from "lucide-react";
 
 interface AdminCommandPaletteModalProps {
@@ -32,15 +34,21 @@ export function AdminCommandPaletteModal({
   onSelectView,
 }: AdminCommandPaletteModalProps) {
   const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    } else {
+      setQuery("");
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         if (isOpen) onClose();
-        else {
-          // Trigger open via parent state or global listener if needed
-        }
       }
       if (e.key === "Escape" && isOpen) {
         onClose();
@@ -53,23 +61,114 @@ export function AdminCommandPaletteModal({
   if (!isOpen) return null;
 
   const allNavOptions = [
-    { id: "overview", label: "Dashboard Overview & KPIs", icon: Rocket, category: "Core Operations" },
-    { id: "crm", label: "Customer CRM & 360 Profiles", icon: Users, category: "User & Trust" },
-    { id: "businesses", label: "Business Profiles & Verified Artisans", icon: Building2, category: "User & Trust" },
-    { id: "verification", label: "ID & Ghana Card Verification Queue", icon: ShieldCheck, category: "User & Trust" },
-    { id: "products", label: "Product Moderation Queue (Guest & Merchant)", icon: ShoppingBag, category: "Marketplace" },
-    { id: "requests", label: "Customer Requests & Dispatch Gigs", icon: MessageSquare, category: "Marketplace" },
-    { id: "disputes", label: "Disputes & Helpdesk Hub", icon: Scale, category: "Marketplace" },
-    { id: "tickers", label: "Announcement Tickers Manager", icon: Megaphone, category: "Ecosystem" },
-    { id: "storage", label: "Cloud Storage & Backups (100GB)", icon: HardDrive, category: "Infrastructure" },
-    { id: "flags", label: "Monetization & Commission Flags", icon: DollarSign, category: "Infrastructure" },
-    { id: "settings", label: "System Settings & API Keys", icon: Settings, category: "Infrastructure" },
+    {
+      id: "overview",
+      label: "Dashboard Overview & KPIs",
+      icon: Rocket,
+      category: "Core Operations",
+      keywords: ["home", "dashboard", "kpi", "stats", "overview", "north star", "metrics"],
+    },
+    {
+      id: "activity",
+      label: "Live Operational Activity Feed",
+      icon: Activity,
+      category: "Core Operations",
+      keywords: ["activity", "feed", "logs", "audit", "history", "real time", "events", "actions"],
+    },
+    {
+      id: "crm",
+      label: "Customer CRM & 360 Profiles",
+      icon: Users,
+      category: "User & Trust",
+      keywords: ["customers", "members", "users", "crm", "people", "profiles", "risk", "ledger", "notes", "wallet", "alhassan", "kwame", "fatima"],
+    },
+    {
+      id: "businesses",
+      label: "Business Profiles & Verified Artisans",
+      icon: Building2,
+      category: "User & Trust",
+      keywords: ["artisans", "providers", "businesses", "merchants", "vendors", "contractors", "electricians", "plumbers", "fugu", "tailors", "salifu", "kwame", "fatima"],
+    },
+    {
+      id: "verification",
+      label: "ID & Ghana Card Verification Queue",
+      icon: ShieldCheck,
+      category: "User & Trust",
+      keywords: ["verification", "id", "ghana card", "national id", "queue", "review", "documents", "identity", "approvals"],
+    },
+    {
+      id: "products",
+      label: "Product Moderation Queue (Guest & Merchant)",
+      icon: ShoppingBag,
+      category: "Marketplace",
+      keywords: ["products", "listings", "classifieds", "moderation", "items", "marketplace", "dewalt", "drill", "fugu", "smock", "guest"],
+    },
+    {
+      id: "requests",
+      label: "Customer Requests & Dispatch Gigs",
+      icon: MessageSquare,
+      category: "Marketplace",
+      keywords: ["requests", "gigs", "service calls", "dispatch", "solar", "wiring", "plumbing", "jobs", "quotes"],
+    },
+    {
+      id: "rentals",
+      label: "Tool Rentals Engine",
+      icon: Wrench,
+      category: "Marketplace",
+      keywords: ["rentals", "tools", "equipment", "power tools", "generators", "mixers", "scaffolding", "ladders", "heavy duty"],
+    },
+    {
+      id: "disputes",
+      label: "Disputes & Helpdesk Hub",
+      icon: Scale,
+      category: "Marketplace",
+      keywords: ["disputes", "helpdesk", "support", "tickets", "escrow", "holds", "refunds", "complaints", "claims"],
+    },
+    {
+      id: "community",
+      label: "Community Board Moderation",
+      icon: Users,
+      category: "Ecosystem",
+      keywords: ["community", "board", "trade board", "notices", "alerts", "meetups", "neighborhood", "tamale", "sakasaka", "choggu", "nyohini"],
+    },
+    {
+      id: "tickers",
+      label: "Announcement Tickers Manager",
+      icon: Megaphone,
+      category: "Ecosystem",
+      keywords: ["tickers", "announcements", "banners", "top bar", "promos", "alerts", "ticker manager"],
+    },
+    {
+      id: "storage",
+      label: "Cloud Storage & Backups (100GB)",
+      icon: HardDrive,
+      category: "Infrastructure",
+      keywords: ["storage", "cloud", "cloudflare", "scaleway", "r2", "backups", "media", "capacity", "images"],
+    },
+    {
+      id: "flags",
+      label: "Monetization & Commission Flags",
+      icon: DollarSign,
+      category: "Infrastructure",
+      keywords: ["flags", "monetization", "commission", "feature flags", "toggles", "fees", "whatsapp dispatch", "escrow"],
+    },
+    {
+      id: "settings",
+      label: "System Settings & API Keys",
+      icon: Settings,
+      category: "Infrastructure",
+      keywords: ["settings", "config", "master settings", "api keys", "platform name", "support phone", "email"],
+    },
   ];
 
+  const searchTerms = query.toLowerCase().trim();
   const filteredOptions = allNavOptions.filter(
     (item) =>
-      item.label.toLowerCase().includes(query.toLowerCase()) ||
-      item.category.toLowerCase().includes(query.toLowerCase())
+      !searchTerms ||
+      item.label.toLowerCase().includes(searchTerms) ||
+      item.category.toLowerCase().includes(searchTerms) ||
+      item.id.toLowerCase().includes(searchTerms) ||
+      item.keywords.some((k) => k.toLowerCase().includes(searchTerms))
   );
 
   return (
@@ -81,13 +180,21 @@ export function AdminCommandPaletteModal({
         <div className="flex items-center px-4 py-3.5 border-b border-slate-200 dark:border-zinc-800">
           <Search className="w-5 h-5 text-slate-400 dark:text-zinc-500 mr-3 shrink-0" />
           <input
+            ref={inputRef}
             type="text"
-            autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type a command or search view (e.g. CRM, Verification, Products)..."
-            className="w-full bg-transparent text-sm outline-none placeholder-slate-400 dark:placeholder-zinc-500 font-medium"
+            placeholder="Type a command or search view (e.g. CRM, Artisans, Verification, Tools)..."
+            className="w-full bg-transparent text-sm outline-none placeholder-slate-400 dark:placeholder-zinc-500 font-medium text-slate-900 dark:text-white"
           />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="mr-2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
           <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono text-slate-400 dark:text-zinc-500 px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
             ESC
           </span>
@@ -96,8 +203,11 @@ export function AdminCommandPaletteModal({
         {/* Search Results List */}
         <div className="max-h-80 overflow-y-auto p-2 space-y-1 text-xs">
           {filteredOptions.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 dark:text-zinc-500 font-medium">
-              No matching admin command or view found.
+            <div className="p-8 text-center text-slate-400 dark:text-zinc-500 font-medium space-y-2">
+              <p>No matching admin command or view found for "{query}".</p>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                Try searching for "CRM", "Artisans", "ID Verification", "Tools", or "Settings".
+              </p>
             </div>
           ) : (
             filteredOptions.map((item) => {

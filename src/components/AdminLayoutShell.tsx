@@ -29,6 +29,7 @@ import {
   Activity,
 } from "lucide-react";
 import { AdminCommandPaletteModal } from "@/components/AdminCommandPaletteModal";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface AdminLayoutShellProps {
   children: React.ReactNode;
@@ -174,15 +175,7 @@ export function AdminLayoutShell({
         {/* Right Actions Toolbar */}
         <div className="flex items-center gap-2">
           {/* Theme Toggle Button */}
-          {onToggleTheme && (
-            <button
-              onClick={onToggleTheme}
-              className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
-            </button>
-          )}
+          <ThemeToggle />
 
           {/* Notifications Bell */}
           <div className="relative">
