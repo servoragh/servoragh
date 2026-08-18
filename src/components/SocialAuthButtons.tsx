@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface SocialAuthButtonsProps {
   actionLabel?: string;
@@ -8,14 +9,51 @@ interface SocialAuthButtonsProps {
 }
 
 export function SocialAuthButtons({ actionLabel = "Sign in" }: SocialAuthButtonsProps) {
+  const router = useRouter();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
-  function handleSocialClick(provider: "google" | "apple" | "whatsapp") {
-    setLoadingProvider(provider);
-    setTimeout(() => {
+  async function handleSocialClick(provider: "google" | "apple" | "whatsapp") {
+    try {
+      setLoadingProvider(provider);
+
+      let mockEmail = "";
+      let mockName = "";
+      if (provider === "google") {
+        mockEmail = "google.user@servora.gh";
+        mockName = "Google Verified Account";
+      } else if (provider === "apple") {
+        mockEmail = "apple.user@servora.gh";
+        mockName = "Apple Verified Account";
+      } else {
+        mockEmail = "whatsapp.user@servora.gh";
+        mockName = "WhatsApp Verified Account";
+      }
+
+      const res = await fetch("/api/auth/social", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider,
+          email: mockEmail,
+          name: mockName,
+          role: "CUSTOMER",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Social authentication failed.");
+
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        window.location.reload();
+      }
+    } catch (e: any) {
+      console.error("Social Auth Error:", e);
+      alert(e.message || "Social sign in failed.");
+    } finally {
       setLoadingProvider(null);
-      alert(`${provider.toUpperCase()} Sign-In initialized. In production, this redirects to ${provider} OAuth provider.`);
-    }, 600);
+    }
   }
 
   return (

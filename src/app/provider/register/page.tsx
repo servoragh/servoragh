@@ -15,6 +15,8 @@ import {
   Clock,
   Lock,
   UserCheck,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { SocialAuthButtons } from "@/components/SocialAuthButtons";
 
@@ -23,6 +25,7 @@ export default function ProviderRegisterPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [bio, setBio] = useState("");
   const [yearsExperience, setYearsExperience] = useState("3");
@@ -203,15 +206,23 @@ export default function ProviderRegisterPage() {
 
                 <div>
                   <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Account Password</label>
-                  <div className="relative">
+                  <div className="relative flex items-center">
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-400 outline-none font-medium"
+                      className="w-full p-3 pr-11 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-400 outline-none font-medium"
                       required
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-1 cursor-pointer"
+                      title={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                   <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-1">
                     If your phone is already registered, enter your existing password to upgrade to a Business Provider account.
