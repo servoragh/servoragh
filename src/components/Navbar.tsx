@@ -2,13 +2,30 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Wrench, Search, MapPin, User, ShieldCheck, Menu, X, PlusCircle, LogOut, ShoppingBag, Building2 } from "lucide-react";
+import {
+  Wrench,
+  Search,
+  MapPin,
+  User,
+  ShieldCheck,
+  Menu,
+  X,
+  PlusCircle,
+  LogOut,
+  ShoppingBag,
+  Building2,
+  ChevronRight,
+  MessageSquare,
+  Sparkles,
+} from "lucide-react";
 import { UnifiedEcommerceSearch } from "@/components/UnifiedEcommerceSearch";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { RequestWizardModal } from "@/components/RequestWizardModal";
 
 export function Navbar() {
   const [session, setSession] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -20,9 +37,12 @@ export function Navbar() {
   }, []);
 
   async function handleLogout() {
+    setMobileMenuOpen(false);
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/";
   }
+
+  const closeMenu = () => setMobileMenuOpen(false);
 
   return (
     <>
@@ -43,11 +63,11 @@ export function Navbar() {
         </div>
       </div>
 
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur border-b border-stone-200 dark:border-stone-800 shadow-xs transition">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border-b border-stone-200 dark:border-stone-800 shadow-xs transition duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-700 via-emerald-600 to-emerald-500 text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition">
+          <Link href="/" onClick={closeMenu} className="flex items-center gap-2 group shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-700 via-emerald-600 to-emerald-500 text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition duration-200">
               <Wrench className="w-5 h-5" />
             </div>
             <div>
@@ -163,97 +183,203 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex items-center gap-1.5 lg:hidden">
+          {/* Mobile Menu Trigger & Switcher */}
+          <div className="flex items-center gap-2 lg:hidden">
             <ThemeToggle />
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 shrink-0 cursor-pointer"
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 rounded-2xl bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 transition shrink-0 cursor-pointer border border-stone-200 dark:border-stone-700"
+              aria-label="Open Mobile Navigation Menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <Menu className="w-5 h-5" />
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Mobile Drawer */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 p-4 space-y-3 shadow-lg">
-            <div className="md:hidden pb-2">
-              <UnifiedEcommerceSearch variant="compact" placeholder="Search products or services..." />
-            </div>
-            <Link
-              href="/products"
-              className="block text-sm font-semibold text-emerald-700 dark:text-emerald-400 py-2 border-b border-stone-100 dark:border-stone-800"
-            >
-              Shop Local Products
-            </Link>
-            <Link
-              href="/rentals"
-              className="block text-sm font-semibold text-amber-700 dark:text-amber-400 py-2 border-b border-stone-100 dark:border-stone-800"
-            >
-              Tool Equipment Rentals
-            </Link>
-            <Link
-              href="/community"
-              className="block text-sm font-semibold text-purple-700 dark:text-purple-400 py-2 border-b border-stone-100 dark:border-stone-800"
-            >
-              Community Board
-            </Link>
-            <Link
-              href="/requests"
-              className="block text-sm font-semibold text-stone-800 dark:text-stone-200 py-2 border-b border-stone-100 dark:border-stone-800"
-            >
-              Browse Job Requests
-            </Link>
-            {session ? (
-              <div className="pt-2 space-y-2">
-                <p className="text-xs font-bold text-stone-400">Signed in as {session.name}</p>
-                <Link
-                  href="/business/portal"
-                  className="block text-sm font-bold text-emerald-600"
-                >
-                  Business Owner Portal
+      {/* ------------------------------------------------------------- */}
+      {/* MOBILE SLIDE-OVER DRAWER (RIGHT TO LEFT) */}
+      {/* ------------------------------------------------------------- */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 overflow-hidden">
+          {/* Backdrop Blur Overlay */}
+          <div
+            className="absolute inset-0 bg-stone-950/60 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+            onClick={closeMenu}
+          />
+
+          {/* Slide-Over Menu Panel (Right to Left) */}
+          <aside className="absolute inset-y-0 right-0 w-80 max-w-[85vw] bg-white/95 dark:bg-stone-900/95 backdrop-blur-2xl border-l border-stone-200/80 dark:border-stone-800/80 shadow-2xl p-5 flex flex-col justify-between animate-in slide-in-from-right duration-300 ease-out text-stone-900 dark:text-stone-100">
+            {/* Drawer Top Bar */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-200/80 dark:border-stone-800/80">
+                <Link href="/" onClick={closeMenu} className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold">
+                    <Wrench className="w-4 h-4" />
+                  </div>
+                  <span className="font-black text-base tracking-tight text-stone-900 dark:text-white">
+                    Servora<span className="text-emerald-600">.gh</span>
+                  </span>
                 </Link>
-                <Link
-                  href="/dashboard"
-                  className="block text-sm font-bold text-stone-900 dark:text-white"
-                >
-                  My Dashboard
-                </Link>
-                {session.role === "ADMIN" && (
-                  <Link
-                    href="/admin"
-                    className="block text-sm font-bold text-amber-600"
-                  >
-                    Enterprise Admin Panel
-                  </Link>
-                )}
+
                 <button
-                  onClick={handleLogout}
-                  className="block w-full text-left text-sm font-semibold text-red-600 py-2 cursor-pointer"
+                  onClick={closeMenu}
+                  className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 hover:text-stone-900 dark:hover:text-white transition cursor-pointer"
+                  aria-label="Close Mobile Navigation Menu"
                 >
-                  Log Out
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            ) : (
-              <div className="flex gap-2 pt-2">
-                <Link
-                  href="/login"
-                  className="flex-1 py-2 text-center text-xs font-bold border border-stone-300 dark:border-stone-700 rounded-xl text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  className="flex-1 py-2 text-center text-xs font-bold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700"
-                >
-                  Join Now
-                </Link>
+
+              {/* Mobile Search Bar inside Drawer */}
+              <div className="pt-1">
+                <UnifiedEcommerceSearch variant="compact" placeholder="Search products or services..." />
               </div>
-            )}
-          </div>
-        )}
-      </header>
+
+              {/* Navigation Links (Each Auto-Closes on Click!) */}
+              <nav className="space-y-1.5 pt-2">
+                <button
+                  onClick={() => {
+                    closeMenu();
+                    setIsWizardOpen(true);
+                  }}
+                  className="w-full p-3 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600 text-white font-extrabold text-xs rounded-2xl shadow-md transition flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Post Service Request</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-emerald-200" />
+                </button>
+
+                <Link
+                  href="/products"
+                  onClick={closeMenu}
+                  className="flex items-center justify-between p-3 rounded-2xl hover:bg-emerald-50 dark:hover:bg-stone-800 text-xs font-bold text-emerald-800 dark:text-emerald-400 transition"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ShoppingBag className="w-4 h-4" />
+                    <span>Shop Local Products</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-stone-400" />
+                </Link>
+
+                <Link
+                  href="/rentals"
+                  onClick={closeMenu}
+                  className="flex items-center justify-between p-3 rounded-2xl hover:bg-amber-50 dark:hover:bg-stone-800 text-xs font-bold text-amber-800 dark:text-amber-400 transition"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Wrench className="w-4 h-4" />
+                    <span>Tool & Heavy Rentals</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-stone-400" />
+                </Link>
+
+                <Link
+                  href="/community"
+                  onClick={closeMenu}
+                  className="flex items-center justify-between p-3 rounded-2xl hover:bg-purple-50 dark:hover:bg-stone-800 text-xs font-bold text-purple-800 dark:text-purple-400 transition"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Community Notice Board</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-stone-400" />
+                </Link>
+
+                <Link
+                  href="/requests"
+                  onClick={closeMenu}
+                  className="flex items-center justify-between p-3 rounded-2xl hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-bold text-stone-800 dark:text-stone-200 transition"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>Browse Job Requests</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-stone-400" />
+                </Link>
+              </nav>
+            </div>
+
+            {/* Bottom Account Section */}
+            <div className="pt-4 border-t border-stone-200/80 dark:border-stone-800/80 space-y-3">
+              {session ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2.5 p-2 bg-stone-100 dark:bg-stone-800/80 rounded-2xl border border-stone-200 dark:border-stone-700">
+                    <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {session.name[0]}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-extrabold text-stone-900 dark:text-white truncate">{session.name}</p>
+                      <p className="text-[10px] text-stone-500 dark:text-stone-400 font-mono truncate">{session.phone}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 pt-1">
+                    <Link
+                      href="/business/portal"
+                      onClick={closeMenu}
+                      className="block p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300 font-bold text-xs"
+                    >
+                      🏢 Business Owner Portal
+                    </Link>
+
+                    <Link
+                      href="/dashboard"
+                      onClick={closeMenu}
+                      className="block p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold text-xs"
+                    >
+                      📊 My Customer Dashboard
+                    </Link>
+
+                    {session.role === "ADMIN" && (
+                      <Link
+                        href="/admin"
+                        onClick={closeMenu}
+                        className="block p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold text-xs"
+                      >
+                        ⚡ Enterprise Admin Panel
+                      </Link>
+                    )}
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left p-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Log Out Account</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="/login"
+                    onClick={closeMenu}
+                    className="py-3 text-center text-xs font-extrabold border border-stone-300 dark:border-stone-700 rounded-2xl text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={closeMenu}
+                    className="py-3 text-center text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-sm transition"
+                  >
+                    Join Servora
+                  </Link>
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Request Wizard Modal */}
+      <RequestWizardModal
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+      />
     </>
   );
 }

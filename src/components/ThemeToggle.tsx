@@ -5,8 +5,10 @@ import { Sun, Moon } from "lucide-react";
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     function syncTheme() {
       const isDark = document.documentElement.classList.contains("dark");
       setTheme(isDark ? "dark" : "light");
@@ -47,22 +49,36 @@ export function ThemeToggle() {
     window.dispatchEvent(new Event("servora_theme_changed"));
   }
 
+  if (!mounted) {
+    return (
+      <div className="w-9 h-9 sm:w-28 sm:h-9 rounded-full bg-stone-200/60 dark:bg-stone-800/60 animate-pulse shrink-0" />
+    );
+  }
+
   return (
     <button
       onClick={toggleTheme}
       type="button"
-      className="p-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 transition flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer border border-stone-300 dark:border-stone-700 shadow-xs"
+      className="relative group p-2 sm:px-3 sm:py-1.5 rounded-full bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-purple-500/10 dark:from-indigo-950/80 dark:to-purple-950/80 border border-stone-200/90 dark:border-stone-700/90 hover:border-emerald-500/50 dark:hover:border-indigo-400/50 text-stone-800 dark:text-stone-100 shadow-xs backdrop-blur-md transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
       title={`Switch to ${theme === "light" ? "Dark" : "Light"} mode`}
     >
       {theme === "light" ? (
         <>
-          <Moon className="w-4 h-4 text-purple-600 shrink-0" />
-          <span className="hidden sm:inline font-bold">Dark Mode</span>
+          <div className="p-1 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 transition duration-300 group-hover:rotate-45">
+            <Moon className="w-3.5 h-3.5 shrink-0" />
+          </div>
+          <span className="hidden sm:inline text-xs font-extrabold text-stone-700 dark:text-stone-300 tracking-tight">
+            Dark Mode
+          </span>
         </>
       ) : (
         <>
-          <Sun className="w-4 h-4 text-amber-400 shrink-0" />
-          <span className="hidden sm:inline font-bold">Light Mode</span>
+          <div className="p-1 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-500 transition duration-300 group-hover:rotate-90">
+            <Sun className="w-3.5 h-3.5 shrink-0" />
+          </div>
+          <span className="hidden sm:inline text-xs font-extrabold text-stone-700 dark:text-stone-300 tracking-tight">
+            Light Mode
+          </span>
         </>
       )}
     </button>
