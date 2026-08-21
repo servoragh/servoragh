@@ -123,6 +123,9 @@ export async function POST(req: Request) {
         },
       });
 
+      // Notify subscribers who favorited this business
+      notifyFavoriteSubscribers(profile.id, profile.businessName, title, profile.slug, "product");
+
       return NextResponse.json({ success: true, item: product, itemType: "product" });
     } else if (itemType === "rental") {
       const {
@@ -159,6 +162,9 @@ export async function POST(req: Request) {
         },
       });
 
+      // Notify subscribers who favorited this business
+      notifyFavoriteSubscribers(profile.id, profile.businessName, title, profile.slug, "rental equipment");
+
       return NextResponse.json({ success: true, item: rental, itemType: "rental" });
     } else if (itemType === "service") {
       const {
@@ -185,6 +191,9 @@ export async function POST(req: Request) {
         },
       });
 
+      // Notify subscribers who favorited this business
+      notifyFavoriteSubscribers(profile.id, profile.businessName, serviceName, profile.slug, "service offering");
+
       return NextResponse.json({ success: true, item: service, itemType: "service" });
     }
 
@@ -194,3 +203,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message || "Failed to create catalog item." }, { status: 500 });
   }
 }
+
+async function notifyFavoriteSubscribers(
+  businessId: string,
+  businessName: string,
+  itemTitle: string,
+  slug: string,
+  itemType: string
+) {
+  try {
+    const subscribers = await prisma.businessFavorite.findMany({
+      where: {
+        businessId,
+        notifyOnNewListing: true,
+      },
+      select: { userId: true },
+    });
+
+    if (!subscribers || subscribers.length === 0) return;
+
+    const notifications = subscribers.map((sub) => ({
+      userId: sub.userId,
+      title: `New Listing from ${businessName}`,
+      message: `${businessName} added a new ${itemType}: "${itemTitle}". Tap to explore!`,
+      link: `/biz/${slug}`,
+    }));
+
+    await prisma.notification.createMany({
+      data: notifications,
+    });
+  } catch (err) {
+    console.error("Failed to dispatch favorite subscriber notifications:", err);
+  }
+}
+

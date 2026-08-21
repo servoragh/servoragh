@@ -13,6 +13,7 @@ import {
   Wrench,
   Search,
   MessageSquare,
+  Truck,
 } from "lucide-react";
 import { RequestWizardModal } from "@/components/RequestWizardModal";
 
@@ -52,7 +53,7 @@ export function MobileBottomNav() {
           {/* Shop Products */}
           <Link
             href="/products"
-            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition cursor-pointer ${
+            className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-2xl transition cursor-pointer ${
               pathname?.startsWith("/products")
                 ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
                 : "text-stone-500 dark:text-stone-400 font-medium hover:text-stone-900 dark:hover:text-white"
@@ -60,6 +61,19 @@ export function MobileBottomNav() {
           >
             <ShoppingBag className="w-5 h-5" />
             <span className="text-[10px] tracking-tight">Products</span>
+          </Link>
+
+          {/* Delivery */}
+          <Link
+            href="/delivery"
+            className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-2xl transition cursor-pointer ${
+              pathname?.startsWith("/delivery")
+                ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+                : "text-stone-500 dark:text-stone-400 font-medium hover:text-stone-900 dark:hover:text-white"
+            }`}
+          >
+            <Truck className="w-5 h-5" />
+            <span className="text-[10px] tracking-tight">Delivery</span>
           </Link>
 
           {/* Quick Post Service Request CTA Floating Action Button */}

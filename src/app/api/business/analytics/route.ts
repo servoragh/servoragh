@@ -44,11 +44,20 @@ export async function GET() {
 
     const totalEstimatedRevenue = productSalesRevenue + serviceRevenue + rentalIncome;
 
+    const sharesCount = profile.sharesCount || 0;
+    const qrScansCount = profile.qrScansCount || 0;
+    const favoritesCount = profile.favoritesCount || 0;
+    const shareConversionRate = sharesCount > 0 ? ((totalLeads / sharesCount) * 100).toFixed(1) : "0.0";
+
     return NextResponse.json({
       metrics: {
         profileViews: profile.profileViews,
         productImpressions: totalProductImpressions,
         whatsappClicks: profile.whatsappClicks,
+        sharesCount,
+        qrScansCount,
+        favoritesCount,
+        shareConversionRate,
         ratingAverage: profile.ratingAverage,
         reviewsCount: profile.reviewsCount,
         totalLeads,
@@ -62,6 +71,7 @@ export async function GET() {
         },
       },
     });
+
   } catch (error: any) {
     console.error("GET Business Analytics Error:", error);
     return NextResponse.json({ error: "Failed to load analytics." }, { status: 500 });

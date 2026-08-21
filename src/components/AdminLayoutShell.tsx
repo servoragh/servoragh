@@ -27,9 +27,12 @@ import {
   X,
   Command,
   Activity,
+  Truck,
 } from "lucide-react";
 import { AdminCommandPaletteModal } from "@/components/AdminCommandPaletteModal";
+import { AdminGlobalSearchModal } from "@/components/AdminGlobalSearchModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Radio, Mail, Layers } from "lucide-react";
 
 interface AdminLayoutShellProps {
   children: React.ReactNode;
@@ -53,6 +56,7 @@ export function AdminLayoutShell({
   onToggleTheme,
 }: AdminLayoutShellProps) {
   const [isCmdOpen, setIsCmdOpen] = useState(false);
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
@@ -70,6 +74,10 @@ export function AdminLayoutShell({
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setIsCmdOpen(true);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setIsGlobalSearchOpen(true);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -101,6 +109,7 @@ export function AdminLayoutShell({
     {
       groupTitle: "MARKETPLACE & SERVICES",
       items: [
+        { id: "delivery", label: "Delivery Fleet & Dispatchers", icon: Truck, count: "Fleet" },
         { id: "products", label: "Product Moderation", icon: ShoppingBag, count: pendingProductsCount > 0 ? pendingProductsCount : null },
         { id: "requests", label: "Service Requests & Gigs", icon: MessageSquare, count: null },
         { id: "rentals", label: "Tool Rentals Engine", icon: Wrench, count: null },
@@ -117,6 +126,9 @@ export function AdminLayoutShell({
     {
       groupTitle: "SYSTEM & INFRASTRUCTURE",
       items: [
+        { id: "health", label: "Operations & System Health", icon: Radio, count: "12/12" },
+        { id: "taxonomy", label: "Category & Taxonomy Core", icon: Layers, count: "18 Verticals" },
+        { id: "email", label: "Email Subsystem & Logs", icon: Mail, count: "Mailer" },
         { id: "storage", label: "Cloud Storage & Backups", icon: HardDrive, count: "100GB" },
         { id: "flags", label: "Monetization & Commission Flags", icon: DollarSign, count: null },
         { id: "settings", label: "System Settings", icon: Settings, count: null },
@@ -173,6 +185,16 @@ export function AdminLayoutShell({
 
         {/* Right Actions Toolbar */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Global Admin Search Button */}
+          <button
+            onClick={() => setIsGlobalSearchOpen(true)}
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+            title="Search Entire Platform Across 13 Entities"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Global Search 🔍</span>
+          </button>
+
           {/* Mobile Search Button */}
           <button
             onClick={() => setIsCmdOpen(true)}
@@ -379,6 +401,16 @@ export function AdminLayoutShell({
         onSelectView={(v) => {
           onSelectView(v);
           setIsCmdOpen(false);
+        }}
+      />
+
+      {/* Global Master Admin Search Modal */}
+      <AdminGlobalSearchModal
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setIsGlobalSearchOpen(false)}
+        onSelectView={(v) => {
+          onSelectView(v);
+          setIsGlobalSearchOpen(false);
         }}
       />
     </div>

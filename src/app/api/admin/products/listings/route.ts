@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth";
 import { getAllProductListings } from "@/lib/productListingsStore";
 import { ProductListingStatus, SellerType } from "@/lib/productListingTypes";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const session = await getSession();

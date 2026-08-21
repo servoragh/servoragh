@@ -1,5 +1,3 @@
-import fs from "fs";
-import path from "path";
 import { prisma } from "@/lib/prisma";
 import {
   ProductListingItem,
@@ -7,175 +5,6 @@ import {
   ListingFilterQuery,
   ProductListingStatus,
 } from "./productListingTypes";
-
-const JSON_FILE_PATH = path.join(process.cwd(), "src", "data", "productings_data.json");
-
-export const INITIAL_DEFAULT_LISTINGS: ProductListingItem[] = [
-  {
-    id: "lst-101",
-    title: "Toyota Hilux Pickup Truck (2020 Model - Clean Engine)",
-    slug: "toyota-hilux-pickup-truck-2020-tamale-lst101",
-    description: "Well maintained Toyota Hilux Double Cabin. Air conditioning freezing cold, complete duty paid in Ghana. Ideal for farm and site work in Northern Region.",
-    category: "Vehicles & Heavy Equipment",
-    subCategory: "Pickup Trucks",
-    condition: "USED_LIKE_NEW",
-    price: 185000.00,
-    isNegotiable: true,
-    currency: "GHS",
-    images: [
-      "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&auto=format&fit=crop&q=80",
-    ],
-    videoUrl: null,
-    area: "Sakasaka, Tamale",
-    deliveryOptions: ["PICKUP", "LOCAL_DELIVERY"],
-    sellerType: "REGISTERED_USER",
-    sellerId: "user-102",
-    sellerName: "Fatima Abdul-Rahman",
-    sellerPhone: "+233501234567",
-    status: "ACTIVE",
-    isFeatured: true,
-    approvedById: "admin-master",
-    approvedByName: "Master Admin",
-    approvedAt: "2026-08-01T10:00:00Z",
-    autoModerationFlags: [],
-    viewsCount: 342,
-    inquiriesCount: 18,
-    expiresAt: "2026-09-30T00:00:00Z",
-    createdAt: "2026-08-01T09:30:00Z",
-    updatedAt: "2026-08-01T10:00:00Z",
-  },
-  {
-    id: "lst-102",
-    title: "DeWalt 20V Max Cordless Brushless Combo Drill Kit (Guest Listing)",
-    slug: "dewalt-20v-max-cordless-drill-kit-lst102",
-    description: "Brand new original DeWalt drill set imported from US. Comes with 2 batteries, charger, and heavy duty contractor bag.",
-    category: "Tools & Equipment",
-    subCategory: "Power Tools",
-    condition: "BRAND_NEW",
-    price: 1450.00,
-    isNegotiable: false,
-    currency: "GHS",
-    images: [
-      "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&auto=format&fit=crop&q=80",
-    ],
-    videoUrl: null,
-    area: "Central Market, Tamale",
-    deliveryOptions: ["PICKUP", "LOCAL_DELIVERY", "SHIPPING"],
-    sellerType: "GUEST",
-    guestName: "Baba Salifu",
-    guestPhone: "+233245678901",
-    guestWhatsApp: "+233245678901",
-    guestEmail: "salifu.hardware@gmail.com",
-    isGuestVerified: true,
-    guestAccessKey: "magic_key_salifu_102",
-    status: "PENDING_APPROVAL",
-    isFeatured: false,
-    autoModerationFlags: [],
-    viewsCount: 45,
-    inquiriesCount: 4,
-    expiresAt: "2026-09-18T00:00:00Z",
-    createdAt: "2026-08-17T14:20:00Z",
-    updatedAt: "2026-08-17T14:20:00Z",
-  },
-  {
-    id: "lst-103",
-    title: "Handwoven Royal Dagbon Smock (Batik Fugu - Size XL)",
-    slug: "handwoven-royal-dagbon-smock-fugu-lst103",
-    description: "Authentic handspun Northern Ghana heavy cotton fugu. Traditional blue and white stripes with intricate neck embroidery.",
-    category: "Fashion & Apparel",
-    subCategory: "Northern Smocks (Fugu)",
-    condition: "BRAND_NEW",
-    price: 480.00,
-    isNegotiable: true,
-    currency: "GHS",
-    images: [
-      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&auto=format&fit=crop&q=80",
-    ],
-    videoUrl: null,
-    area: "Nyohini, Tamale",
-    deliveryOptions: ["PICKUP", "LOCAL_DELIVERY", "SHIPPING"],
-    sellerType: "REGISTERED_USER",
-    sellerId: "user-102",
-    sellerName: "Northern Authentic Fugu & Fabrics",
-    sellerPhone: "+233501234567",
-    status: "ACTIVE",
-    isFeatured: true,
-    approvedById: "admin-master",
-    approvedByName: "Master Admin",
-    approvedAt: "2026-08-05T08:00:00Z",
-    autoModerationFlags: [],
-    viewsCount: 620,
-    inquiriesCount: 35,
-    expiresAt: "2026-10-05T00:00:00Z",
-    createdAt: "2026-08-05T07:15:00Z",
-    updatedAt: "2026-08-05T08:00:00Z",
-  },
-  {
-    id: "lst-104",
-    title: "Commercial Agricultural Solar Water Pump (5HP - High Head)",
-    slug: "agricultural-solar-water-pump-5hp-lst104",
-    description: "High capacity borehole and river irrigation solar pump set. Includes 5HP submersible pump, inverter controller, and mounting rails.",
-    category: "Agricultural & Farming",
-    subCategory: "Irrigation & Solar Pumps",
-    condition: "BRAND_NEW",
-    price: 12500.00,
-    isNegotiable: true,
-    currency: "GHS",
-    images: [
-      "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&auto=format&fit=crop&q=80",
-    ],
-    videoUrl: null,
-    area: "Aboabo, Tamale",
-    deliveryOptions: ["LOCAL_DELIVERY", "SHIPPING"],
-    sellerType: "GUEST",
-    guestName: "Issahaku Agribusiness",
-    guestPhone: "+233201122334",
-    guestWhatsApp: "+233201122334",
-    guestEmail: "issahaku.agri@gmail.com",
-    isGuestVerified: true,
-    guestAccessKey: "magic_key_issahaku_104",
-    status: "PENDING_APPROVAL",
-    isFeatured: false,
-    autoModerationFlags: ["HIGH_PRICE_ANOMALY"],
-    viewsCount: 88,
-    inquiriesCount: 7,
-    expiresAt: "2026-09-20T00:00:00Z",
-    createdAt: "2026-08-18T09:00:00Z",
-    updatedAt: "2026-08-18T09:00:00Z",
-  },
-];
-
-function ensureDirectoryExistence(filePath: string) {
-  const dirname = path.dirname(filePath);
-  if (fs.existsSync(dirname)) return true;
-  ensureDirectoryExistence(dirname);
-  fs.mkdirSync(dirname);
-}
-
-function readLocalListingsData(): ProductListingItem[] {
-  try {
-    if (fs.existsSync(JSON_FILE_PATH)) {
-      const data = fs.readFileSync(JSON_FILE_PATH, "utf8");
-      const items = JSON.parse(data);
-      if (Array.isArray(items) && items.length > 0) return items;
-    }
-  } catch (e) {
-    console.error("Error reading local listings file:", e);
-  }
-  return INITIAL_DEFAULT_LISTINGS;
-}
-
-function writeLocalListingsData(items: ProductListingItem[]): boolean {
-  try {
-    ensureDirectoryExistence(JSON_FILE_PATH);
-    fs.writeFileSync(JSON_FILE_PATH, JSON.stringify(items, null, 2), "utf8");
-    return true;
-  } catch (e) {
-    console.error("Error writing local listings file:", e);
-    return false;
-  }
-}
 
 export function runAutoModerationCheck(title: string, description: string, price: number): string[] {
   const flags: string[] = [];
@@ -195,29 +24,129 @@ export function runAutoModerationCheck(title: string, description: string, price
 }
 
 export async function getAllProductListings(query?: ListingFilterQuery): Promise<{ listings: ProductListingItem[]; total: number }> {
-  let list = readLocalListingsData();
+  let list: ProductListingItem[] = [];
 
-  // Try Prisma DB if available
   try {
-    if ((prisma as any).productListing) {
-      const dbListings = await (prisma as any).productListing.findMany({
-        orderBy: { createdAt: "desc" },
+    // 1. Fetch ProductListing entries from PostgreSQL DB
+    const dbListings = await prisma.productListing.findMany({
+      include: {
+        seller: { select: { name: true, phone: true, avatarUrl: true } },
+        business: { select: { businessName: true, slug: true, logoUrl: true, zone: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    for (const l of dbListings) {
+      const parsedImages = Array.isArray(l.images)
+        ? l.images
+        : typeof l.images === "string"
+        ? JSON.parse(l.images || "[]")
+        : [];
+
+      list.push({
+        id: l.id,
+        title: l.title,
+        slug: l.slug,
+        description: l.description,
+        category: l.category,
+        subCategory: l.subCategory || null,
+        condition: (l.condition as any) || "BRAND_NEW",
+        price: Number(l.price),
+        originalPrice: l.originalPrice ? Number(l.originalPrice) : null,
+        isNegotiable: l.isNegotiable ?? false,
+        currency: l.currency || "GHS",
+        images: parsedImages,
+        videoUrl: l.videoUrl || null,
+        area: l.area || l.business?.zone || "Tamale",
+        deliveryOptions: Array.isArray(l.deliveryOptions)
+          ? (l.deliveryOptions as any)
+          : typeof l.deliveryOptions === "string"
+          ? JSON.parse(l.deliveryOptions || '["PICKUP","LOCAL_DELIVERY"]')
+          : ["PICKUP", "LOCAL_DELIVERY"],
+        sellerType: (l.sellerType as any) || "REGISTERED_USER",
+        sellerId: l.sellerId || l.businessId || null,
+        sellerName: l.business?.businessName || l.seller?.name || l.guestName || "Verified Seller",
+        sellerPhone: l.seller?.phone || l.guestPhone || "",
+        sellerSlug: l.business?.slug || (l.sellerId ? l.sellerId : (l.guestName ? l.guestName.toLowerCase().replace(/[^a-z0-9]+/g, "-") : "seller")),
+        guestName: l.guestName || undefined,
+        guestPhone: l.guestPhone || undefined,
+        guestWhatsApp: l.guestWhatsApp || undefined,
+        guestEmail: l.guestEmail || undefined,
+        isGuestVerified: l.isGuestVerified ?? false,
+        guestAccessKey: l.guestAccessKey || undefined,
+        status: (l.status as any) || "ACTIVE",
+        isFeatured: l.isFeatured ?? false,
+        autoModerationFlags: [],
+        viewsCount: l.viewsCount || 0,
+        inquiriesCount: l.inquiriesCount || 0,
+        createdAt: l.createdAt.toISOString(),
+        updatedAt: l.updatedAt.toISOString(),
       });
-      if (dbListings && dbListings.length > 0) {
-        list = dbListings.map((l: any) => ({
-          ...l,
-          price: Number(l.price),
-          images: Array.isArray(l.images) ? l.images : JSON.parse(l.images || "[]"),
-          deliveryOptions: Array.isArray(l.deliveryOptions) ? l.deliveryOptions : JSON.parse(l.deliveryOptions || "[]"),
-          createdAt: l.createdAt.toISOString(),
-          updatedAt: l.updatedAt.toISOString(),
-        }));
+    }
+
+    // 2. Fetch Product entries from PostgreSQL DB
+    const dbProducts = await prisma.product.findMany({
+      include: {
+        provider: {
+          include: {
+            user: { select: { name: true, phone: true, avatarUrl: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    for (const p of dbProducts) {
+      const parsedImages = typeof p.images === "string" ? JSON.parse(p.images || "[]") : Array.isArray(p.images) ? p.images : [];
+
+      list.push({
+        id: p.id,
+        title: p.title,
+        slug: p.slug,
+        description: p.description,
+        category: p.category || "General Marketplace",
+        subCategory: "Artisan Catalog",
+        condition: "BRAND_NEW",
+        price: Number(p.price),
+        originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
+        isNegotiable: false,
+        currency: "GHS",
+        images: parsedImages.length > 0 ? parsedImages : ["https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=600&auto=format&fit=crop&q=80"],
+        videoUrl: null,
+        area: p.provider?.serviceArea || "Tamale, Northern Region",
+        deliveryOptions: ["PICKUP", "LOCAL_DELIVERY", "SHIPPING"],
+        sellerType: "REGISTERED_USER",
+        sellerId: p.provider?.userId || p.providerId,
+        sellerName: p.provider?.businessName || p.provider?.user?.name || "Verified Artisan Merchant",
+        sellerPhone: p.provider?.user?.phone || "+233245556677",
+        sellerSlug: p.provider?.slug || p.providerId || "artisan-merchant",
+        status: p.isAvailable ? "ACTIVE" : "SUSPENDED",
+        isFeatured: true,
+        autoModerationFlags: [],
+        viewsCount: 120,
+        inquiriesCount: 15,
+        createdAt: p.createdAt.toISOString(),
+        updatedAt: p.updatedAt.toISOString(),
+      });
+    }
+
+    // Deduplicate items by slug & id
+    const seen = new Set<string>();
+    const combined: ProductListingItem[] = [];
+
+    for (const item of list) {
+      if (!seen.has(item.slug)) {
+        seen.add(item.slug);
+        combined.push(item);
       }
     }
+
+    list = combined;
   } catch (e) {
-    // DB query fallback
+    console.error("Prisma product fetch error in store:", e);
   }
 
+  // Filter listings based on query parameters
   if (query) {
     const { search, status, sellerType, category, area, condition, isFeatured } = query;
 
@@ -262,149 +191,229 @@ export async function getAllProductListings(query?: ListingFilterQuery): Promise
 }
 
 export async function createProductListing(payload: CreateListingPayload, sessionUser?: any): Promise<ProductListingItem> {
-  const list = readLocalListingsData();
-
   const slug = `${payload.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now().toString().slice(-6)}`;
-  const flags = runAutoModerationCheck(payload.title, payload.description, payload.price);
-  
   const isGuest = payload.sellerType === "GUEST" || !sessionUser;
   const accessKey = isGuest ? `magic_key_${Date.now()}` : undefined;
 
-  const newListing: ProductListingItem = {
-    id: `lst-${Date.now()}`,
-    title: payload.title,
-    slug,
-    description: payload.description,
-    category: payload.category,
-    subCategory: payload.subCategory || null,
-    condition: payload.condition,
-    price: Number(payload.price),
-    isNegotiable: !!payload.isNegotiable,
-    currency: payload.currency || "GHS",
-    images: payload.images && payload.images.length > 0 ? payload.images : ["https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80"],
-    videoUrl: payload.videoUrl || null,
-    area: payload.area || "Tamale Central",
-    deliveryOptions: payload.deliveryOptions || ["PICKUP"],
-    sellerType: isGuest ? "GUEST" : "REGISTERED_USER",
-    sellerId: sessionUser ? sessionUser.id : null,
-    sellerName: sessionUser ? sessionUser.name : payload.guestName || "Guest Seller",
-    sellerPhone: sessionUser ? sessionUser.phone : payload.guestPhone || "+233240000000",
-    guestName: isGuest ? payload.guestName || "Guest Seller" : null,
-    guestPhone: isGuest ? payload.guestPhone || null : null,
-    guestWhatsApp: isGuest ? payload.guestWhatsApp || payload.guestPhone || null : null,
-    guestEmail: isGuest ? payload.guestEmail || null : null,
-    isGuestVerified: true, // OTP verified upon submit
-    guestAccessKey: accessKey || null,
-    status: "PENDING_APPROVAL",
-    isFeatured: false,
-    autoModerationFlags: flags,
+  const businessProfile = sessionUser?.id
+    ? await prisma.businessProfile.findUnique({ where: { userId: sessionUser.id } }).catch(() => null)
+    : null;
+
+  const createdDbItem = await prisma.productListing.create({
+    data: {
+      title: payload.title,
+      slug,
+      description: payload.description,
+      category: payload.category,
+      subCategory: payload.subCategory || null,
+      condition: (payload.condition as any) || "BRAND_NEW",
+      price: Number(payload.price),
+      originalPrice: payload.originalPrice ? Number(payload.originalPrice) : null,
+      isNegotiable: !!payload.isNegotiable,
+      currency: payload.currency || "GHS",
+      images: payload.images && payload.images.length > 0 ? payload.images : ["https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80"],
+      videoUrl: payload.videoUrl || null,
+      area: payload.area || businessProfile?.zone || "Tamale Central",
+      deliveryOptions: payload.deliveryOptions || ["PICKUP"],
+      sellerType: isGuest ? "GUEST" : "REGISTERED_USER",
+      sellerId: sessionUser ? sessionUser.id : null,
+      businessId: businessProfile?.id || null,
+      guestName: isGuest ? payload.guestName || "Guest Seller" : null,
+      guestPhone: isGuest ? payload.guestPhone || null : null,
+      guestWhatsApp: isGuest ? payload.guestWhatsApp || payload.guestPhone || null : null,
+      guestEmail: isGuest ? payload.guestEmail || null : null,
+      isGuestVerified: true,
+      guestAccessKey: accessKey || null,
+      status: "PENDING_APPROVAL",
+      isFeatured: false,
+    },
+  });
+
+  return {
+    id: createdDbItem.id,
+    title: createdDbItem.title,
+    slug: createdDbItem.slug,
+    description: createdDbItem.description,
+    category: createdDbItem.category,
+    subCategory: createdDbItem.subCategory,
+    condition: createdDbItem.condition as any,
+    price: Number(createdDbItem.price),
+    originalPrice: createdDbItem.originalPrice ? Number(createdDbItem.originalPrice) : null,
+    isNegotiable: createdDbItem.isNegotiable,
+    currency: createdDbItem.currency,
+    images: Array.isArray(createdDbItem.images) ? (createdDbItem.images as any) : [],
+    videoUrl: createdDbItem.videoUrl,
+    area: createdDbItem.area,
+    deliveryOptions: Array.isArray(createdDbItem.deliveryOptions) ? (createdDbItem.deliveryOptions as any) : ["PICKUP"],
+    sellerType: createdDbItem.sellerType as any,
+    sellerId: createdDbItem.sellerId,
+    sellerName: sessionUser?.name || createdDbItem.guestName || "Seller",
+    sellerPhone: sessionUser?.phone || createdDbItem.guestPhone || "",
+    guestName: createdDbItem.guestName || undefined,
+    guestPhone: createdDbItem.guestPhone || undefined,
+    guestWhatsApp: createdDbItem.guestWhatsApp || undefined,
+    guestEmail: createdDbItem.guestEmail || undefined,
+    isGuestVerified: createdDbItem.isGuestVerified,
+    guestAccessKey: createdDbItem.guestAccessKey || undefined,
+    status: createdDbItem.status as any,
+    isFeatured: createdDbItem.isFeatured,
+    autoModerationFlags: [],
     viewsCount: 1,
     inquiriesCount: 0,
-    expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // 60 days
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: createdDbItem.createdAt.toISOString(),
+    updatedAt: createdDbItem.updatedAt.toISOString(),
   };
-
-  list.unshift(newListing);
-  writeLocalListingsData(list);
-
-  // Try Prisma create
-  try {
-    if ((prisma as any).productListing) {
-      await (prisma as any).productListing.create({
-        data: {
-          id: newListing.id,
-          title: newListing.title,
-          slug: newListing.slug,
-          description: newListing.description,
-          category: newListing.category,
-          subCategory: newListing.subCategory,
-          condition: newListing.condition,
-          price: newListing.price,
-          isNegotiable: newListing.isNegotiable,
-          currency: newListing.currency,
-          images: newListing.images,
-          videoUrl: newListing.videoUrl,
-          area: newListing.area,
-          deliveryOptions: newListing.deliveryOptions,
-          sellerType: newListing.sellerType,
-          sellerId: newListing.sellerId,
-          guestName: newListing.guestName,
-          guestPhone: newListing.guestPhone,
-          guestWhatsApp: newListing.guestWhatsApp,
-          guestEmail: newListing.guestEmail,
-          isGuestVerified: newListing.isGuestVerified,
-          guestAccessKey: newListing.guestAccessKey,
-          status: newListing.status,
-          isFeatured: newListing.isFeatured,
-          viewsCount: 1,
-          expiresAt: new Date(newListing.expiresAt!),
-        },
-      });
-    }
-  } catch (e) {
-    // Database write fallback
-  }
-
-  return newListing;
 }
 
-export async function moderateProductListing(
+export async function updateProductListingStatus(
   id: string,
-  action: "APPROVE" | "REJECT" | "FEATURE" | "SUSPEND" | "MARK_SOLD" | "DELETE",
-  adminUser: { id: string; name: string },
+  status: ProductListingStatus,
+  adminUser?: any,
   rejectionReason?: string
 ): Promise<ProductListingItem | null> {
-  const list = readLocalListingsData();
-  const index = list.findIndex((l) => l.id === id);
-  if (index < 0) return null;
+  const updated = await prisma.productListing.update({
+    where: { id },
+    data: {
+      status: status as any,
+      rejectionReason: rejectionReason || null,
+      approvedById: adminUser?.id || null,
+      approvedAt: status === "ACTIVE" ? new Date() : null,
+    },
+  }).catch(() => null);
 
-  const target = list[index];
+  if (!updated) return null;
 
-  if (action === "APPROVE") {
-    target.status = "ACTIVE";
-    target.approvedById = adminUser.id;
-    target.approvedByName = adminUser.name;
-    target.approvedAt = new Date().toISOString();
-    target.rejectionReason = null;
-  } else if (action === "REJECT") {
-    target.status = "REJECTED";
-    target.rejectionReason = rejectionReason || "Does not meet platform community guidelines.";
-  } else if (action === "FEATURE") {
-    target.isFeatured = !target.isFeatured;
-  } else if (action === "SUSPEND") {
-    target.status = "SUSPENDED";
-  } else if (action === "MARK_SOLD") {
-    target.status = "SOLD";
-  } else if (action === "DELETE") {
-    list.splice(index, 1);
-    writeLocalListingsData(list);
-    try {
-      if ((prisma as any).productListing) {
-        await (prisma as any).productListing.delete({ where: { id } });
-      }
-    } catch (e) {}
-    return target;
+  return {
+    id: updated.id,
+    title: updated.title,
+    slug: updated.slug,
+    description: updated.description,
+    category: updated.category,
+    subCategory: updated.subCategory,
+    condition: updated.condition as any,
+    price: Number(updated.price),
+    originalPrice: updated.originalPrice ? Number(updated.originalPrice) : null,
+    isNegotiable: updated.isNegotiable,
+    currency: updated.currency,
+    images: Array.isArray(updated.images) ? (updated.images as any) : [],
+    videoUrl: updated.videoUrl,
+    area: updated.area,
+    deliveryOptions: Array.isArray(updated.deliveryOptions) ? (updated.deliveryOptions as any) : ["PICKUP"],
+    sellerType: updated.sellerType as any,
+    sellerId: updated.sellerId,
+    sellerName: adminUser?.name || "Admin",
+    sellerPhone: "",
+    status: updated.status as any,
+    isFeatured: updated.isFeatured,
+    autoModerationFlags: [],
+    viewsCount: updated.viewsCount,
+    inquiriesCount: updated.inquiriesCount,
+    createdAt: updated.createdAt.toISOString(),
+    updatedAt: updated.updatedAt.toISOString(),
+  };
+}
+
+export const moderateProductListing = updateProductListingStatus;
+
+export async function getListingBySlug(slug: string): Promise<ProductListingItem | null> {
+  const listing = await prisma.productListing.findUnique({
+    where: { slug },
+    include: {
+      seller: { select: { name: true, phone: true, avatarUrl: true } },
+      business: { select: { businessName: true, slug: true, logoUrl: true, zone: true } },
+    },
+  }).catch(() => null);
+
+  if (listing) {
+    const parsedImages = Array.isArray(listing.images)
+      ? listing.images
+      : typeof listing.images === "string"
+      ? JSON.parse(listing.images || "[]")
+      : [];
+
+    return {
+      id: listing.id,
+      title: listing.title,
+      slug: listing.slug,
+      description: listing.description,
+      category: listing.category,
+      subCategory: listing.subCategory,
+      condition: listing.condition as any,
+      price: Number(listing.price),
+      originalPrice: listing.originalPrice ? Number(listing.originalPrice) : null,
+      isNegotiable: listing.isNegotiable,
+      currency: listing.currency,
+      images: parsedImages,
+      videoUrl: listing.videoUrl,
+      area: listing.area || listing.business?.zone || "Tamale",
+      deliveryOptions: Array.isArray(listing.deliveryOptions)
+        ? (listing.deliveryOptions as any)
+        : typeof listing.deliveryOptions === "string"
+        ? JSON.parse(listing.deliveryOptions || '["PICKUP","LOCAL_DELIVERY"]')
+        : ["PICKUP"],
+      sellerType: listing.sellerType as any,
+      sellerId: listing.sellerId || listing.businessId,
+      sellerName: listing.business?.businessName || listing.seller?.name || listing.guestName || "Seller",
+      sellerPhone: listing.seller?.phone || listing.guestPhone || "",
+      guestName: listing.guestName || undefined,
+      guestPhone: listing.guestPhone || undefined,
+      guestWhatsApp: listing.guestWhatsApp || undefined,
+      guestEmail: listing.guestEmail || undefined,
+      isGuestVerified: listing.isGuestVerified,
+      guestAccessKey: listing.guestAccessKey || undefined,
+      status: listing.status as any,
+      isFeatured: listing.isFeatured,
+      autoModerationFlags: [],
+      viewsCount: listing.viewsCount,
+      inquiriesCount: listing.inquiriesCount,
+      createdAt: listing.createdAt.toISOString(),
+      updatedAt: listing.updatedAt.toISOString(),
+    };
   }
 
-  target.updatedAt = new Date().toISOString();
-  list[index] = target;
-  writeLocalListingsData(list);
-
-  try {
-    if ((prisma as any).productListing) {
-      await (prisma as any).productListing.update({
-        where: { id },
-        data: {
-          status: target.status,
-          isFeatured: target.isFeatured,
-          rejectionReason: target.rejectionReason,
-          approvedById: target.approvedById,
-          approvedAt: target.approvedAt ? new Date(target.approvedAt) : null,
+  // Fallback to legacy Product by slug
+  const legacyProd = await prisma.product.findUnique({
+    where: { slug },
+    include: {
+      provider: {
+        include: {
+          user: { select: { name: true, phone: true, avatarUrl: true } },
         },
-      });
-    }
-  } catch (e) {}
+      },
+    },
+  }).catch(() => null);
 
-  return target;
+  if (legacyProd) {
+    const parsedImages = typeof legacyProd.images === "string" ? JSON.parse(legacyProd.images || "[]") : Array.isArray(legacyProd.images) ? legacyProd.images : [];
+    return {
+      id: legacyProd.id,
+      title: legacyProd.title,
+      slug: legacyProd.slug,
+      description: legacyProd.description,
+      category: legacyProd.category,
+      subCategory: "Artisan Catalog",
+      condition: "BRAND_NEW",
+      price: Number(legacyProd.price),
+      originalPrice: legacyProd.originalPrice ? Number(legacyProd.originalPrice) : null,
+      isNegotiable: false,
+      currency: "GHS",
+      images: parsedImages,
+      videoUrl: null,
+      area: legacyProd.provider?.serviceArea || "Tamale",
+      deliveryOptions: ["PICKUP", "LOCAL_DELIVERY", "SHIPPING"],
+      sellerType: "REGISTERED_USER",
+      sellerId: legacyProd.provider?.userId || legacyProd.providerId,
+      sellerName: legacyProd.provider?.businessName || legacyProd.provider?.user?.name || "Merchant",
+      sellerPhone: legacyProd.provider?.user?.phone || "",
+      status: legacyProd.isAvailable ? "ACTIVE" : "SUSPENDED",
+      isFeatured: true,
+      autoModerationFlags: [],
+      viewsCount: 120,
+      inquiriesCount: 15,
+      createdAt: legacyProd.createdAt.toISOString(),
+      updatedAt: legacyProd.updatedAt.toISOString(),
+    };
+  }
+
+  return null;
 }

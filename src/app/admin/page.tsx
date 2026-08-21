@@ -45,6 +45,8 @@ import {
   TrendingUp,
   Filter,
   CheckSquare,
+  Eye,
+  PhoneCall,
 } from "lucide-react";
 import { LaunchModeWidget } from "@/components/LaunchModeWidget";
 import { TrustBadge } from "@/components/TrustBadge";
@@ -53,6 +55,14 @@ import { CsvImporterModal } from "@/components/CsvImporterModal";
 import { AdminTickersManager } from "@/components/AdminTickersManager";
 import { CustomerCrmDashboard } from "@/components/CustomerCrmDashboard";
 import { AdminProductModerationHub } from "@/components/AdminProductModerationHub";
+import { AdminDeliveryManagementHub } from "@/components/AdminDeliveryManagementHub";
+import { AdminToolRentalsHub } from "@/components/AdminToolRentalsHub";
+import { AdminDisputesHub } from "@/components/AdminDisputesHub";
+import { AdminCommunityModerationHub } from "@/components/AdminCommunityModerationHub";
+import { AdminVerificationQueueHub } from "@/components/AdminVerificationQueueHub";
+import { AdminSystemHealthHub } from "@/components/AdminSystemHealthHub";
+import { AdminEmailManagementHub } from "@/components/AdminEmailManagementHub";
+import { AdminUniversalTaxonomyHub } from "@/components/AdminUniversalTaxonomyHub";
 import { AdminLayoutShell } from "@/components/AdminLayoutShell";
 import { formatDate, formatGHS } from "@/lib/utils";
 
@@ -60,13 +70,14 @@ export default function AdminDashboardPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [inspectingRequest, setInspectingRequest] = useState<any>(null);
 
   // Theme Mode: "dark" | "light"
   const [themeMode, setThemeMode] = useState<"dark" | "light">("light");
 
   // Active View in Admin Shell
   const [activeView, setActiveView] = useState<
-    "overview" | "crm" | "tickers" | "members" | "businesses" | "services" | "products" | "requests" | "disputes" | "storage" | "verification" | "flags" | "settings" | "activity" | "rentals" | "community"
+    "overview" | "crm" | "tickers" | "members" | "businesses" | "services" | "products" | "requests" | "disputes" | "storage" | "verification" | "flags" | "settings" | "activity" | "rentals" | "community" | "delivery" | "health" | "email" | "taxonomy"
   >("overview");
 
   const [searchFilter, setSearchFilter] = useState("");
@@ -506,22 +517,29 @@ export default function AdminDashboardPage() {
       {/* 4. VIEW: BUSINESS PROFILES & ARTISANS */}
       {/* ------------------------------------------------------------- */}
       {activeView === "businesses" && (
-        <div className="space-y-4">
+        <div className="space-y-4 font-sans">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-4">
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-emerald-500" /> Business Profiles & Verified Artisans
               </h2>
-              <p className="text-xs text-slate-500">Manage registered local service providers, artisans, and business profiles.</p>
+              <p className="text-xs text-slate-500">Manage registered local service providers, artisans, and merchant storefront profiles.</p>
             </div>
+            <Link
+              href="/provider/register"
+              target="_blank"
+              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" /> Register New Business
+            </Link>
           </div>
 
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-xs">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto max-h-[calc(100vh-280px)] overflow-y-auto">
-              <table className="w-full text-left text-xs min-w-[600px]">
+              <table className="w-full text-left text-xs min-w-[650px]">
                 <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-zinc-950 text-slate-500 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200 dark:border-zinc-800 shadow-xs">
                   <tr>
-                    <th className="p-4">Business Name</th>
+                    <th className="p-4">Business Name & Owner</th>
                     <th className="p-4">Service Area</th>
                     <th className="p-4">Verification State</th>
                     <th className="p-4 text-right">Actions</th>
@@ -530,19 +548,37 @@ export default function AdminDashboardPage() {
                 <tbody className="divide-y divide-slate-200 dark:divide-zinc-800">
                   {filteredProviders.map((prov: any) => (
                     <tr key={prov.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/60">
-                      <td className="p-4 font-bold text-slate-900 dark:text-white">{prov.businessName}</td>
-                      <td className="p-4 font-medium text-slate-500">{prov.serviceArea}</td>
                       <td className="p-4">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-                          {prov.verificationStatus}
+                        <div className="font-extrabold text-slate-900 dark:text-white text-sm">{prov.businessName}</div>
+                        <div className="text-[11px] text-slate-400 font-mono">
+                          Owner: {prov.user?.name || "Artisan"} • Phone: {prov.user?.phone || "N/A"}
+                        </div>
+                      </td>
+                      <td className="p-4 font-medium text-slate-500">{prov.serviceArea || "Tamale"}</td>
+                      <td className="p-4">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                            prov.verificationStatus === "VERIFIED"
+                              ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30"
+                              : "bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30"
+                          }`}
+                        >
+                          {prov.verificationStatus || "PENDING"}
                         </span>
                       </td>
                       <td className="p-4 text-right space-x-2">
-                        <button
-                          onClick={() => handleAdminAction("TOGGLE_PROVIDER_VERIFICATION", prov.id)}
-                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs cursor-pointer transition"
+                        <Link
+                          href={`/biz/${prov.slug || prov.id}`}
+                          target="_blank"
+                          className="px-3.5 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 text-stone-700 dark:text-stone-300 font-bold rounded-xl text-xs inline-flex items-center gap-1.5 transition"
                         >
-                          Verify Artisan
+                          View Storefront ↗
+                        </Link>
+                        <button
+                          onClick={() => setActiveView("verification")}
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs cursor-pointer transition shadow-xs"
+                        >
+                          Inspect ID & Verify 🛡️
                         </button>
                       </td>
                     </tr>
@@ -557,51 +593,7 @@ export default function AdminDashboardPage() {
       {/* ------------------------------------------------------------- */}
       {/* 5. VIEW: ID & VERIFICATION QUEUE */}
       {/* ------------------------------------------------------------- */}
-      {activeView === "verification" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-4">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-amber-500" /> ID & Ghana Card Verification Queue
-              </h2>
-              <p className="text-xs text-slate-500">Review pending national identification documents submitted by local service artisans.</p>
-            </div>
-            <span className="px-3 py-1 bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-full">
-              1 Pending Verification
-            </span>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-5 shadow-xs space-y-4">
-            <div className="p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
-              <div className="space-y-1">
-                <span className="font-extrabold text-slate-900 dark:text-white block text-sm">
-                  Salifu Plumbing & Borehole Services (Salifu Yakubu)
-                </span>
-                <span className="text-slate-500 block">
-                  Ghana Card Number: <strong className="font-mono text-slate-800 dark:text-zinc-200">GHA-72109845-2</strong>
-                </span>
-                <span className="text-slate-400 block font-mono text-[11px]">
-                  Service Area: Choggu, Tamale • Phone: +233201122334
-                </span>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => alert("Ghana Card Approved!")}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow transition cursor-pointer"
-                >
-                  Approve ID
-                </button>
-                <button
-                  onClick={() => alert("Verification Rejected.")}
-                  className="px-4 py-2 bg-rose-100 dark:bg-rose-950 text-rose-600 font-bold rounded-xl text-xs transition cursor-pointer"
-                >
-                  Reject
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {activeView === "verification" && <AdminVerificationQueueHub isDark={themeMode === "dark"} />}
 
       {/* ------------------------------------------------------------- */}
       {/* 6. VIEW: PRODUCT MODERATION HUB */}
@@ -648,8 +640,11 @@ export default function AdminDashboardPage() {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <button className="px-3 py-1 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold rounded-lg text-xs">
-                        Inspect
+                      <button
+                        onClick={() => setInspectingRequest(req)}
+                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs shadow-xs transition cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> Inspect Details
                       </button>
                     </td>
                   </tr>
@@ -664,84 +659,17 @@ export default function AdminDashboardPage() {
       {/* ------------------------------------------------------------- */}
       {/* 8. VIEW: TOOL RENTALS ENGINE */}
       {/* ------------------------------------------------------------- */}
-      {activeView === "rentals" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-4">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-teal-500" /> Heavy Equipment & Tool Rentals Engine
-              </h2>
-              <p className="text-xs text-slate-500">Manage tool rentals, power generators, concrete mixers, and scaffolding inventory.</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-5 rounded-xl space-y-2">
-              <span className="font-extrabold text-slate-900 dark:text-white block text-sm">Industrial 10kVA Diesel Generator</span>
-              <span className="text-emerald-600 font-bold block">GH₵ 350.00 / day</span>
-              <span className="text-slate-500 block">Owner: Northern Equipment Suppliers (Aboabo)</span>
-              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold inline-block">Available</span>
-            </div>
-            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-5 rounded-xl space-y-2">
-              <span className="font-extrabold text-slate-900 dark:text-white block text-sm">Heavy Duty Concrete Mixer 350L</span>
-              <span className="text-emerald-600 font-bold block">GH₵ 250.00 / day</span>
-              <span className="text-slate-500 block">Owner: Tamale Construction Depot</span>
-              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold inline-block">Available</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {activeView === "rentals" && <AdminToolRentalsHub isDark={themeMode === "dark"} />}
 
       {/* ------------------------------------------------------------- */}
       {/* 9. VIEW: DISPUTES & HELPDESK */}
       {/* ------------------------------------------------------------- */}
-      {activeView === "disputes" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-4">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Scale className="w-5 h-5 text-rose-500" /> Disputes & Helpdesk Hub
-              </h2>
-              <p className="text-xs text-slate-500">Platform dispute resolution center and Mobile Money escrow holds.</p>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-8 rounded-xl text-center space-y-3">
-            <CheckSquare className="w-12 h-12 text-emerald-500 mx-auto" />
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Zero Active Disputes</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              All Mobile Money escrow payments and job completion certificates are healthy.
-            </p>
-          </div>
-        </div>
-      )}
+      {activeView === "disputes" && <AdminDisputesHub isDark={themeMode === "dark"} />}
 
       {/* ------------------------------------------------------------- */}
       {/* 10. VIEW: COMMUNITY BOARD MODERATION */}
       {/* ------------------------------------------------------------- */}
-      {activeView === "community" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-4">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-500" /> Community Board & Trade Feed Moderation
-              </h2>
-              <p className="text-xs text-slate-500">Review neighborhood trade notices, tool rental posts, and community alerts.</p>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-5 rounded-xl space-y-3 text-xs">
-            <span className="font-bold text-slate-900 dark:text-white text-sm block">Recent Community Trade Notice</span>
-            <p className="text-slate-600 dark:text-zinc-400">
-              "Looking for certified solar installer for 5kW hybrid system in Sakasaka."
-            </p>
-            <div className="flex items-center justify-between text-slate-400 font-mono text-[11px]">
-              <span>Author: Alhassan Ibrahim • Sakasaka</span>
-              <span className="text-emerald-600 font-bold">Approved & Live</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {activeView === "community" && <AdminCommunityModerationHub isDark={themeMode === "dark"} />}
 
       {/* ------------------------------------------------------------- */}
       {/* 11. VIEW: ANNOUNCEMENT TICKERS MANAGER */}
@@ -785,7 +713,22 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* 13. VIEW: MONETIZATION & FEATURE FLAGS */}
+      {/* 12. VIEW: OPERATIONS & SYSTEM HEALTH */}
+      {/* ------------------------------------------------------------- */}
+      {activeView === "health" && <AdminSystemHealthHub isDark={themeMode === "dark"} />}
+
+      {/* ------------------------------------------------------------- */}
+      {/* 13. VIEW: EMAIL SUBSYSTEM & LOGS */}
+      {/* ------------------------------------------------------------- */}
+      {activeView === "email" && <AdminEmailManagementHub isDark={themeMode === "dark"} />}
+
+      {/* ------------------------------------------------------------- */}
+      {/* 14. VIEW: CATEGORY & TAXONOMY CORE */}
+      {/* ------------------------------------------------------------- */}
+      {activeView === "taxonomy" && <AdminUniversalTaxonomyHub isDark={themeMode === "dark"} />}
+
+      {/* ------------------------------------------------------------- */}
+      {/* 15. VIEW: MONETIZATION & FEATURE FLAGS */}
       {/* ------------------------------------------------------------- */}
       {activeView === "flags" && (
         <div className="space-y-4 max-w-4xl">
@@ -876,6 +819,98 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* 15. VIEW: DELIVERY FLEET & DISPATCH HUB */}
+      {/* ------------------------------------------------------------- */}
+      {activeView === "delivery" && <AdminDeliveryManagementHub />}
+
+      {/* ------------------------------------------------------------- */}
+      {/* SERVICE REQUEST INSPECTION MODAL */}
+      {/* ------------------------------------------------------------- */}
+      {inspectingRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 text-slate-900 dark:text-white relative">
+            <button
+              onClick={() => setInspectingRequest(null)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full bg-slate-100 dark:bg-zinc-800 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="space-y-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 uppercase">
+                Status: {inspectingRequest.status}
+              </span>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white pt-1">
+                {inspectingRequest.title}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                Category: {inspectingRequest.service?.name || "General Service"} • Posted {formatDate(inspectingRequest.createdAt)}
+              </p>
+            </div>
+
+            {/* Description */}
+            <div className="p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs space-y-1.5">
+              <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
+                Job Description / Issue Detail:
+              </span>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                {inspectingRequest.description || "Customer placed request for rapid service dispatch."}
+              </p>
+            </div>
+
+            {/* Customer Contact Panel */}
+            <div className="p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs space-y-2">
+              <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
+                Customer Info & Location:
+              </span>
+              <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                <span>{inspectingRequest.customer?.name || inspectingRequest.guestName || "Customer"}</span>
+                <span className="text-slate-500 font-mono text-[11px]">📍 {inspectingRequest.location?.area || "Tamale"}</span>
+              </div>
+              <div className="text-[11px] text-slate-500 font-mono">
+                Phone: {inspectingRequest.customer?.phone || inspectingRequest.guestPhone || "+233240000000"}
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-zinc-800">
+                <a
+                  href={`https://wa.me/${(inspectingRequest.customer?.phone || inspectingRequest.guestPhone || "").replace(/[^0-9]/g, "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" /> WhatsApp Customer
+                </a>
+                <a
+                  href={`tel:${inspectingRequest.customer?.phone || inspectingRequest.guestPhone || ""}`}
+                  className="py-2 px-3 bg-slate-200 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 font-bold rounded-xl text-xs flex items-center justify-center gap-1 hover:bg-slate-300"
+                >
+                  <PhoneCall className="w-3.5 h-3.5" /> Call
+                </a>
+              </div>
+            </div>
+
+            {/* Action Bar */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-zinc-800 gap-2">
+              <Link
+                href={`/requests/${inspectingRequest.id}`}
+                target="_blank"
+                className="py-2 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-xs"
+              >
+                <ArrowUpRight className="w-4 h-4" /> View Public Page ↗
+              </Link>
+
+              <button
+                onClick={() => setInspectingRequest(null)}
+                className="py-2 px-4 bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold rounded-xl text-xs hover:bg-slate-300 cursor-pointer"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </AdminLayoutShell>

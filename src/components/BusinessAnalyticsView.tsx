@@ -13,6 +13,9 @@ import {
   ShoppingBag,
   Wrench,
   Layers,
+  Share2,
+  QrCode,
+  Heart,
 } from "lucide-react";
 import { formatGHS } from "@/lib/utils";
 
@@ -96,6 +99,52 @@ export function BusinessAnalyticsView() {
             {formatGHS(data.revenue?.totalEstimatedRevenue || 0)}
           </h3>
           <p className="text-[11px] text-amber-600 font-semibold mt-1">Combined enterprise earnings</p>
+        </div>
+      </div>
+
+      {/* Referral & Share Analytics Row */}
+      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-6 lg:p-8 shadow-sm space-y-6">
+        <div className="border-b border-stone-100 dark:border-stone-800 pb-4">
+          <h4 className="text-lg font-bold text-stone-900 dark:text-white">Referral & Viral Growth Analytics</h4>
+          <p className="text-xs text-stone-500">Track link shares, QR code signboard scans, and customer favoriting metrics.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="p-5 bg-sky-50/60 dark:bg-sky-950/20 border border-sky-200/60 dark:border-sky-800/40 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-sky-800 dark:text-sky-300 uppercase">Total Link Shares</span>
+              <Share2 className="w-5 h-5 text-sky-600" />
+            </div>
+            <h3 className="text-2xl font-black text-stone-900 dark:text-white mt-2">{data.sharesCount || 0}</h3>
+            <p className="text-[11px] text-sky-600 font-semibold mt-0.5">WhatsApp & Social shares</p>
+          </div>
+
+          <div className="p-5 bg-teal-50/60 dark:bg-teal-950/20 border border-teal-200/60 dark:border-teal-800/40 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-teal-800 dark:text-teal-300 uppercase">QR Code Scans</span>
+              <QrCode className="w-5 h-5 text-teal-600" />
+            </div>
+            <h3 className="text-2xl font-black text-stone-900 dark:text-white mt-2">{data.qrScansCount || 0}</h3>
+            <p className="text-[11px] text-teal-600 font-semibold mt-0.5">Signboard & receipt scans</p>
+          </div>
+
+          <div className="p-5 bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/60 dark:border-rose-800/40 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-rose-800 dark:text-rose-300 uppercase">Customer Bookmarks</span>
+              <Heart className="w-5 h-5 text-rose-600 fill-rose-600" />
+            </div>
+            <h3 className="text-2xl font-black text-stone-900 dark:text-white mt-2">{data.favoritesCount || 0}</h3>
+            <p className="text-[11px] text-rose-600 font-semibold mt-0.5">Subscribed customer alerts</p>
+          </div>
+
+          <div className="p-5 bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-indigo-800 dark:text-indigo-300 uppercase">Share Conversion</span>
+              <TrendingUp className="w-5 h-5 text-indigo-600" />
+            </div>
+            <h3 className="text-2xl font-black text-stone-900 dark:text-white mt-2">{data.shareConversionRate || "0.0"}%</h3>
+            <p className="text-[11px] text-indigo-600 font-semibold mt-0.5">Share-to-Inquiry ratio</p>
+          </div>
         </div>
       </div>
 

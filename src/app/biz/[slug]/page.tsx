@@ -25,8 +25,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  QrCode,
+  Image as ImageIcon,
 } from "lucide-react";
 import { formatGHS } from "@/lib/utils";
+import { FavoriteButton } from "@/components/FavoriteButton";
+import { ShareDrawerModal } from "@/components/ShareDrawerModal";
+import { QrCodeGeneratorModal } from "@/components/QrCodeGeneratorModal";
+import { DigitalPromoFlyerModal } from "@/components/DigitalPromoFlyerModal";
 
 export default function PublicDigitalStorefrontPage() {
   const params = useParams();
@@ -43,6 +49,11 @@ export default function PublicDigitalStorefrontPage() {
   const [viewingProduct, setViewingProduct] = useState<any>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
+  // Growth Toolkit Modal States
+  const [isShareDrawerOpen, setIsShareDrawerOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isPromoFlyerOpen, setIsPromoFlyerOpen] = useState(false);
+
   // Custom Quote Modal State
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [custName, setCustName] = useState("");
@@ -51,6 +62,7 @@ export default function PublicDigitalStorefrontPage() {
   const [custNotes, setCustNotes] = useState("");
   const [sendingQuote, setSendingQuote] = useState(false);
   const [quoteSuccess, setQuoteSuccess] = useState(false);
+
 
   useEffect(() => {
     if (slug) fetchStorefront();
@@ -206,26 +218,61 @@ export default function PublicDigitalStorefrontPage() {
               </div>
 
               {/* PRIMARY ACTION CTAS */}
-              <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
+              <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+                <FavoriteButton
+                  businessId={profile.id}
+                  businessSlug={profile.slug}
+                  businessName={profile.businessName}
+                  variant="button"
+                  size="md"
+                  className="py-3 px-4 shadow-sm"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setIsShareDrawerOpen(true)}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-extrabold rounded-2xl text-xs transition-all border border-stone-200 dark:border-stone-700"
+                >
+                  <Share2 className="w-4 h-4 text-emerald-600" /> Share Link
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsQrModalOpen(true)}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-extrabold rounded-2xl text-xs transition-all border border-stone-200 dark:border-stone-700"
+                >
+                  <QrCode className="w-4 h-4 text-emerald-600" /> QR Code
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsPromoFlyerOpen(true)}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-extrabold rounded-2xl text-xs transition-all border border-stone-200 dark:border-stone-700"
+                >
+                  <ImageIcon className="w-4 h-4 text-emerald-600" /> Promo Flyer
+                </button>
+
                 <button
                   type="button"
                   onClick={() => handleWhatsAppClick()}
-                  className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs shadow-lg shadow-emerald-600/30 transition-all"
+                  className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs shadow-lg shadow-emerald-600/30 transition-all"
                 >
-                  <MessageSquare className="w-4 h-4" /> Chat on WhatsApp
+                  <MessageSquare className="w-4 h-4" /> WhatsApp
                 </button>
+
                 <a
                   href={`tel:${profile.phone}`}
-                  className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-stone-900 dark:bg-white text-white dark:text-stone-900 font-bold rounded-2xl text-xs hover:opacity-90 transition-all"
+                  className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-3 bg-stone-900 dark:bg-white text-white dark:text-stone-900 font-bold rounded-2xl text-xs hover:opacity-90 transition-all"
                 >
-                  <PhoneCall className="w-4 h-4" /> Call Business
+                  <PhoneCall className="w-4 h-4" /> Call
                 </a>
+
                 <button
                   type="button"
                   onClick={() => setIsQuoteModalOpen(true)}
-                  className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white font-bold rounded-2xl text-xs hover:bg-stone-200 transition-all"
+                  className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white font-bold rounded-2xl text-xs hover:bg-stone-200 transition-all border border-stone-200 dark:border-stone-700"
                 >
-                  Request Custom Quote
+                  Request Quote
                 </button>
               </div>
             </div>
@@ -704,6 +751,39 @@ export default function PublicDigitalStorefrontPage() {
           </form>
         </div>
       )}
+
+      {/* Growth Toolkit Modals */}
+      <ShareDrawerModal
+        isOpen={isShareDrawerOpen}
+        onClose={() => setIsShareDrawerOpen(false)}
+        businessName={profile.businessName}
+        slug={profile.slug}
+        zone={profile.zone}
+        tagline={profile.tagline}
+      />
+
+      <QrCodeGeneratorModal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        businessName={profile.businessName}
+        slug={profile.slug}
+        zone={profile.zone}
+        verificationStatus={profile.verificationStatus}
+      />
+
+      <DigitalPromoFlyerModal
+        isOpen={isPromoFlyerOpen}
+        onClose={() => setIsPromoFlyerOpen(false)}
+        businessName={profile.businessName}
+        slug={profile.slug}
+        category={profile.businessType}
+        zone={profile.zone}
+        verificationStatus={profile.verificationStatus}
+        ratingAverage={profile.ratingAverage}
+        reviewsCount={profile.reviewsCount}
+        topItems={profile.products?.map((p: any) => ({ title: p.title, price: p.price })) || []}
+      />
     </div>
   );
 }
+

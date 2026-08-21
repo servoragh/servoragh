@@ -173,7 +173,7 @@ export function UnifiedEcommerceSearch({
           onSubmit={handleFormSubmit}
           className={`flex items-center bg-stone-100 dark:bg-stone-800 border ${
             isOpen ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-stone-300 dark:border-stone-700"
-          } rounded-full h-10 px-2 transition-all duration-200 relative z-30 w-full`}
+          } rounded-full h-10 px-1.5 transition-all duration-200 relative z-30 w-full overflow-hidden`}
         >
           <CustomDropdown
             options={[
@@ -184,10 +184,10 @@ export function UnifiedEcommerceSearch({
             ]}
             value={scope}
             onChange={(val) => setScope(val as any)}
-            buttonClassName="border-0 bg-transparent text-stone-800 dark:text-stone-200 px-1.5 hover:bg-transparent text-xs shrink-0 font-bold"
+            buttonClassName="border-0 bg-transparent text-stone-800 dark:text-stone-200 px-1 hover:bg-transparent text-xs shrink-0 font-bold"
           />
 
-          <div className="h-4 w-px bg-stone-300 dark:bg-stone-700 mx-1 shrink-0" />
+          <div className="h-4 w-px bg-stone-300 dark:bg-stone-700 mx-0.5 shrink-0" />
 
           <div
             className="flex items-center gap-1.5 flex-1 min-w-0 px-1 cursor-text"
@@ -229,7 +229,7 @@ export function UnifiedEcommerceSearch({
 
           <button
             type="submit"
-            className="px-3.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full transition shrink-0 shadow-xs ml-1 cursor-pointer"
+            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full transition shrink-0 shadow-xs ml-1 cursor-pointer whitespace-nowrap"
           >
             Search
           </button>

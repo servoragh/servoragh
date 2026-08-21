@@ -15,6 +15,7 @@ model User {
   passwordHash     String
   name             String
   role             String            @default("CUSTOMER") // CUSTOMER, PROVIDER, ADMIN
+  adminRole        String?           @default("MASTER_ADMIN") // MASTER_ADMIN, OPERATIONS_ADMIN, VERIFICATION_ADMIN, FINANCE_ADMIN, SUPPORT_ADMIN, MODERATOR
   avatarUrl        String?
   isPhoneVerified  Boolean           @default(false)
   referralCode     String?           @unique
@@ -46,6 +47,10 @@ model User {
   adminCustomerNotes    AdminCustomerNote[]   @relation("AdminNotes")
   productListings       ProductListing[]      @relation("UserListings")
   approvedProducts      ProductListing[]      @relation("ApprovedProducts")
+  favorites             BusinessFavorite[]
+  emailLogs             EmailLog[]
+  deliveryProviderProfile DeliveryProviderProfile?
+  customerDeliveries    DeliveryRequest[]     @relation("CustomerDeliveries")
 }
 
 model ProviderProfile {
@@ -81,15 +86,39 @@ model ProviderProfile {
 }
 
 model Category {
-  id          String    @id @default(uuid())
-  name        String    @unique
-  slug        String    @unique
-  description String
-  icon        String
-  featured    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
+  id                      String        @id @default(uuid())
+  name                    String        @unique
+  slug                    String        @unique
+  description             String
+  icon                    String
+  capabilities            String        @default("[\"SERVICES\"]") // JSON string array of allowed capabilities
+  verificationRequirement String        @default("NONE") // NONE, ID_VERIFIED, BUSINESS_LICENSE, PROFESSIONAL_LICENSE
+  disclaimerText          String?       // Legal / Regulatory disclaimer text (e.g. for Health/Legal)
+  displayOrder            Int           @default(0)
+  isActive                Boolean       @default(true)
+  featured                Boolean       @default(false)
+  createdAt               DateTime      @default(now())
 
-  services    Service[]
+  services                Service[]
+  subcategories           Subcategory[]
+  offers                  UniversalOffer[]
+}
+
+model Subcategory {
+  id           String    @id @default(uuid())
+  categoryId   String
+  category     Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name         String
+  slug         String    @unique
+  description  String?
+  icon         String?
+  displayOrder Int       @default(0)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
+  offers       UniversalOffer[]
+
+  @@index([categoryId])
 }
 
 model Service {
@@ -799,6 +828,12 @@ model BusinessProfile {
   ratingAverage     Float              @default(0.0)
   reviewsCount      Int                @default(0)
 
+  favoritesCount    Int                @default(0)
+  sharesCount       Int                @default(0)
+  qrScansCount      Int                @default(0)
+
+  favoritedBy       BusinessFavorite[]
+
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -894,6 +929,395 @@ model SearchQueryLog {
   @@index([resultCount])
   @@index([createdAt])
 }
+
+model BusinessFavorite {
+  id                 String          @id @default(cuid())
+  userId             String
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId         String
+  business           BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  notifyOnNewListing Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+
+  @@unique([userId, businessId])
+  @@index([userId])
+  @@index([businessId])
+}
+
+// =========================================================================
+// FULL DELIVERY MARKETPLACE PLATFORM SUBSYSTEM MODELS
+// =========================================================================
+
+model DeliveryProviderProfile {
+  id                     String              @id @default(cuid())
+  userId                 String              @unique
+  user                   User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Verification Workflow
+  verificationStatus     String              @default("PENDING") // NOT_STARTED, SUBMITTED, UNDER_REVIEW, APPROVED, REJECTED, SUSPENDED
+  rejectionReason        String?
+  idType                 String?             // GHANA_CARD, PASSPORT, DRIVERS_LICENSE
+  idNumber               String?
+  idDocumentUrl          String?
+  selfieUrl              String?
+  emergencyContactName   String?
+  emergencyContactPhone  String?
+  dateOfBirth            DateTime?
+  residentialAddress     String?
+  
+  // Live Status & GPS Location
+  isOnline               Boolean             @default(false)
+  currentLatitude        Float?
+  currentLongitude       Float?
+  lastLocationUpdate     DateTime?
+  activeVehicleId        String?
+  
+  // Performance & Financial Metrics
+  ratingAverage          Float               @default(5.0)
+  ratingCount            Int                 @default(0)
+  completedDeliveriesCount Int               @default(0)
+  cancelledDeliveriesCount Int               @default(0)
+  walletBalance          Decimal             @default(0.0) @db.Decimal(12, 2)
+  pendingBalance         Decimal             @default(0.0) @db.Decimal(12, 2)
+  totalEarnings          Decimal             @default(0.0) @db.Decimal(12, 2)
+  
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  vehicles               DeliveryVehicle[]
+  assignedDeliveries     DeliveryRequest[]   @relation("AssignedProviderDeliveries")
+  withdrawals            DeliveryWithdrawal[]
+  ratings                DeliveryRating[]    @relation("ProviderRatings")
+
+  @@index([verificationStatus, isOnline])
+}
+
+model DeliveryVehicle {
+  id                   String                  @id @default(cuid())
+  providerId           String
+  provider             DeliveryProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  
+  vehicleType          String                  // BICYCLE, MOTORCYCLE, TRICYCLE, CAR, PICKUP, VAN, TRUCK
+  make                 String
+  model                String
+  year                 Int?
+  plateNumber          String?
+  color                String?
+  photoUrl             String?
+  registrationDocUrl   String?
+  insuranceDocUrl      String?
+  verificationStatus   String                  @default("PENDING") // PENDING, APPROVED, REJECTED
+  rejectionReason      String?
+  
+  createdAt            DateTime                @default(now())
+
+  @@index([providerId, vehicleType])
+}
+
+model DeliveryRequest {
+  id                   String                   @id @default(cuid())
+  trackingNumber       String                   @unique
+  customerId           String
+  customer             User                     @relation("CustomerDeliveries", fields: [customerId], references: [id], onDelete: Cascade)
+  businessAccountId    String?
+  batchId              String?
+  
+  // Pickup Details
+  pickupAddress        String
+  pickupLatitude       Float
+  pickupLongitude      Float
+  pickupContactName    String
+  pickupContactPhone   String
+  
+  // Destination Details
+  destinationAddress   String
+  destinationLatitude  Float
+  destinationLongitude Float
+  recipientName        String
+  recipientPhone       String
+  
+  // Package Specifications
+  packageCategory      String                   // DOCUMENTS, FOOD, CLOTHING, ELECTRONICS, GROCERIES, HOUSEHOLD, BUSINESS_GOODS, AGRICULTURAL, OTHER
+  packageDescription   String
+  packageWeightKg      Float                    @default(1.0)
+  packageSize          String                   @default("MEDIUM") // SMALL, MEDIUM, LARGE, HEAVY_BULK
+  packageQuantity      Int                      @default(1)
+  specialInstructions  String?
+  prohibitedItemsConfirmed Boolean              @default(true)
+  requiredVehicleType  String                   @default("ANY") // ANY, BICYCLE, MOTORCYCLE, TRICYCLE, CAR, PICKUP, VAN, TRUCK
+  
+  // Matching & Assignment
+  assignedProviderId   String?
+  assignedProvider     DeliveryProviderProfile? @relation("AssignedProviderDeliveries", fields: [assignedProviderId], references: [id], onDelete: SetNull)
+  assignedVehicleId    String?
+  
+  // Financial Ledger & Rates
+  estimatedDistanceKm  Float
+  estimatedDurationMins Int
+  deliveryFee          Decimal                  @db.Decimal(12, 2)
+  platformCommission   Decimal                  @db.Decimal(12, 2)
+  providerEarnings     Decimal                  @db.Decimal(12, 2)
+  paymentMethod        String                   @default("MOBILE_MONEY") // MOBILE_MONEY, CARD, CASH, WALLET
+  paymentStatus        String                   @default("PENDING") // PENDING, PAID, ESCROW_HELD, CASH_ON_DELIVERY
+  
+  // Security & Proof of Delivery OTP
+  deliveryPin          String                   // 4-digit PIN OTP
+  status               String                   @default("REQUESTED") // REQUESTED, SEARCHING_FOR_PROVIDER, PROVIDER_ASSIGNED, PROVIDER_ARRIVING, AT_PICKUP, PACKAGE_COLLECTED, IN_TRANSIT, ARRIVING_AT_DESTINATION, DELIVERED, COMPLETED, CANCELLED_BY_CUSTOMER, CANCELLED_BY_PROVIDER, FAILED, DISPUTED
+  proofPhotoUrl        String?
+  cancellationReason   String?
+  
+  // Lifecycle Timestamps
+  acceptedAt           DateTime?
+  collectedAt          DateTime?
+  deliveredAt          DateTime?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  statusHistory        DeliveryStatusLog[]
+  messages             DeliveryMessage[]
+  dispute              DeliveryDispute?
+  rating               DeliveryRating?
+
+  @@index([status, customerId])
+  @@index([assignedProviderId, status])
+}
+
+model DeliveryStatusLog {
+  id                   String           @id @default(cuid())
+  deliveryId           String
+  delivery             DeliveryRequest  @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  status               String
+  note                 String?
+  actorId              String?
+  actorRole            String?          // CUSTOMER, PROVIDER, ADMIN, SYSTEM
+  createdAt            DateTime         @default(now())
+
+  @@index([deliveryId])
+}
+
+model DeliveryMessage {
+  id                   String           @id @default(cuid())
+  deliveryId           String
+  delivery             DeliveryRequest  @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  senderId             String
+  senderName           String
+  text                 String
+  isRead               Boolean          @default(false)
+  createdAt            DateTime         @default(now())
+
+  @@index([deliveryId])
+}
+
+model DeliveryPricingRule {
+  id                   String           @id @default(cuid())
+  city                 String           @default("Tamale")
+  country              String           @default("Ghana")
+  vehicleType          String           // BICYCLE, MOTORCYCLE, TRICYCLE, CAR, PICKUP, VAN, TRUCK
+  baseFee              Float            @default(10.0)
+  perKmFee             Float            @default(2.5)
+  minFee               Float            @default(10.0)
+  weightFeePerKg       Float            @default(1.5)
+  commissionPercentage Float            @default(15.0)
+  isActive             Boolean          @default(true)
+  updatedAt            DateTime         @updatedAt
+
+  @@unique([city, vehicleType])
+}
+
+model DeliveryWithdrawal {
+  id                   String                  @id @default(cuid())
+  providerId           String
+  provider             DeliveryProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  amount               Decimal                 @db.Decimal(12, 2)
+  paymentMethod        String                  // MOBILE_MONEY, BANK_TRANSFER
+  accountName          String
+  accountNumber        String
+  networkOrBank        String                  // MTN, Telecel, AT, GCB, Ecobank
+  status               String                  @default("PENDING") // PENDING, PROCESSING, COMPLETED, REJECTED
+  adminNote            String?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  @@index([providerId, status])
+}
+
+model DeliveryRating {
+  id                   String                  @id @default(cuid())
+  deliveryId           String                  @unique
+  delivery             DeliveryRequest         @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  customerId           String
+  providerId           String
+  provider             DeliveryProviderProfile @relation("ProviderRatings", fields: [providerId], references: [id], onDelete: Cascade)
+  rating               Int                     // 1 to 5
+  comment              String?
+  createdAt            DateTime                @default(now())
+}
+
+model DeliveryDispute {
+  id                   String           @id @default(cuid())
+  deliveryId           String           @unique
+  delivery             DeliveryRequest  @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  raisedBy             String           // CUSTOMER, PROVIDER
+  reason               String
+  details              String
+  status               String           @default("OPEN") // OPEN, UNDER_REVIEW, RESOLVED_REFUND, RESOLVED_DISMISSED
+  resolutionNote       String?
+  createdAt            DateTime         @default(now())
+}
+
+model DeliveryBatch {
+  id                   String           @id @default(cuid())
+  businessUserId       String
+  title                String
+  totalItems           Int
+  status               String           @default("CREATED")
+  createdAt            DateTime         @default(now())
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   // e.g. "true", "false", JSON string
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+}
+
+model SystemIncident {
+  id           String    @id @default(cuid())
+  serviceName  String    // e.g. "Database", "Mobile Money", "SMS Gateway"
+  severity     String    @default("WARNING") // CRITICAL, WARNING, INFO
+  title        String
+  errorMessage String
+  failureCount Int       @default(1)
+  status       String    @default("ACTIVE") // ACTIVE, INVESTIGATING, RESOLVED
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+enum EmailStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+enum EmailCategory {
+  AUTHENTICATION
+  GUEST_VERIFICATION
+  MARKETPLACE
+  SERVICE_GIG
+  RENTAL
+  SUPPORT_DISPUTE
+  ADMIN_ALERT
+  SECURITY
+  SYSTEM_NOTIFICATIONS
+}
+
+model EmailLog {
+  id                String        @id @default(cuid())
+  recipientEmail    String
+  recipientName     String?
+  senderEmail       String
+  subject           String
+  templateName      String
+  category          EmailCategory @default(SYSTEM_NOTIFICATIONS)
+  status            EmailStatus   @default(QUEUED)
+  provider          String        // "resend", "brevo", "smtp", "mock"
+  providerMessageId String?       // External API message ID
+  
+  // Payload & Troubleshooting
+  templateData      String?       // JSON string of variables passed
+  errorMessage      String?
+  retryCount        Int           @default(0)
+  
+  // Relations
+  userId            String?
+  user              User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  sentAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([recipientEmail])
+  @@index([status, category])
+  @@index([createdAt])
+}
+
+model UniversalOffer {
+  id                    String        @id @default(cuid())
+  providerId            String
+  categoryId            String
+  category              Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  subcategoryId         String?
+  subcategory           Subcategory?  @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  
+  title                 String
+  slug                  String        @unique
+  description           String        @db.Text
+  
+  // Transaction Type: PRODUCT_PURCHASE, SERVICE_BOOKING, QUOTE_REQUEST, RENTAL, APPOINTMENT, DELIVERY_REQUEST, EVENT_TICKET, COURSE_ENROLLMENT, SUBSCRIPTION, CONSULTATION, ORDER, CUSTOM_REQUEST
+  transactionType       String        @default("SERVICE_BOOKING")
+  
+  price                 Decimal       @db.Decimal(12, 2)
+  compareAtPrice        Decimal?      @db.Decimal(12, 2)
+  pricingUnit           String        @default("FIXED") // FIXED, PER_HOUR, PER_DAY, PER_ITEM, QUOTE_BASED
+  currency              String        @default("GHS")
+  
+  imagesJson            String        @default("[]") // JSON string array of image URLs
+  locationCity          String        @default("Tamale")
+  locationRegion        String        @default("Northern Region")
+  serviceRadiusKm       Float         @default(25.0)
+  isOnlineOnly          Boolean       @default(false)
+  stockQuantity         Int           @default(1)
+  availabilityJson      String?       // JSON schedule string
+  verificationRequired  String        @default("NONE")
+  
+  status                String        @default("ACTIVE") // ACTIVE, PENDING_REVIEW, ARCHIVED
+  ratingAverage         Float         @default(0.0)
+  reviewCount           Int           @default(0)
+  
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  transactions          UniversalTransaction[]
+
+  @@index([categoryId, transactionType])
+  @@index([locationCity, status])
+}
+
+model UniversalTransaction {
+  id                    String          @id @default(cuid())
+  transactionNumber     String          @unique
+  customerId            String
+  providerId            String
+  offerId               String?
+  offer                 UniversalOffer? @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  
+  transactionType       String          // PRODUCT_PURCHASE, SERVICE_BOOKING, QUOTE_REQUEST, RENTAL, APPOINTMENT, DELIVERY_REQUEST, EVENT_TICKET, SUBSCRIPTION
+  status                String          @default("CREATED") // CREATED, PAYMENT_PENDING, CONFIRMED, PROCESSING, READY, DISPATCHED, DELIVERED, COMPLETED, CANCELLED, REFUNDED, DISPUTED
+  
+  amount                Decimal         @db.Decimal(12, 2)
+  commissionAmount      Decimal         @default(0.00) @db.Decimal(12, 2)
+  platformFee           Decimal         @default(0.00) @db.Decimal(12, 2)
+  paymentMethod         String          @default("MOBILE_MONEY") // MOBILE_MONEY, CARD, CASH, WALLET
+  paymentStatus         String          @default("PENDING") // PENDING, PAID, REFUNDED, ESCROW_HELD
+  
+  detailsJson           String?         @db.Text // Dynamic payload JSON string (dates, addresses, notes)
+  
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([customerId])
+  @@index([providerId, status])
+}
+
+
+
+
+
 
 
 

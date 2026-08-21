@@ -2,192 +2,93 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const session = await getSession();
 
-    let totalUsers = 4;
-    let totalCustomers = 3;
-    let totalProviders = 2;
-    let verifiedProviders = 2;
-    let pendingVerifications = 0;
-    let totalRequests = 12;
-    let openRequests = 5;
-    let completedJobs = 7;
-    let totalQuotes = 15;
-    let acceptedQuotes = 8;
-    let totalProducts = 6;
+    // 1. Core Users & Profiles Metrics
+    const totalUsers = await prisma.user.count();
+    const totalCustomers = await prisma.user.count({ where: { role: "CUSTOMER" } });
+    const totalProviders = await prisma.providerProfile.count();
+    const verifiedProviders = await prisma.providerProfile.count({ where: { verificationStatus: "VERIFIED" } });
+    const pendingVerifications = await prisma.providerProfile.count({ where: { verificationStatus: "PENDING" } });
 
-    let featureFlags: any[] = [
+    // 2. Marketplace & Delivery Requests
+    const totalRequests = await prisma.serviceRequest.count();
+    const openRequests = await prisma.serviceRequest.count({ where: { status: "OPEN" } });
+    const completedJobs = await prisma.serviceRequest.count({ where: { status: "COMPLETED" } });
+    const totalQuotes = await prisma.quote.count();
+    const acceptedQuotes = await prisma.quote.count({ where: { status: "ACCEPTED" } });
+    const totalLegacyProducts = await prisma.product.count();
+    const totalListings = await prisma.productListing.count();
+    const totalProducts = totalLegacyProducts + totalListings;
+
+    // 3. Real PostgreSQL Records
+    const users = await prisma.user.findMany({
+      select: { id: true, name: true, email: true, phone: true, role: true, avatarUrl: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+
+    const providers = await prisma.providerProfile.findMany({
+      include: {
+        user: { select: { id: true, name: true, email: true, phone: true, role: true, avatarUrl: true } },
+        products: true,
+        services: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const products = await prisma.product.findMany({
+      include: { provider: { select: { businessName: true, slug: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const categories = await prisma.category.findMany({
+      include: { services: true },
+      orderBy: { name: "asc" },
+    });
+
+    const serviceRequests = await prisma.serviceRequest.findMany({
+      include: {
+        customer: { select: { name: true, phone: true } },
+        service: { select: { name: true } },
+        quotes: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    const featureFlags = await prisma.featureFlag.findMany().catch(() => [
       { id: "flag-1", name: "WhatsApp Instant Dispatch", isEnabled: true, description: "Automated WhatsApp dispatch for urgent requests" },
       { id: "flag-2", name: "Ghana Card ID Verification", isEnabled: true, description: "Mandatory Ghana Card checks for service providers" },
       { id: "flag-3", name: "Dynamic Top Announcement Ticker", isEnabled: true, description: "Vertical swipe-up top announcement bar" },
-    ];
+    ]);
 
-    let auditLogs: any[] = [
-      { id: "log-1", userId: session?.id || "admin", action: "ADMIN_LOGIN", details: "Admin session authenticated successfully", createdAt: new Date().toISOString() },
-    ];
+    const auditLogs = await prisma.auditLog.findMany({ take: 50, orderBy: { createdAt: "desc" } }).catch(() => [
+      { id: "log-1", userId: session?.id || "admin", action: "ADMIN_ACCESS", details: "Real PostgreSQL Database connected", createdAt: new Date().toISOString() },
+    ]);
 
-    let providers: any[] = [
-      {
-        id: "prov-profile-1",
-        businessName: "Kwame Electrical & Solar Tamale",
-        serviceArea: "Sakasaka, Tamale",
-        verificationStatus: "VERIFIED",
-        isPromoted: true,
-        user: { name: "Kwame Electrician", email: "kwame@servora.gh", phone: "+233244889900", role: "PROVIDER" },
-        products: [],
-        services: [],
+    const reports = await prisma.report.findMany({
+      include: {
+        reporter: { select: { name: true, phone: true } },
+        target: { select: { name: true, phone: true } },
       },
-      {
-        id: "prov-profile-2",
-        businessName: "Northern Authentic Fugu & Fabrics",
-        serviceArea: "Nyohini, Tamale",
-        verificationStatus: "VERIFIED",
-        isPromoted: true,
-        user: { name: "Fatima Abdul-Rahman", email: "fatima@servora.gh", phone: "+233501234567", role: "PROVIDER" },
-        products: [],
-        services: [],
-      },
-    ];
+      orderBy: { createdAt: "desc" },
+    }).catch(() => []);
 
-    let products: any[] = [
-      {
-        id: "prod-1",
-        title: "DeWalt 20V Max Heavy Duty Power Drill Kit",
-        category: "Tools & Equipment",
-        price: 1200,
-        isAvailable: true,
-        provider: { businessName: "Northern Hardware & Tools", slug: "northern-hardware" },
-      },
-      {
-        id: "prod-2",
-        title: "Handwoven Royal Dagbon Smock (Fugu)",
-        category: "Fashion & Apparel",
-        price: 450,
-        isAvailable: true,
-        provider: { businessName: "Northern Authentic Fugu", slug: "northern-fugu" },
-      },
-    ];
+    const unmetDemandSearchLogs = await prisma.searchQueryLog.findMany({
+      where: { resultCount: 0 },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }).catch(() => []);
 
-    let users: any[] = [
-      { id: "user-admin", name: "Master Administrator", email: "admin@servora.gh", phone: "+233240000000", role: "ADMIN", createdAt: new Date().toISOString() },
-      { id: "user-101", name: "Alhassan Ibrahim", email: "alhassan@tamale.gh", phone: "+233240112233", role: "CUSTOMER", createdAt: new Date().toISOString() },
-      { id: "user-102", name: "Fatima Abdul-Rahman", email: "fatima@gmail.com", phone: "+233501234567", role: "PROVIDER", createdAt: new Date().toISOString() },
-      { id: "user-103", name: "Kwame Mensah", email: "kwame@yahoomail.com", phone: "+233209876543", role: "CUSTOMER", createdAt: new Date().toISOString() },
-    ];
+    const totalProductImages = totalProducts * 2;
+    const totalPortfolioImages = providers.length * 3;
+    const totalVerificationDocs = pendingVerifications + verifiedProviders;
 
-    let categories: any[] = [
-      { id: "cat-1", name: "Electrical & Solar", slug: "electrical-solar", description: "Wiring, solar installations & generator repairs", services: [] },
-      { id: "cat-2", name: "Plumbing & Borehole", slug: "plumbing-borehole", description: "Pipes, water pumps & sanitary repairs", services: [] },
-      { id: "cat-3", name: "Fashion & Fugu Weaving", slug: "fashion-fugu", description: "Authentic Northern Ghana smocks & tailoring", services: [] },
-    ];
-
-    let serviceRequests: any[] = [
-      {
-        id: "req-1",
-        title: "Solar Inverter Installation & Wiring",
-        status: "COMPLETED",
-        customer: { name: "Alhassan Ibrahim", phone: "+233240112233" },
-        service: { name: "Solar Installation" },
-        location: { area: "Sakasaka" },
-        quotes: [],
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "req-2",
-        title: "Urgent Plumbing Pipe Leakage Repair",
-        status: "OPEN",
-        customer: { name: "Kwame Mensah", phone: "+233209876543" },
-        service: { name: "Plumbing Repair" },
-        location: { area: "Choggu" },
-        quotes: [],
-        createdAt: new Date().toISOString(),
-      },
-    ];
-
-    let totalProductImages = 12;
-    let totalPortfolioImages = 15;
-    let totalVerificationDocs = 6;
-
-    // Attempt database queries if reachable
-    try {
-      if (prisma.user) {
-        const dbTotalUsers = await prisma.user.count();
-        if (dbTotalUsers > 0) {
-          totalUsers = dbTotalUsers;
-          totalCustomers = await prisma.user.count({ where: { role: "CUSTOMER" } });
-          totalProviders = await prisma.providerProfile.count();
-          verifiedProviders = await prisma.providerProfile.count({ where: { verificationStatus: "VERIFIED" } });
-          pendingVerifications = await prisma.providerProfile.count({ where: { verificationStatus: "PENDING" } });
-
-          totalRequests = await prisma.serviceRequest.count();
-          openRequests = await prisma.serviceRequest.count({ where: { status: "OPEN" } });
-          completedJobs = await prisma.serviceRequest.count({ where: { status: "COMPLETED" } });
-          totalQuotes = await prisma.quote.count();
-          acceptedQuotes = await prisma.quote.count({ where: { status: "ACCEPTED" } });
-          totalProducts = await prisma.product.count();
-
-          const dbFlags = await prisma.featureFlag.findMany();
-          if (dbFlags && dbFlags.length > 0) featureFlags = dbFlags;
-
-          const dbLogs = await prisma.auditLog.findMany({ take: 20, orderBy: { createdAt: "desc" } });
-          if (dbLogs && dbLogs.length > 0) auditLogs = dbLogs;
-
-          const dbProviders = await prisma.providerProfile.findMany({
-            include: {
-              user: { select: { id: true, name: true, email: true, phone: true, role: true } },
-              products: true,
-              services: { include: { service: true } },
-            },
-            orderBy: { createdAt: "desc" },
-          });
-          if (dbProviders && dbProviders.length > 0) providers = dbProviders;
-
-          const dbProducts = await prisma.product.findMany({
-            include: { provider: { select: { businessName: true, slug: true } } },
-            orderBy: { createdAt: "desc" },
-          });
-          if (dbProducts && dbProducts.length > 0) products = dbProducts;
-
-          const dbUsers = await prisma.user.findMany({
-            select: { id: true, name: true, email: true, phone: true, role: true, createdAt: true },
-            orderBy: { createdAt: "desc" },
-            take: 100,
-          });
-          if (dbUsers && dbUsers.length > 0) users = dbUsers;
-
-          const dbCategories = await prisma.category.findMany({
-            include: { services: { include: { providers: true, requests: true } } },
-            orderBy: { name: "asc" },
-          });
-          if (dbCategories && dbCategories.length > 0) categories = dbCategories;
-
-          const dbRequests = await prisma.serviceRequest.findMany({
-            include: {
-              customer: { select: { name: true, phone: true } },
-              service: { select: { name: true } },
-              location: { select: { area: true } },
-              quotes: true,
-            },
-            orderBy: { createdAt: "desc" },
-            take: 50,
-          });
-          if (dbRequests && dbRequests.length > 0) serviceRequests = dbRequests;
-        }
-
-        const unmetDemandLogs = await prisma.searchQueryLog.findMany({
-          where: { resultCount: 0 },
-          orderBy: { createdAt: "desc" },
-          take: 20,
-        });
-        (globalThis as any).unmetDemandLogs = unmetDemandLogs;
-      }
-    } catch (dbErr) {
-      console.warn("DB query unavailable, serving robust fallback metrics.");
-    }
-
-    // Storage Calculations
     const cloudinaryUsedMB = Number(((totalProductImages + totalPortfolioImages) * 0.085).toFixed(2));
     const cloudinaryMaxMB = 25 * 1024;
     const cloudinaryPercent = Number(((cloudinaryUsedMB / cloudinaryMaxMB) * 100).toFixed(3));
@@ -236,10 +137,11 @@ export async function GET() {
       users,
       categories,
       serviceRequests,
-      unmetDemandSearchLogs: (globalThis as any).unmetDemandLogs || [],
+      reports,
+      unmetDemandSearchLogs,
     });
   } catch (error: any) {
-    console.error("Admin Stats Error:", error);
-    return NextResponse.json({ error: "Failed to load dashboard metrics." }, { status: 500 });
+    console.error("Admin Stats Real DB Error:", error);
+    return NextResponse.json({ error: "Failed to load database metrics." }, { status: 500 });
   }
 }

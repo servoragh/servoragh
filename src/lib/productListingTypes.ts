@@ -27,6 +27,7 @@ export interface ProductListingItem {
   
   // Pricing
   price: number;
+  originalPrice?: number | null;
   isNegotiable: boolean;
   currency: string;
   
@@ -41,6 +42,7 @@ export interface ProductListingItem {
   sellerId?: string | null;
   sellerName?: string | null;
   sellerPhone?: string | null;
+  sellerSlug?: string | null;
   
   // Guest Seller Specific
   guestName?: string | null;
@@ -75,6 +77,7 @@ export interface CreateListingPayload {
   subCategory?: string;
   condition: ItemCondition;
   price: number;
+  originalPrice?: number;
   isNegotiable?: boolean;
   currency?: string;
   images: string[];

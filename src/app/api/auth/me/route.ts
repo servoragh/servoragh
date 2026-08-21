@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const session = await getSession();
@@ -21,7 +23,6 @@ export async function GET() {
             role: true,
             avatarUrl: true,
             isPhoneVerified: true,
-            referralCode: true,
             providerProfile: {
               select: {
                 id: true,

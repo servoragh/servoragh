@@ -352,19 +352,41 @@ export function AdminProductModerationHub({ isDark = false }: AdminProductModera
                   </div>
 
                   {/* Seller Details & Contact Outreach Panel */}
-                  <div className="w-full sm:w-64 p-3.5 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-2xl text-xs space-y-2 shrink-0">
-                    <span className="text-[10px] font-mono uppercase text-stone-400 font-bold block">
+                  <div className="w-full sm:w-64 p-3.5 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-2xl text-xs space-y-2 shrink-0 shadow-xs">
+                    <span className="text-[10px] font-mono uppercase text-stone-400 font-bold block tracking-wider">
                       Seller Contact Info
                     </span>
-                    <div className="font-extrabold text-stone-900 dark:text-white">
-                      {isGuest ? item.guestName : item.sellerName}
-                    </div>
+
+                    {/* Clickable Profile Title */}
+                    <a
+                      href={`/biz/${item.sellerSlug || "seller-profile"}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-black text-amber-600 dark:text-amber-400 hover:underline transition group"
+                      title="Open Public Digital Storefront Profile"
+                    >
+                      <span className="truncate max-w-[170px]">{isGuest ? item.guestName || item.sellerName : item.sellerName}</span>
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0 group-hover:scale-110 transition-transform" />
+                    </a>
+
                     <div className="text-[11px] text-stone-500 font-mono">
                       Phone: {isGuest ? item.guestPhone : item.sellerPhone}
                     </div>
 
+                    {/* Dedicated View Profile Action Link Button */}
+                    <div className="pt-1">
+                      <a
+                        href={`/biz/${item.sellerSlug || "seller-profile"}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full py-1.5 px-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black rounded-xl text-[10px] flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer"
+                      >
+                        <ExternalLink className="w-3 h-3" /> View Public Storefront Profile ↗
+                      </a>
+                    </div>
+
                     {/* Direct Outreach Buttons */}
-                    <div className="flex items-center gap-1.5 pt-1">
+                    <div className="flex items-center gap-1.5 pt-1 border-t border-stone-200/60 dark:border-stone-800">
                       <a
                         href={`https://wa.me/${(isGuest ? item.guestWhatsApp || item.guestPhone : item.sellerPhone)?.replace(/[^0-9]/g, "")}`}
                         target="_blank"
@@ -375,7 +397,7 @@ export function AdminProductModerationHub({ isDark = false }: AdminProductModera
                       </a>
                       <a
                         href={`tel:${isGuest ? item.guestPhone : item.sellerPhone}`}
-                        className="py-1.5 px-2 bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold rounded-xl text-[10px] flex items-center justify-center gap-1 cursor-pointer"
+                        className="py-1.5 px-2.5 bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold rounded-xl text-[10px] flex items-center justify-center gap-1 cursor-pointer hover:bg-stone-300"
                       >
                         <Phone className="w-3 h-3" /> Call
                       </a>

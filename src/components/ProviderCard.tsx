@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Star, MapPin, Briefcase, PhoneCall, ShieldCheck } from "lucide-react";
 import { TrustBadge } from "@/components/TrustBadge";
 import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { calculateTrustScore, parseJsonArray, formatGHS } from "@/lib/utils";
 
 export interface ProviderCardProps {
@@ -74,11 +75,18 @@ export function ProviderCard({ provider, onRequestQuote }: ProviderCardProps) {
             </div>
           </div>
 
-          <div className="flex flex-col items-end">
+          <div className="flex flex-col items-end gap-1.5">
             <div className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-xs px-2.5 py-1 rounded-full font-bold border border-emerald-200 dark:border-emerald-800">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
               <span>{trustScore}% Trust</span>
             </div>
+            <FavoriteButton
+              businessId={provider.id}
+              businessSlug={provider.slug}
+              businessName={provider.businessName}
+              variant="icon"
+              size="sm"
+            />
           </div>
         </div>
 

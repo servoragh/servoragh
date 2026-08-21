@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Bot, X, Send, Sparkles, UserCheck, ShieldCheck, Zap, HelpCircle, PhoneCall, ChevronRight } from "lucide-react";
 
 const QUICK_PROMPTS = [
@@ -11,6 +12,9 @@ const QUICK_PROMPTS = [
 ];
 
 export function AIAssistantWidget() {
+  const pathname = usePathname() || "";
+  const [userRole, setUserRole] = useState<string | null>(null);
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ sender: "user" | "bot"; text: string }>>([
     {
@@ -24,8 +28,29 @@ export function AIAssistantWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user?.role) setUserRole(data.user.role);
+      })
+      .catch(() => null);
+  }, []);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  const isAdminOrBusinessRoute =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/business") ||
+    pathname.startsWith("/delivery/provider");
+
+  const isAdminOrBusinessUser =
+    userRole === "ADMIN" || userRole === "BUSINESS" || userRole === "PROVIDER";
+
+  if (isAdminOrBusinessRoute || isAdminOrBusinessUser) {
+    return null;
+  }
 
   async function sendMessage(textToSend: string) {
     if (!textToSend.trim()) return;

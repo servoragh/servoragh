@@ -20,6 +20,7 @@ import {
   Command,
   Activity,
   Zap,
+  Mail,
 } from "lucide-react";
 
 interface AdminCommandPaletteModalProps {
@@ -34,6 +35,8 @@ export function AdminCommandPaletteModal({
   onSelectView,
 }: AdminCommandPaletteModalProps) {
   const [query, setQuery] = useState("");
+  const [dbResults, setDbResults] = useState<any>(null);
+  const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -41,8 +44,33 @@ export function AdminCommandPaletteModal({
       setTimeout(() => inputRef.current?.focus(), 50);
     } else {
       setQuery("");
+      setDbResults(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setDbResults(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setSearching(true);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        if (res.ok && data.results) {
+          setDbResults(data.results);
+        }
+      } catch {
+        console.warn("Command palette search error.");
+      } finally {
+        setSearching(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [query]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -146,6 +174,13 @@ export function AdminCommandPaletteModal({
       keywords: ["storage", "cloud", "cloudflare", "scaleway", "r2", "backups", "media", "capacity", "images"],
     },
     {
+      id: "email",
+      label: "Transactional Email Subsystem & Audit Logs",
+      icon: Mail,
+      category: "Infrastructure",
+      keywords: ["email", "mail", "resend", "brevo", "smtp", "templates", "logs", "otp", "notifications", "transactional"],
+    },
+    {
       id: "flags",
       label: "Monetization & Commission Flags",
       icon: DollarSign,
@@ -201,43 +236,119 @@ export function AdminCommandPaletteModal({
         </div>
 
         {/* Search Results List */}
-        <div className="max-h-80 overflow-y-auto p-2 space-y-1 text-xs">
-          {filteredOptions.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 dark:text-zinc-500 font-medium space-y-2">
-              <p>No matching admin command or view found for "{query}".</p>
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                Try searching for "CRM", "Artisans", "ID Verification", "Tools", or "Settings".
-              </p>
+        <div className="max-h-96 overflow-y-auto p-2 space-y-3 text-xs">
+          {/* Section 1: Navigation Commands */}
+          {filteredOptions.length > 0 && (
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 uppercase font-bold px-2 block">
+                ADMIN SYSTEM COMMANDS & VIEWS
+              </span>
+              {filteredOptions.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      onSelectView(item.id);
+                      onClose();
+                    }}
+                    className="w-full p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition flex items-center justify-between text-left cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition">
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-slate-900 dark:text-zinc-100 block text-xs">
+                          {item.label}
+                        </span>
+                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">
+                          {item.category}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 dark:text-zinc-600 group-hover:text-emerald-500 transition" />
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            filteredOptions.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    onSelectView(item.id);
-                    onClose();
-                  }}
-                  className="w-full p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition flex items-center justify-between text-left cursor-pointer group"
+          )}
+
+          {/* Section 2: Live Database Products & Listings */}
+          {dbResults?.products && dbResults.products.length > 0 && (
+            <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-zinc-800">
+              <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 uppercase font-bold px-2 block">
+                MATCHING PRODUCTS & CLASSIFIED LISTINGS 📦
+              </span>
+              {dbResults.products.slice(0, 5).map((prod: any) => (
+                <a
+                  key={prod.id}
+                  href={`/products/${prod.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={onClose}
+                  className="w-full p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition flex items-center justify-between text-left cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition">
-                      <Icon className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 font-bold flex items-center justify-center shrink-0">
+                      <ShoppingBag className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="font-extrabold text-slate-900 dark:text-zinc-100 block text-xs">
-                        {item.label}
+                      <span className="font-bold text-slate-900 dark:text-white block text-xs line-clamp-1">
+                        {prod.title}
                       </span>
-                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">
-                        {item.category}
+                      <span className="text-[10px] text-emerald-600 font-bold">
+                        GH₵ {prod.price} • {prod.provider?.businessName || "Verified Seller"}
                       </span>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 dark:text-zinc-600 group-hover:text-emerald-500 transition" />
-                </button>
-              );
-            })
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
+                </a>
+              ))}
+            </div>
+          )}
+
+          {/* Section 3: Live Database Business Profiles & Artisans */}
+          {dbResults?.providers && dbResults.providers.length > 0 && (
+            <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-zinc-800">
+              <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 uppercase font-bold px-2 block">
+                MATCHING BUSINESS PROFILES & ARTISANS 🏬
+              </span>
+              {dbResults.providers.slice(0, 5).map((prov: any) => (
+                <a
+                  key={prov.id}
+                  href={`/biz/${prov.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={onClose}
+                  className="w-full p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition flex items-center justify-between text-left cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 font-bold flex items-center justify-center shrink-0">
+                      <Building2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-900 dark:text-white block text-xs">
+                        {prov.businessName}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        📍 {prov.serviceArea || "Tamale"} • {prov.verificationStatus}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-500" />
+                </a>
+              ))}
+            </div>
+          )}
+
+          {filteredOptions.length === 0 && (!dbResults || (!dbResults.products?.length && !dbResults.providers?.length)) && (
+            <div className="p-8 text-center text-slate-400 dark:text-zinc-500 font-medium space-y-2">
+              <p>No matching admin command, view, or product found for "{query}".</p>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                Try searching for "CRM", "Artisans", "ID Verification", "Tools", or item names like "Generator".
+              </p>
+            </div>
           )}
         </div>
 

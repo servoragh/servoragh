@@ -18,6 +18,8 @@ import {
   ChevronRight,
   MessageSquare,
   Sparkles,
+  Heart,
+  Truck,
 } from "lucide-react";
 import { UnifiedEcommerceSearch } from "@/components/UnifiedEcommerceSearch";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -72,12 +74,12 @@ export function Navbar() {
           </Link>
 
           {/* Desktop E-Commerce Omnibox Quick Search */}
-          <div className="hidden md:block flex-1 max-w-sm lg:max-w-md min-w-0 mx-2 lg:mx-4 shrink">
+          <div className="hidden md:block flex-1 max-w-xs lg:max-w-sm xl:max-w-md min-w-[200px] mx-2 lg:mx-4 shrink">
             <UnifiedEcommerceSearch variant="compact" placeholder="Search products or services..." />
           </div>
 
           {/* Navigation Actions */}
-          <div className="hidden lg:flex items-center gap-2 shrink-0">
+          <div className="hidden lg:flex items-center gap-2 lg:gap-3 shrink-0">
             <div className="hidden xl:flex items-center gap-3 mr-1">
               <Link
                 href="/products"
@@ -93,10 +95,24 @@ export function Navbar() {
                 Tool Rentals
               </Link>
               <Link
+                href="/delivery"
+                className="text-xs font-bold text-teal-700 dark:text-teal-400 hover:text-teal-600 flex items-center gap-1 transition"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span>Delivery</span>
+              </Link>
+              <Link
                 href="/community"
                 className="text-xs font-bold text-purple-700 dark:text-purple-400 hover:text-purple-600 transition"
               >
                 Community
+              </Link>
+              <Link
+                href="/account/favorites"
+                className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 flex items-center gap-1 transition"
+              >
+                <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                <span>Saved</span>
               </Link>
             </div>
 
