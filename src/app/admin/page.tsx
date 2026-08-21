@@ -517,9 +517,9 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[calc(100vh-280px)] overflow-y-auto">
               <table className="w-full text-left text-xs min-w-[600px]">
-                <thead className="bg-slate-50 dark:bg-zinc-950 text-slate-500 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200 dark:border-zinc-800">
+                <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-zinc-950 text-slate-500 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200 dark:border-zinc-800 shadow-xs">
                   <tr>
                     <th className="p-4">Business Name</th>
                     <th className="p-4">Service Area</th>
@@ -529,7 +529,7 @@ export default function AdminDashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-zinc-800">
                   {filteredProviders.map((prov: any) => (
-                    <tr key={prov.id} className="hover:bg-slate-50 dark:hover:bg-zinc-850/50">
+                    <tr key={prov.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/60">
                       <td className="p-4 font-bold text-slate-900 dark:text-white">{prov.businessName}</td>
                       <td className="p-4 font-medium text-slate-500">{prov.serviceArea}</td>
                       <td className="p-4">
@@ -623,19 +623,20 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-xs text-xs">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 dark:bg-zinc-950 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200 dark:border-zinc-800">
-                <tr>
-                  <th className="p-4">Request Title</th>
-                  <th className="p-4">Customer Name</th>
-                  <th className="p-4">Location</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-zinc-800">
-                {serviceRequests.map((req: any) => (
-                  <tr key={req.id} className="hover:bg-slate-50 dark:hover:bg-zinc-850/50">
+            <div className="overflow-x-auto max-h-[calc(100vh-280px)] overflow-y-auto">
+              <table className="w-full text-left">
+                <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-zinc-950 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200 dark:border-zinc-800 shadow-xs">
+                  <tr>
+                    <th className="p-4">Request Title</th>
+                    <th className="p-4">Customer Name</th>
+                    <th className="p-4">Location</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-zinc-800">
+                  {serviceRequests.map((req: any) => (
+                    <tr key={req.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/60">
                     <td className="p-4 font-bold text-slate-900 dark:text-white">{req.title}</td>
                     <td className="p-4 text-slate-500 font-medium">{req.customer?.name} ({req.customer?.phone})</td>
                     <td className="p-4 text-slate-500 font-mono">{req.location?.area || "Tamale"}</td>
@@ -657,6 +658,7 @@ export default function AdminDashboardPage() {
             </table>
           </div>
         </div>
+      </div>
       )}
 
       {/* ------------------------------------------------------------- */}

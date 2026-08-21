@@ -380,7 +380,7 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
                           className={`p-2.5 rounded-xl text-left font-bold transition border cursor-pointer ${
                             (isCustomCategory && cat.id === "custom") || selectedServiceId === cat.id
                               ? "bg-emerald-50 dark:bg-emerald-950 border-emerald-500 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300"
-                              : "bg-stone-50 dark:bg-stone-800 border-stone-300 dark:border-stone-800 text-stone-700 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-750 hover:text-stone-900 dark:hover:text-white"
+                              : "bg-stone-50 dark:bg-stone-800 border-stone-300 dark:border-stone-800 text-stone-700 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-white"
                           }`}
                         >
                           {cat.name}

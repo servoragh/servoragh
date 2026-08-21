@@ -2,154 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { tokenizeText, calculateRelevanceScore } from "@/lib/searchEngine";
 
-// Static Default Catalog for Serverless Environments (Vercel) when DB is empty
-const MOCK_PRODUCTS = [
-  {
-    id: "prod-fugu-1",
-    title: "Hand-Woven Heavy Northern Ghana Fugu Smock",
-    slug: "hand-woven-northern-fugu-smock",
-    description: "Authentic hand-woven traditional Fugu from Aboabo Market. Premium thread, custom embroidery.",
-    price: 450.0,
-    category: "Fashion & Fugu",
-    provider: { businessName: "Northern Grace Fugu & Tailoring Hub", serviceArea: "Aboabo, Tamale Central, Bolgatanga" },
-  },
-  {
-    id: "prod-elec-1",
-    title: "Original 1.5mm Pure Copper Wiring Cable (100m Roll)",
-    slug: "copper-wiring-cable-100m",
-    description: "High quality copper cable for household wiring and socket installations. High heat resistance.",
-    price: 350.0,
-    category: "Electrical Supplies",
-    provider: { businessName: "Kwame Electrical & AC Experts", serviceArea: "Sakasaka, Tamale Central, Nyohini" },
-  },
-  {
-    id: "prod-solar-1",
-    title: "Solar Rechargeable LED Emergency Bulb (30W)",
-    slug: "solar-led-emergency-bulb-30w",
-    description: "Bright solar rechargeable bulb for homes & shops during power outages. Long battery life.",
-    price: 45.0,
-    category: "Electrical Supplies",
-    provider: { businessName: "Kwame Electrical & AC Experts", serviceArea: "Sakasaka, Tamale Central, Nyohini" },
-  },
-  {
-    id: "prod-phone-1",
-    title: "Original Samsung Galaxy A54 AMOLED Screen Replacement",
-    slug: "samsung-a54-amoled-screen",
-    description: "Genuine OEM AMOLED replacement display with glass touch digitizer. Sakasaka phone hub.",
-    price: 280.0,
-    category: "Electronics",
-    provider: { businessName: "Fuseini Mobile Phone & Laptop Hospital", serviceArea: "Sakasaka, Aboabo, Central Market" },
-  },
-  {
-    id: "prod-charger-1",
-    title: "Fast Charging 67W Type-C Adapter & Cable",
-    slug: "fast-charging-67w-typec",
-    description: "Ultra-fast charger compatible with Xiaomi, Tecno, Infinix, Samsung. Over-voltage protection.",
-    price: 65.0,
-    category: "Electronics",
-    provider: { businessName: "Fuseini Mobile Phone & Laptop Hospital", serviceArea: "Sakasaka, Aboabo, Central Market" },
-  },
-  {
-    id: "prod-gen-1",
-    title: "Heavy Duty 15kVA Soundproof Generator Rental (Daily)",
-    slug: "15kva-generator-rental",
-    description: "Heavy duty soundproof diesel generator rental for site projects, events, and emergency backup power across Northern Ghana.",
-    price: 600.0,
-    category: "Tools & Equipment",
-    provider: { businessName: "Northern Heavy Tool & Generator Rentals", serviceArea: "Tamale, Bolgatanga, Wa, Yendi" },
-  },
-];
-
-const MOCK_SERVICES = [
-  {
-    id: "serv-elec",
-    name: "Electrician & Wiring",
-    slug: "electricians",
-    description: "Fault detection, house wiring, breaker repair, ceiling fan installation.",
-    category: { name: "Electrical & Home Maintenance" },
-  },
-  {
-    id: "serv-fugu",
-    name: "Fugu & Traditional Smock Weaving",
-    slug: "fugu-tailors",
-    description: "Authentic handmade Northern Ghanaian Fugu, smock embroidery, custom sizing.",
-    category: { name: "Tailoring & Fashion Design" },
-  },
-  {
-    id: "serv-phone",
-    name: "Phone & Tablet Repair",
-    slug: "phone-repair",
-    description: "Screen replacements, battery changes, charging port repair, software flashing.",
-    category: { name: "Electronics & Device Repair" },
-  },
-  {
-    id: "serv-ac",
-    name: "AC & Fridge Servicing",
-    slug: "ac-fridge-repair",
-    description: "Air conditioner gas refill, cooling repairs, refrigerator compressor fixing.",
-    category: { name: "Electrical & Home Maintenance" },
-  },
-  {
-    id: "serv-plumb",
-    name: "Plumbing & Drainage",
-    slug: "plumbers",
-    description: "Water pipe leaks, borehole pump installation, bathroom fixtures.",
-    category: { name: "Electrical & Home Maintenance" },
-  },
-  {
-    id: "serv-tool",
-    name: "Heavy Equipment & Generator Rentals",
-    slug: "equipment-rentals",
-    description: "Soundproof generators, concrete mixers, scaffoldings, power tools for hire.",
-    category: { name: "Tools & Equipment" },
-  },
-];
-
-const MOCK_PROVIDERS = [
-  {
-    id: "prov-fugu",
-    businessName: "Northern Grace Fugu & Tailoring Hub",
-    slug: "northern-grace-fugu-tamale",
-    bio: "Authentic hand-woven Northern Ghana Fugu (Smocks), embroidery, bespoke Senator kaftans, and bridal attire. Located at Aboabo Market.",
-    serviceArea: "Aboabo, Tamale Central, Choggu, Bolgatanga, Wa",
-    ratingAverage: 5.0,
-    services: [{ service: { name: "Fugu & Traditional Smock Weaving" } }],
-  },
-  {
-    id: "prov-kwame",
-    businessName: "Kwame Electrical & AC Experts",
-    slug: "kwame-electrical-tamale",
-    bio: "Certified electrical engineer with over 8 years experience in Tamale. Specialist in household wiring, AC gas refilling, breaker troubleshooting.",
-    serviceArea: "Sakasaka, Tamale Central, Nyohini, Choggu",
-    ratingAverage: 4.9,
-    services: [{ service: { name: "Electrician & Wiring" } }, { service: { name: "AC & Fridge Servicing" } }],
-  },
-  {
-    id: "prov-fuseini",
-    businessName: "Fuseini Mobile Phone & Laptop Hospital",
-    slug: "fuseini-phone-repair-sakasaka",
-    bio: "Sakasaka phone hub master technician. Original screen replacement for iPhone, Samsung, Tecno, Infinix. Battery upgrades, charging port repair.",
-    serviceArea: "Sakasaka, Aboabo, Central Market",
-    ratingAverage: 4.8,
-    services: [{ service: { name: "Phone & Tablet Repair" } }],
-  },
-  {
-    id: "prov-rental",
-    businessName: "Northern Heavy Tool & Generator Rentals",
-    slug: "northern-heavy-tool-rentals",
-    bio: "Heavy machinery, 15kVA diesel generators, scaffoldings, concrete mixers, and industrial power tools for daily/weekly hire across Northern Ghana.",
-    serviceArea: "Tamale, Bolgatanga, Wa, Yendi, Damongo",
-    ratingAverage: 4.9,
-    services: [{ service: { name: "Heavy Equipment & Generator Rentals" } }],
-  },
-];
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const rawQuery = searchParams.get("q") || "";
     const query = rawQuery.trim();
-    const scope = searchParams.get("scope") || "all"; // all, products, services, providers
+    const scope = searchParams.get("scope") || "all"; // all, products, rentals, services, providers, community
     const category = searchParams.get("category");
     const area = searchParams.get("area");
 
@@ -157,60 +15,246 @@ export async function GET(request: Request) {
 
     const results: {
       products: any[];
+      rentals: any[];
       services: any[];
       providers: any[];
+      community: any[];
     } = {
       products: [],
+      rentals: [],
       services: [],
       providers: [],
+      community: [],
     };
 
-    // Attempt to fetch from Database
     let dbProducts: any[] = [];
+    let dbRentals: any[] = [];
     let dbServices: any[] = [];
     let dbProviders: any[] = [];
+    let dbCommunity: any[] = [];
 
     try {
-      dbProducts = await prisma.product.findMany({
-        where: { isAvailable: true },
-        include: {
-          provider: {
-            select: {
-              id: true,
-              businessName: true,
-              slug: true,
-              serviceArea: true,
-              verificationStatus: true,
-              ratingAverage: true,
+      // -------------------------------------------------------------
+      // INDEX 1: PRODUCTS CATALOG (ProductListing & Product)
+      // -------------------------------------------------------------
+      if (scope === "all" || scope === "products") {
+        const legacyProds = await prisma.product.findMany({
+          where: { isAvailable: true },
+          include: {
+            provider: {
+              select: {
+                id: true,
+                businessName: true,
+                slug: true,
+                serviceArea: true,
+                verificationStatus: true,
+                ratingAverage: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      dbServices = await prisma.service.findMany({
-        include: { category: true },
-      });
+        const portalListings = await prisma.productListing.findMany({
+          where: { status: { in: ["ACTIVE", "PENDING_APPROVAL"] } },
+          include: {
+            seller: { select: { name: true, phone: true, avatarUrl: true } },
+            business: {
+              select: {
+                id: true,
+                businessName: true,
+                slug: true,
+                zone: true,
+                verificationStatus: true,
+                ratingAverage: true,
+              },
+            },
+          },
+        });
 
-      dbProviders = await prisma.providerProfile.findMany({
-        include: {
-          services: { include: { service: true } },
-          products: { take: 3 },
-        },
-      });
+        const formattedPortalListings = portalListings.map((item) => {
+          const parsedImages = Array.isArray(item.images)
+            ? item.images
+            : typeof item.images === "string"
+            ? JSON.parse(item.images || "[]")
+            : [];
+
+          return {
+            id: item.id,
+            title: item.title,
+            slug: item.slug,
+            description: item.description,
+            price: Number(item.price),
+            originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+            category: item.category,
+            images: JSON.stringify(parsedImages),
+            isAvailable: true,
+            provider: {
+              id: item.business?.id || item.sellerId || "business",
+              businessName: item.business?.businessName || item.seller?.name || "Verified Enterprise",
+              slug: item.business?.slug || "biz",
+              serviceArea: item.area || item.business?.zone || "Tamale",
+              verificationStatus: item.business?.verificationStatus || "TIER_1_BASIC",
+              ratingAverage: item.business?.ratingAverage || 5.0,
+            },
+          };
+        });
+
+        dbProducts = [...formattedPortalListings, ...legacyProds];
+      }
+
+      // -------------------------------------------------------------
+      // INDEX 2: TOOL & EQUIPMENT RENTALS (ToolRentalListing & RentalTool)
+      // -------------------------------------------------------------
+      if (scope === "all" || scope === "rentals" || scope === "products") {
+        const portalRentals = await prisma.toolRentalListing.findMany({
+          where: { isAvailable: true },
+          include: {
+            business: {
+              select: { businessName: true, slug: true, zone: true, verificationStatus: true },
+            },
+          },
+        });
+
+        const legacyRentals = await prisma.rentalTool.findMany({
+          where: { isAvailable: true },
+          include: {
+            provider: { select: { businessName: true, slug: true, serviceArea: true } },
+          },
+        });
+
+        const formattedPortalRentals = portalRentals.map((r) => ({
+          id: r.id,
+          title: r.title,
+          slug: r.id,
+          description: r.description,
+          price: Number(r.dailyRate),
+          category: r.category || "Heavy Machinery & Rentals",
+          images: Array.isArray(r.images) ? JSON.stringify(r.images) : "[]",
+          isAvailable: true,
+          isRental: true,
+          provider: {
+            businessName: r.business?.businessName || "Rental Supplier",
+            slug: r.business?.slug || "biz",
+            serviceArea: r.business?.zone || "Tamale",
+          },
+        }));
+
+        dbRentals = [...formattedPortalRentals, ...legacyRentals];
+      }
+
+      // -------------------------------------------------------------
+      // INDEX 3: SERVICES MENU (BusinessService & Service)
+      // -------------------------------------------------------------
+      if (scope === "all" || scope === "services") {
+        const legacyServices = await prisma.service.findMany({
+          include: { category: true },
+        });
+
+        const businessServices = await prisma.businessService.findMany({
+          where: { isActive: true },
+          include: {
+            business: { select: { businessName: true, slug: true, zone: true } },
+          },
+        });
+
+        const formattedBusinessServices = businessServices.map((bs) => ({
+          id: bs.id,
+          name: bs.serviceName,
+          slug: bs.id,
+          description: bs.description,
+          category: { name: bs.serviceName || "Custom Service" },
+          provider: bs.business,
+        }));
+
+        dbServices = [...formattedBusinessServices, ...legacyServices];
+      }
+
+      // -------------------------------------------------------------
+      // INDEX 4: ARTISANS & BUSINESSES (BusinessProfile & ProviderProfile)
+      // -------------------------------------------------------------
+      if (scope === "all" || scope === "providers") {
+        const legacyProviders = await prisma.providerProfile.findMany({
+          include: {
+            services: { include: { service: true } },
+            products: { take: 3 },
+          },
+        });
+
+        const businessProfiles = await prisma.businessProfile.findMany({
+          include: {
+            products: { take: 3 },
+            services: { take: 3 },
+            rentals: { take: 3 },
+          },
+        });
+
+        const formattedBusinessProfiles = businessProfiles.map((bp) => ({
+          id: bp.id,
+          businessName: bp.businessName,
+          slug: bp.slug,
+          bio: bp.description,
+          serviceArea: bp.zone,
+          ratingAverage: bp.ratingAverage,
+          verificationStatus: bp.verificationStatus,
+          services: bp.services.map((s) => ({ service: { name: s.serviceName } })),
+        }));
+
+        dbProviders = [...formattedBusinessProfiles, ...legacyProviders];
+      }
+
+      // -------------------------------------------------------------
+      // INDEX 5: COMMUNITY POSTS & SERVICE REQUESTS
+      // -------------------------------------------------------------
+      if (scope === "all" || scope === "community") {
+        const communityPosts = await prisma.communityPost.findMany({
+          include: {
+            author: { select: { name: true, avatarUrl: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 30,
+        });
+
+        const serviceRequests = await prisma.serviceRequest.findMany({
+          where: { status: "OPEN" },
+          include: {
+            customer: { select: { name: true } },
+            service: { select: { name: true } },
+            location: { select: { area: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 30,
+        });
+
+        dbCommunity = [
+          ...communityPosts.map((cp) => ({
+            id: cp.id,
+            title: cp.title,
+            description: cp.content,
+            category: cp.category,
+            locationOrArea: cp.zone,
+            authorName: cp.author?.name || cp.guestName || "Community Member",
+            type: "COMMUNITY_POST",
+          })),
+          ...serviceRequests.map((sr) => ({
+            id: sr.id,
+            title: sr.title,
+            description: sr.description,
+            category: sr.service?.name || sr.customCategory || "General Request",
+            locationOrArea: sr.location?.area || sr.landmark || "Tamale",
+            authorName: sr.customer?.name || "Customer",
+            type: "SERVICE_REQUEST",
+          })),
+        ];
+      }
     } catch (e) {
-      console.warn("DB Query fallback to Mock Catalog:", e);
+      console.warn("Database Search Fetch Warning:", e);
     }
 
-    // Use DB data if populated, otherwise use Mock Catalog
-    const productPool = dbProducts.length > 0 ? dbProducts : MOCK_PRODUCTS;
-    const servicePool = dbServices.length > 0 ? dbServices : MOCK_SERVICES;
-    const providerPool = dbProviders.length > 0 ? dbProviders : MOCK_PROVIDERS;
-
     // -----------------------------------------------------------------
-    // 1. Search Products
+    // 1. FILTER & SCORE PRODUCTS INDEX
     // -----------------------------------------------------------------
     if (scope === "all" || scope === "products") {
-      let filtered = productPool.map((prod) => {
+      let filtered = [...dbProducts, ...dbRentals].map((prod) => {
         const score = calculateRelevanceScore(
           {
             titleOrName: prod.title,
@@ -218,7 +262,8 @@ export async function GET(request: Request) {
             descriptionOrBio: prod.description,
             locationOrArea: prod.provider?.serviceArea || "",
           },
-          queryTokens
+          queryTokens,
+          area || undefined
         );
         return { ...prod, _score: score };
       });
@@ -239,21 +284,22 @@ export async function GET(request: Request) {
         filtered = filtered.filter((p) => p._score > 0).sort((a, b) => b._score - a._score);
       }
 
-      results.products = filtered.slice(0, 15);
+      results.products = filtered.slice(0, 30);
     }
 
     // -----------------------------------------------------------------
-    // 2. Search Services
+    // 2. FILTER & SCORE SERVICES INDEX
     // -----------------------------------------------------------------
     if (scope === "all" || scope === "services") {
-      let filtered = servicePool.map((serv) => {
+      let filtered = dbServices.map((serv) => {
         const score = calculateRelevanceScore(
           {
             titleOrName: serv.name,
             category: serv.category?.name || "",
             descriptionOrBio: serv.description,
           },
-          queryTokens
+          queryTokens,
+          area || undefined
         );
         return { ...serv, _score: score };
       });
@@ -268,14 +314,14 @@ export async function GET(request: Request) {
         filtered = filtered.filter((s) => s._score > 0).sort((a, b) => b._score - a._score);
       }
 
-      results.services = filtered.slice(0, 15);
+      results.services = filtered.slice(0, 20);
     }
 
     // -----------------------------------------------------------------
-    // 3. Search Providers
+    // 3. FILTER & SCORE PROVIDERS & ARTISANS INDEX
     // -----------------------------------------------------------------
     if (scope === "all" || scope === "providers") {
-      let filtered = providerPool.map((prov) => {
+      let filtered = dbProviders.map((prov) => {
         const serviceNames = prov.services ? prov.services.map((s: any) => s.service?.name).join(" ") : "";
         const score = calculateRelevanceScore(
           {
@@ -284,7 +330,8 @@ export async function GET(request: Request) {
             descriptionOrBio: prov.bio || "",
             locationOrArea: prov.serviceArea || "",
           },
-          queryTokens
+          queryTokens,
+          area || undefined
         );
         return { ...prov, _score: score };
       });
@@ -299,33 +346,68 @@ export async function GET(request: Request) {
         filtered = filtered.filter((p) => p._score > 0).sort((a, b) => b._score - a._score);
       }
 
-      results.providers = filtered.slice(0, 15);
+      results.providers = filtered.slice(0, 20);
     }
 
-    let totalCount =
-      results.products.length + results.services.length + results.providers.length;
-    let isFallback = false;
+    // -----------------------------------------------------------------
+    // 4. FILTER & SCORE COMMUNITY & REQUESTS INDEX
+    // -----------------------------------------------------------------
+    if (scope === "all" || scope === "community") {
+      let filtered = dbCommunity.map((comm) => {
+        const score = calculateRelevanceScore(
+          {
+            titleOrName: comm.title,
+            category: comm.category || "",
+            descriptionOrBio: comm.description || "",
+            locationOrArea: comm.locationOrArea || "",
+          },
+          queryTokens,
+          area || undefined
+        );
+        return { ...comm, _score: score };
+      });
 
-    // Discovery Fallback if zero items match specific query
-    if (queryTokens.length > 0 && totalCount === 0) {
-      isFallback = true;
-      results.products = productPool.slice(0, 6);
-      results.services = servicePool.slice(0, 6);
-      results.providers = providerPool.slice(0, 6);
-      totalCount = results.products.length + results.services.length + results.providers.length;
+      if (queryTokens.length > 0) {
+        filtered = filtered.filter((c) => c._score > 0).sort((a, b) => b._score - a._score);
+      }
+
+      results.community = filtered.slice(0, 15);
+    }
+
+    const totalCount =
+      results.products.length +
+      results.services.length +
+      results.providers.length +
+      results.community.length;
+
+    // -----------------------------------------------------------------
+    // ASYNCHRONOUS SEARCH TELEMETRY LOGGING
+    // -----------------------------------------------------------------
+    if (query) {
+      prisma.searchQueryLog
+        .create({
+          data: {
+            query,
+            scope,
+            filters: { category, area },
+            resultCount: totalCount,
+            userIp: request.headers.get("x-forwarded-for") || "127.0.0.1",
+          },
+        })
+        .catch((err) => console.warn("Search Telemetry Log Warning:", err));
     }
 
     return NextResponse.json({
       query,
       scope,
       totalCount,
-      isFallback,
+      isFallback: false,
       results,
     });
   } catch (error: any) {
-    console.error("Unified Search Error:", error);
+    console.error("Hybrid Search Error:", error);
     return NextResponse.json(
-      { error: "Failed to perform unified search." },
+      { error: "Failed to perform hybrid search." },
       { status: 500 }
     );
   }

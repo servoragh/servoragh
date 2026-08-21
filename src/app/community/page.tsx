@@ -165,7 +165,7 @@ export default function CommunityHubPage() {
         {/* ------------------------------------------------------------- */}
         {/* 2. HERO COMMUNITY BANNER */}
         {/* ------------------------------------------------------------- */}
-        <div className="bg-gradient-to-br from-stone-900 via-stone-850 to-stone-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-stone-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-stone-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 text-[11px] font-extrabold rounded-full border border-amber-500/30 uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" /> Northern Ghana Trade & Community Ecosystem

@@ -175,6 +175,13 @@ export async function GET() {
           });
           if (dbRequests && dbRequests.length > 0) serviceRequests = dbRequests;
         }
+
+        const unmetDemandLogs = await prisma.searchQueryLog.findMany({
+          where: { resultCount: 0 },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        });
+        (globalThis as any).unmetDemandLogs = unmetDemandLogs;
       }
     } catch (dbErr) {
       console.warn("DB query unavailable, serving robust fallback metrics.");
@@ -229,6 +236,7 @@ export async function GET() {
       users,
       categories,
       serviceRequests,
+      unmetDemandSearchLogs: (globalThis as any).unmetDemandLogs || [],
     });
   } catch (error: any) {
     console.error("Admin Stats Error:", error);

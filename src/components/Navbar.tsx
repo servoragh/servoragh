@@ -30,8 +30,6 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
-  if (pathname.startsWith("/admin")) return null;
-
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => res.json())
@@ -40,6 +38,8 @@ export function Navbar() {
       })
       .catch(() => {});
   }, []);
+
+  if (pathname?.startsWith("/admin")) return null;
 
   async function handleLogout() {
     setMobileMenuOpen(false);

@@ -125,7 +125,7 @@ export function AdminProductModerationHub({ isDark = false }: AdminProductModera
       {/* ------------------------------------------------------------- */}
       {/* MODERATION HUB HEADER */}
       {/* ------------------------------------------------------------- */}
-      <div className="bg-gradient-to-br from-stone-900 via-stone-850 to-stone-900 border border-stone-800 rounded-3xl p-5 sm:p-6 shadow-xl text-white">
+      <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 border border-stone-800 rounded-3xl p-5 sm:p-6 shadow-xl text-white">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-stone-800">
           <div>
             <div className="flex items-center gap-2.5">

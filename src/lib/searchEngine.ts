@@ -1,10 +1,23 @@
 /**
- * Servora Advanced Fuzzy & Tokenized Search Engine
- * Zero-cost, high-speed relevance scoring algorithm for Products, Services & Artisans.
+ * Servora Hybrid Typo-Tolerant Global Search Engine
+ * High-performance, zero-cost fuzzy search algorithm supporting Levenshtein distance,
+ * trigram matching, stop-word removal, and location proximity boosting.
  */
 
-// Simple Levenshtein distance for typo matching
+// Common stop words to strip out from search queries
+const STOP_WORDS = new Set([
+  "a", "an", "the", "and", "or", "for", "in", "at", "to", "with", "of", "by",
+  "on", "from", "is", "it", "my", "me", "your", "our", "us", "are", "be", "this",
+  "that", "these", "those", "can", "need", "want", "looking", "find", "get", "buy",
+  "hire", "rent", "sell", "service", "services", "shop", "near", "tamale", "ghana"
+]);
+
+/**
+ * Standard Levenshtein distance for typo matching.
+ * Measures single-character edits (insertions, deletions, substitutions).
+ */
 export function levenshteinDistance(a: string, b: string): number {
+  if (a === b) return 0;
   if (a.length === 0) return b.length;
   if (b.length === 0) return a.length;
 
@@ -35,75 +48,140 @@ export function levenshteinDistance(a: string, b: string): number {
   return matrix[b.length][a.length];
 }
 
-// Tokenize and clean text into normalized search terms
+/**
+ * Generates character trigrams for fuzzy substring similarity (e.g. "cemet" -> ["cem", "eme", "met"]).
+ */
+export function getTrigrams(text: string): Set<string> {
+  const clean = `  ${text.toLowerCase()}  `;
+  const trigrams = new Set<string>();
+  for (let i = 0; i < clean.length - 2; i++) {
+    trigrams.add(clean.substring(i, i + 3));
+  }
+  return trigrams;
+}
+
+/**
+ * Trigram similarity coefficient between 0.0 and 1.0 (Dice / Jaccard index)
+ */
+export function trigramSimilarity(a: string, b: string): number {
+  if (!a || !b) return 0;
+  const setA = getTrigrams(a);
+  const setB = getTrigrams(b);
+
+  let intersection = 0;
+  for (const tri of setA) {
+    if (setB.has(tri)) intersection++;
+  }
+
+  const total = setA.size + setB.size;
+  return total === 0 ? 0 : (2 * intersection) / total;
+}
+
+/**
+ * Tokenize and normalize text into clean search tokens, removing stop words and punctuation.
+ */
 export function tokenizeText(text: string): string[] {
   if (!text) return [];
   return text
     .toLowerCase()
-    .replace(/[^\w\s]/gi, " ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // unaccent
+    .replace(/[^\w\s]/gi, " ")       // remove punctuation
     .split(/\s+/)
-    .filter((t) => t.length > 1);
+    .filter((t) => t.length > 1 && !STOP_WORDS.has(t));
 }
 
-// Calculate relevance score for a target text block against search tokens
+/**
+ * Calculates a comprehensive relevance score for any item against search query tokens,
+ * applying typo tolerance (Levenshtein/Trigram) and location proximity boosting.
+ */
 export function calculateRelevanceScore(
   item: {
     titleOrName: string;
     category?: string;
     descriptionOrBio?: string;
     locationOrArea?: string;
+    tags?: string[];
   },
-  queryTokens: string[]
+  queryTokens: string[],
+  userLocation?: string
 ): number {
   if (!queryTokens || queryTokens.length === 0) return 1;
 
+  const rawTitle = item.titleOrName.toLowerCase();
+  const rawCat = (item.category || "").toLowerCase();
+  const rawDesc = (item.descriptionOrBio || "").toLowerCase();
+  const rawLoc = (item.locationOrArea || "").toLowerCase();
+
   const titleTokens = tokenizeText(item.titleOrName);
   const categoryTokens = item.category ? tokenizeText(item.category) : [];
-  const descTokens = item.descriptionOrBio ? tokenizeText(item.descriptionOrBio) : [];
-  const areaTokens = item.locationOrArea ? tokenizeText(item.locationOrArea) : [];
 
   let score = 0;
 
   for (const qToken of queryTokens) {
     let tokenScore = 0;
 
-    // 1. Title / Name exact or substring match
-    if (item.titleOrName.toLowerCase().includes(qToken)) {
-      tokenScore += 100;
+    // 1. Title / Name Match
+    if (rawTitle === qToken) {
+      tokenScore += 150; // Exact match
+    } else if (rawTitle.includes(qToken)) {
+      tokenScore += 100; // Exact substring match
     } else {
-      // Fuzzy match on title words
+      // Fuzzy & Typo Matching against Title Tokens
       for (const tWord of titleTokens) {
         if (tWord.includes(qToken) || qToken.includes(tWord)) {
-          tokenScore += 70;
+          tokenScore += 80;
           break;
         }
-        if (qToken.length > 3 && tWord.length > 3 && levenshteinDistance(qToken, tWord) <= 2) {
-          tokenScore += 50;
+
+        // Trigram similarity match
+        const triSim = trigramSimilarity(qToken, tWord);
+        if (triSim > 0.45) {
+          tokenScore += Math.round(triSim * 90);
+          break;
+        }
+
+        // Levenshtein distance typo match (e.g. "cemet" -> "cement", "weldr" -> "welder")
+        const maxDist = qToken.length > 5 ? 2 : qToken.length > 3 ? 1 : 0;
+        if (maxDist > 0 && levenshteinDistance(qToken, tWord) <= maxDist) {
+          tokenScore += 65;
           break;
         }
       }
     }
 
-    // 2. Category match
-    if (item.category && item.category.toLowerCase().includes(qToken)) {
-      tokenScore += 60;
+    // 2. Category Match
+    if (rawCat.includes(qToken)) {
+      tokenScore += 80;
     } else {
       for (const cWord of categoryTokens) {
         if (cWord.includes(qToken) || qToken.includes(cWord)) {
+          tokenScore += 50;
+          break;
+        }
+        if (trigramSimilarity(qToken, cWord) > 0.5) {
           tokenScore += 40;
           break;
         }
       }
     }
 
-    // 3. Location / Service Area match
-    if (item.locationOrArea && item.locationOrArea.toLowerCase().includes(qToken)) {
-      tokenScore += 40;
+    // 3. Location & Proximity Boost
+    if (rawLoc.includes(qToken)) {
+      tokenScore += 60;
+    }
+    if (userLocation && rawLoc.includes(userLocation.toLowerCase())) {
+      tokenScore += 40; // Neighborhood Proximity Bonus
     }
 
-    // 4. Description / Bio match
-    if (item.descriptionOrBio && item.descriptionOrBio.toLowerCase().includes(qToken)) {
-      tokenScore += 20;
+    // 4. Description & Bio Match
+    if (rawDesc.includes(qToken)) {
+      tokenScore += 30;
+    } else {
+      const triSimDesc = trigramSimilarity(qToken, rawDesc);
+      if (triSimDesc > 0.35) {
+        tokenScore += Math.round(triSimDesc * 40);
+      }
     }
 
     score += tokenScore;

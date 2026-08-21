@@ -54,7 +54,8 @@ export function UnifiedEcommerceSearch({
     products: any[];
     services: any[];
     providers: any[];
-  }>({ products: [], services: [], providers: [] });
+    community?: any[];
+  }>({ products: [], services: [], providers: [], community: [] });
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -129,22 +130,13 @@ export function UnifiedEcommerceSearch({
       const res = await fetch(`/api/search?${params.toString()}`);
       const data = await res.json();
 
-      const prod = data.products || [];
-      const serv = data.services || [];
-      const prov = data.providers || [];
+      const prod = data.results?.products || data.products || [];
+      const serv = data.results?.services || data.services || [];
+      const prov = data.results?.providers || data.providers || [];
+      const comm = data.results?.community || data.community || [];
 
-      if (prod.length === 0 && serv.length === 0 && prov.length === 0) {
-        const fallbackRes = await fetch(`/api/search?q=a&limit=4`);
-        const fallbackData = await fallbackRes.json();
-        setResults({
-          products: fallbackData.products?.slice(0, 2) || [],
-          services: fallbackData.services?.slice(0, 2) || [],
-          providers: fallbackData.providers?.slice(0, 2) || [],
-        });
-        setIsFallback(true);
-      } else {
-        setResults({ products: prod, services: serv, providers: prov });
-      }
+      setResults({ products: prod, services: serv, providers: prov, community: comm });
+      setIsFallback(Boolean(data.isFallback));
     } catch (e) {
       console.error("Search failed:", e);
     } finally {
@@ -168,7 +160,8 @@ export function UnifiedEcommerceSearch({
   const totalResultsCount =
     (results.products?.length || 0) +
     (results.services?.length || 0) +
-    (results.providers?.length || 0);
+    (results.providers?.length || 0) +
+    (results.community?.length || 0);
 
   // -------------------------------------------------------------
   // 1. HEADER COMPACT VARIANT
@@ -408,11 +401,26 @@ export function UnifiedEcommerceSearch({
             <span>Searching products, artisans & services across Northern Ghana...</span>
           </div>
         ) : query.trim() && totalResultsCount === 0 ? (
-          <div className="p-6 text-center space-y-2">
-            <p className="text-xs font-bold text-stone-800 dark:text-stone-200">No matching items found for "{query}"</p>
-            <p className="text-[11px] text-stone-400">
-              Try searching for "Fugu", "Solar", "Generator", "Repair", or choose from popular suggestions above.
-            </p>
+          <div className="p-6 text-center space-y-3 bg-amber-50/50 dark:bg-amber-950/20 rounded-3xl m-2 border border-amber-200/60 dark:border-amber-900/40">
+            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto shadow-sm">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-stone-900 dark:text-stone-100">
+                No direct matches for "{query}" yet.
+              </p>
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1 max-w-sm mx-auto leading-relaxed">
+                Broadcast your request to verified artisans, local workshops & tool suppliers across Tamale & Northern Ghana.
+              </p>
+            </div>
+            <Link
+              href={`/requests?new=true&title=${encodeURIComponent(query)}`}
+              onClick={() => setIsOpen(false)}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+            >
+              <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
+              <span>Broadcast Request for "{query}" to Tamale Artisans & Suppliers</span>
+            </Link>
           </div>
         ) : totalResultsCount > 0 && (
           <>
@@ -539,6 +547,41 @@ export function UnifiedEcommerceSearch({
                       <span className="px-2 py-0.5 bg-stone-200 dark:bg-stone-700 text-[10px] font-bold text-stone-700 dark:text-stone-200 rounded-lg shrink-0">
                         ⭐️ {item.ratingAverage || 5.0}
                       </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* COMMUNITY CALLS & SERVICE REQUESTS SECTION */}
+            {results.community && results.community.length > 0 && (
+              <div className="p-3 space-y-2 border-t border-stone-100 dark:border-stone-800">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-teal-700 dark:text-teal-400 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" /> Community Calls & Requests ({results.community.length})
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {results.community.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={item.type === "COMMUNITY_POST" ? `/community#post-${item.id}` : `/requests/${item.id}`}
+                      onClick={() => setIsOpen(false)}
+                      className="p-2.5 bg-stone-50 dark:bg-stone-800/60 hover:bg-teal-50 dark:hover:bg-stone-700 rounded-2xl border border-stone-200 dark:border-stone-700 transition group flex items-center justify-between gap-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-bold text-teal-800 dark:text-teal-300 uppercase tracking-wider bg-teal-100 dark:bg-teal-950 px-2 py-0.5 rounded-full inline-block">
+                          {item.type === "COMMUNITY_POST" ? "Community Post" : "Work Request"}
+                        </span>
+                        <h4 className="text-xs font-bold text-stone-900 dark:text-white mt-0.5 group-hover:text-teal-700 dark:group-hover:text-teal-400 truncate">
+                          {item.title}
+                        </h4>
+                        <span className="text-[10px] text-stone-500 dark:text-stone-400 block truncate">
+                          {item.authorName} • {item.locationOrArea || "Tamale"}
+                        </span>
+                      </div>
+
+                      <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-teal-600 shrink-0" />
                     </Link>
                   ))}
                 </div>

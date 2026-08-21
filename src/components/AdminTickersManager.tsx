@@ -207,7 +207,7 @@ export function AdminTickersManager({ isDark = false }: AdminTickersManagerProps
   return (
     <div className="space-y-6 font-sans">
       {/* Top Header & Live Preview Container */}
-      <div className="bg-gradient-to-br from-stone-900 via-stone-850 to-stone-900 border border-stone-800 rounded-3xl p-5 shadow-xl text-white">
+      <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 border border-stone-800 rounded-3xl p-5 shadow-xl text-white">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-stone-800">
           <div>
             <div className="flex items-center gap-2">

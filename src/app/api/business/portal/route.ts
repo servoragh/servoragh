@@ -9,30 +9,30 @@ export async function GET() {
       return NextResponse.json({ error: "Please log in to access your business portal." }, { status: 401 });
     }
 
-    const providerProfile = await prisma.providerProfile.findUnique({
+    const businessProfile = await prisma.businessProfile.findUnique({
       where: { userId: session.id },
       include: {
-        services: {
-          include: { service: true },
-        },
-        products: {
-          orderBy: { createdAt: "desc" },
-        },
-        rentalTools: {
-          orderBy: { createdAt: "desc" },
-        },
+        products: { orderBy: { createdAt: "desc" } },
+        services: { orderBy: { createdAt: "desc" } },
+        rentals: { orderBy: { createdAt: "desc" } },
+        leads: { orderBy: { createdAt: "desc" } },
+        quotes: { orderBy: { createdAt: "desc" } },
       },
     });
 
-    if (!providerProfile && session.role !== "ADMIN") {
-      return NextResponse.json({ error: "No provider profile found. Please register as a service business." }, { status: 404 });
-    }
+    const providerProfile = await prisma.providerProfile.findUnique({
+      where: { userId: session.id },
+      include: {
+        services: { include: { service: true } },
+        products: { orderBy: { createdAt: "desc" } },
+        rentalTools: { orderBy: { createdAt: "desc" } },
+      },
+    });
 
-    // Fetch incoming service requests matching provider's services
-    const serviceIds = providerProfile?.services.map((s) => s.serviceId) || [];
+    // Fetch incoming community service calls
     const incomingRequests = await prisma.serviceRequest.findMany({
       where: {
-        serviceId: { in: serviceIds },
+        status: { in: ["OPEN", "PUBLISHED"] },
       },
       include: {
         customer: { select: { name: true, phone: true, avatarUrl: true } },
@@ -43,6 +43,7 @@ export async function GET() {
         },
       },
       orderBy: { createdAt: "desc" },
+      take: 20,
     });
 
     // Fetch submitted quotes
@@ -61,7 +62,8 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      profile: providerProfile,
+      businessProfile,
+      providerProfile,
       incomingRequests,
       submittedQuotes,
     });

@@ -125,7 +125,7 @@ export function AdminLayoutShell({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 font-sans antialiased flex flex-col transition-colors duration-200 relative">
+    <div className="h-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 font-sans antialiased flex flex-col transition-colors duration-200 relative">
       {/* ------------------------------------------------------------- */}
       {/* UNIFIED ADMIN TOPBAR */}
       {/* ------------------------------------------------------------- */}

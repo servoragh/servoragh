@@ -307,7 +307,7 @@ export function CustomerCrmDashboard({ isDark = false }: CustomerCrmDashboardPro
       {/* ------------------------------------------------------------- */}
       {/* HEADER & METRICS SUMMARY ROW */}
       {/* ------------------------------------------------------------- */}
-      <div className="bg-gradient-to-br from-stone-900 via-stone-850 to-stone-900 border border-stone-800 rounded-3xl p-5 sm:p-6 shadow-xl text-white">
+      <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 border border-stone-800 rounded-3xl p-5 sm:p-6 shadow-xl text-white">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-stone-800">
           <div>
             <div className="flex items-center gap-2.5">
@@ -489,9 +489,9 @@ export function CustomerCrmDashboard({ isDark = false }: CustomerCrmDashboardPro
             No customer profiles match your search criteria.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[calc(100vh-280px)] overflow-y-auto">
             <table className="w-full text-left text-xs min-w-[700px]">
-              <thead className="bg-stone-100 dark:bg-stone-950 text-stone-500 uppercase tracking-wider text-[10px] font-bold border-b border-stone-200 dark:border-stone-800">
+              <thead className="sticky top-0 z-10 bg-stone-100 dark:bg-stone-950 text-stone-500 uppercase tracking-wider text-[10px] font-bold border-b border-stone-200 dark:border-stone-800 shadow-xs">
                 <tr>
                   <th className="p-4">Customer Identity</th>
                   <th className="p-4">Verification & Tier</th>
@@ -509,7 +509,7 @@ export function CustomerCrmDashboard({ isDark = false }: CustomerCrmDashboardPro
                   return (
                     <tr
                       key={cust.id}
-                      className="hover:bg-stone-50 dark:hover:bg-stone-850/50 transition duration-150"
+                      className="hover:bg-stone-100/80 dark:hover:bg-stone-800/60 transition duration-150"
                     >
                       {/* Customer Identity */}
                       <td className="p-4">

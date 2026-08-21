@@ -11,39 +11,31 @@ export async function GET(request: Request) {
     const search = searchParams.get("q");
     const includeInactive = searchParams.get("all") === "true";
 
-    const whereClause: any = {};
-    if (!includeInactive) {
-      whereClause.isAvailable = true;
-    }
-
-    if (category) {
-      whereClause.category = category;
-    }
-
-    if (providerSlug) {
-      whereClause.provider = { slug: providerSlug };
-    }
-
-    if (area) {
-      whereClause.provider = {
-        ...(whereClause.provider || {}),
-        serviceArea: { contains: area },
+    // 1. Fetch from legacy `prisma.product`
+    const productWhere: any = {};
+    if (!includeInactive) productWhere.isAvailable = true;
+    if (category && category !== "all") productWhere.category = category;
+    if (providerSlug) productWhere.provider = { slug: providerSlug };
+    if (area && area !== "all") {
+      productWhere.provider = {
+        ...(productWhere.provider || {}),
+        serviceArea: { contains: area, mode: "insensitive" },
       };
     }
-
     if (search) {
-      whereClause.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-        { category: { contains: search } },
+      productWhere.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { category: { contains: search, mode: "insensitive" } },
       ];
     }
 
-    const products = await prisma.product.findMany({
-      where: whereClause,
+    const legacyProducts = await prisma.product.findMany({
+      where: productWhere,
       include: {
         provider: {
           select: {
+            id: true,
             businessName: true,
             slug: true,
             logoUrl: true,
@@ -63,7 +55,102 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ products });
+    // 2. Fetch from new `prisma.productListing` (posted via Business Portal)
+    const listingWhere: any = {};
+    if (!includeInactive) {
+      listingWhere.status = { in: ["ACTIVE", "PENDING_APPROVAL"] };
+    }
+    if (category && category !== "all") {
+      listingWhere.category = { contains: category, mode: "insensitive" };
+    }
+    if (area && area !== "all") {
+      listingWhere.area = { contains: area, mode: "insensitive" };
+    }
+    if (search) {
+      listingWhere.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { category: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const portalListings = await prisma.productListing.findMany({
+      where: listingWhere,
+      include: {
+        seller: {
+          select: {
+            name: true,
+            phone: true,
+            avatarUrl: true,
+          },
+        },
+        business: {
+          select: {
+            id: true,
+            businessName: true,
+            slug: true,
+            logoUrl: true,
+            zone: true,
+            verificationStatus: true,
+            ratingAverage: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Format ProductListing records to match Product structure
+    const formattedPortalProducts = portalListings.map((item) => {
+      const parsedImages = Array.isArray(item.images)
+        ? item.images
+        : typeof item.images === "string"
+        ? JSON.parse(item.images || "[]")
+        : [];
+
+      return {
+        id: item.id,
+        title: item.title,
+        slug: item.slug,
+        description: item.description,
+        price: Number(item.price),
+        originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+        stockQuantity: item.stockQuantity || 1,
+        category: item.category,
+        images: JSON.stringify(parsedImages),
+        isAvailable: item.status === "ACTIVE" || item.status === "PENDING_APPROVAL",
+        createdAt: item.createdAt,
+        provider: {
+          id: item.business?.id || item.sellerId || "business",
+          businessName: item.business?.businessName || item.seller?.name || "Verified Enterprise",
+          slug: item.business?.slug || "biz",
+          logoUrl: item.business?.logoUrl || item.seller?.avatarUrl || null,
+          serviceArea: item.area || item.business?.zone || "Tamale",
+          ratingAverage: item.business?.ratingAverage || 5.0,
+          verificationStatus: item.business?.verificationStatus || "TIER_1_BASIC",
+          user: {
+            name: item.seller?.name || item.business?.businessName || "Artisan Merchant",
+            phone: item.seller?.phone || "",
+            avatarUrl: item.seller?.avatarUrl || null,
+          },
+        },
+      };
+    });
+
+    // Merge legacy and portal products (deduplicate by slug)
+    const slugSet = new Set<string>();
+    const combinedProducts: any[] = [];
+
+    for (const p of [...formattedPortalProducts, ...legacyProducts]) {
+      if (!slugSet.has(p.slug)) {
+        slugSet.add(p.slug);
+        combinedProducts.push(p);
+      }
+    }
+
+    // Sort by newest first
+    combinedProducts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return NextResponse.json({ products: combinedProducts });
   } catch (error: any) {
     console.error("Fetch Products Error:", error);
     return NextResponse.json({ error: "Failed to fetch marketplace products." }, { status: 500 });
@@ -73,43 +160,45 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await getSession();
-    if (!session || session.role !== "PROVIDER") {
-      return NextResponse.json({ error: "Only registered businesses/providers can post products for sale." }, { status: 403 });
+    if (!session) {
+      return NextResponse.json({ error: "Please log in to post products for sale." }, { status: 401 });
     }
 
     const body = await request.json();
-    const { title, description, price, originalPrice, stockQuantity, category, images } = body;
+    const { title, description, price, originalPrice, stockQuantity, category, images, area } = body;
 
     if (!title || !description || !price || !category) {
       return NextResponse.json({ error: "Product title, description, price, and category are required." }, { status: 400 });
     }
 
-    const providerProfile = await prisma.providerProfile.findUnique({
+    const cleanSlug = `${title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-")}-${Math.floor(100 + Math.random() * 900)}`;
+
+    const businessProfile = await prisma.businessProfile.findUnique({
       where: { userId: session.id },
     });
 
-    if (!providerProfile) {
-      return NextResponse.json({ error: "Please complete your business profile before posting products." }, { status: 400 });
-    }
+    const parsedImages = Array.isArray(images) ? images : [];
 
-    const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Math.floor(100 + Math.random() * 900)}`;
-
-    const product = await prisma.product.create({
+    const productListing = await prisma.productListing.create({
       data: {
-        providerId: providerProfile.id,
         title,
-        slug,
+        slug: cleanSlug,
         description,
+        category,
         price: Number(price),
         originalPrice: originalPrice ? Number(originalPrice) : null,
         stockQuantity: Number(stockQuantity) || 1,
-        category,
-        images: JSON.stringify(images || []),
-        isAvailable: true,
+        images: parsedImages,
+        area: area || businessProfile?.zone || "Tamale Central",
+        sellerType: "REGISTERED_USER",
+        sellerId: session.id,
+        businessId: businessProfile?.id || null,
+        status: "ACTIVE",
+        inventoryStatus: "IN_STOCK",
       },
     });
 
-    return NextResponse.json({ success: true, product });
+    return NextResponse.json({ success: true, product: productListing });
   } catch (error: any) {
     console.error("Create Product Error:", error);
     return NextResponse.json({ error: "Failed to post product." }, { status: 500 });

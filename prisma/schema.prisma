@@ -42,6 +42,7 @@ model User {
   communityComments     CommunityComment[]
   communityUpvotes      CommunityUpvote[]
   customerProfile       CustomerProfile?
+  businessProfile       BusinessProfile?
   adminCustomerNotes    AdminCustomerNote[]   @relation("AdminNotes")
   productListings       ProductListing[]      @relation("UserListings")
   approvedProducts      ProductListing[]      @relation("ApprovedProducts")
@@ -561,8 +562,15 @@ model ProductListing {
   
   // Pricing
   price            Decimal              @db.Decimal(12, 2)
+  originalPrice    Decimal?             @db.Decimal(12, 2)
   isNegotiable     Boolean              @default(false)
   currency         String               @default("GHS")
+  
+  // Stock & Inventory Control
+  stockQuantity    Int                  @default(1)
+  sku              String?
+  variants         Json?
+  inventoryStatus  String               @default("IN_STOCK") // IN_STOCK, LOW_STOCK, RENTED_OUT, SOLD_OUT
   
   // Media & Location
   images           String[]
@@ -574,6 +582,8 @@ model ProductListing {
   sellerType       SellerType           @default(REGISTERED_USER)
   sellerId         String?
   seller           User?                @relation("UserListings", fields: [sellerId], references: [id], onDelete: SetNull)
+  businessId       String?
+  business         BusinessProfile?     @relation(fields: [businessId], references: [id], onDelete: SetNull)
   
   // Guest Seller Data (Populated if sellerType == GUEST)
   guestName        String?
@@ -706,6 +716,186 @@ model CommunityUpvote {
 
   @@unique([postId, userId, userIp])
 }
+
+// =========================================================================
+// ENTERPRISE MERCHANT & ARTISAN BUSINESS PORTAL SUBSYSTEM
+// =========================================================================
+
+enum BusinessType {
+  SOLO_ARTISAN
+  RETAIL_STORE
+  EQUIPMENT_RENTAL_HUB
+  CONTRACTOR_WORKSHOP
+  WHOLESALE_SUPPLIER
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING_REVIEW
+  TIER_1_BASIC
+  TIER_2_VERIFIED_ARTISAN
+  TIER_3_REGISTERED_ENTERPRISE
+  REJECTED
+}
+
+enum LeadStatus {
+  NEW_INQUIRY
+  QUOTE_SENT
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  DECLINED
+}
+
+model BusinessProfile {
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Public Identity
+  businessName      String
+  slug              String             @unique
+  tagline           String?
+  description       String             @db.Text
+  businessType      BusinessType       @default(SOLO_ARTISAN)
+  logoUrl           String?
+  bannerUrl         String?
+  
+  // Location & Contact
+  zone              String             // e.g., "Sakasaka", "Choggu", "Tamale Central"
+  addressDetails    String?
+  landmark          String?
+  latitude          Float?
+  longitude         Float?
+  phone             String
+  whatsappNumber    String
+  email             String?
+  businessHours     Json?              // { monday: { open: "08:00", close: "18:00", closed: false }, emergencyCallout: true }
+  
+  // Trust & Verification
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  idCardNumber      String?
+  idCardPhotoUrl    String?
+  businessCertUrl   String?
+  tinNumber         String?
+  tradeAssociation  String?
+  storefrontPhotoUrl String?
+  isFeatured        Boolean            @default(false)
+  
+  // Social & External Channels
+  instagramUrl      String?
+  facebookUrl       String?
+  
+  // Catalogs & Links
+  products          ProductListing[]
+  services          BusinessService[]
+  rentals           ToolRentalListing[]
+  quotes            ServiceQuote[]
+  leads             BusinessLead[]
+  
+  // Metrics & Analytics Counters
+  profileViews      Int                @default(0)
+  whatsappClicks    Int                @default(0)
+  ratingAverage     Float              @default(0.0)
+  reviewsCount      Int                @default(0)
+
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([zone, businessType])
+  @@index([verificationStatus])
+}
+
+model BusinessService {
+  id                String          @id @default(cuid())
+  businessId        String
+  business          BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  serviceName       String
+  description       String          @db.Text
+  startingPrice     Decimal?        @db.Decimal(10, 2)
+  estimatedDuration String?         // e.g., "2-4 hours", "1 day"
+  portfolioPhotos   String[]
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+
+  @@index([businessId])
+}
+
+model ToolRentalListing {
+  id                String          @id @default(cuid())
+  businessId        String
+  business          BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  title             String
+  slug              String          @unique
+  description       String          @db.Text
+  category          String          // e.g. "Power Tools", "Generators", "Scaffolding & Heavy Equipment"
+  dailyRate         Decimal         @db.Decimal(10, 2)
+  weeklyRate        Decimal?        @db.Decimal(10, 2)
+  securityDeposit   Decimal?        @db.Decimal(10, 2)
+  operatorIncluded  Boolean         @default(false)
+  images            String[]
+  status            String          @default("AVAILABLE") // AVAILABLE, RENTED_OUT, MAINTENANCE, UNPUBLISHED
+  isAvailable       Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([businessId, category])
+}
+
+model ServiceQuote {
+  id                String          @id @default(cuid())
+  businessId        String
+  business          BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  leadId            String?
+  lead              BusinessLead?   @relation(fields: [leadId], references: [id])
+  serviceRequestId  String?
+  laborCost         Decimal         @db.Decimal(10, 2)
+  materialsCost     Decimal         @default(0.0) @db.Decimal(10, 2)
+  totalAmount       Decimal         @db.Decimal(10, 2)
+  estimatedTimeline String          // e.g. "2-3 days"
+  notes             String?         @db.Text
+  status            String          @default("SENT") // SENT, ACCEPTED, DECLINED
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([businessId])
+}
+
+model BusinessLead {
+  id                String          @id @default(cuid())
+  businessId        String
+  business          BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId        String?
+  customerName      String
+  customerPhone     String
+  customerWhatsApp  String?
+  serviceRequestId  String?
+  status            LeadStatus      @default(NEW_INQUIRY)
+  notes             String?         @db.Text
+  quoteAmount       Decimal?        @db.Decimal(10, 2)
+  quotes            ServiceQuote[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([businessId, status])
+}
+
+model SearchQueryLog {
+  id          String   @id @default(cuid())
+  query       String
+  scope       String   @default("all")
+  filters     Json?
+  resultCount Int      @default(0)
+  userId      String?
+  userIp      String?
+  createdAt   DateTime @default(now())
+
+  @@index([query])
+  @@index([resultCount])
+  @@index([createdAt])
+}
+
+
 
 
 
