@@ -42,6 +42,8 @@ export interface CommunityPostItem {
   category: PostCategory;
   zone: RegionZone;
   status: ItemStatus;
+  isPinned?: boolean;
+  isLocked?: boolean;
   
   budget?: number | null;
   currency: string;

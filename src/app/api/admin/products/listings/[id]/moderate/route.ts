@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { moderateProductListing } from "@/lib/productListingsStore";
+import { ProductListingStatus } from "@/lib/productListingTypes";
 
 export async function POST(
   request: Request,
@@ -20,9 +21,17 @@ export async function POST(
       return NextResponse.json({ error: "Moderation action is required." }, { status: 400 });
     }
 
+    // Map frontend action string to Prisma ProductListingStatus enum
+    let targetStatus: ProductListingStatus = "ACTIVE";
+    if (action === "APPROVE") targetStatus = "ACTIVE";
+    else if (action === "REJECT") targetStatus = "REJECTED";
+    else if (action === "SUSPEND") targetStatus = "SUSPENDED";
+    else if (action === "MARK_SOLD") targetStatus = "SOLD";
+    else if (action === "FEATURE") targetStatus = "ACTIVE";
+
     const updated = await moderateProductListing(
       id,
-      action,
+      targetStatus,
       { id: session.id, name: session.name || "Master Admin" },
       rejectionReason
     );

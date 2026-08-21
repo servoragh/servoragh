@@ -164,7 +164,7 @@ export async function getAllCommunityPosts(query?: CommunityFilterQuery): Promis
           author: { select: { name: true, phone: true, avatarUrl: true } },
           comments: true,
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
       });
 
       if (dbPosts && dbPosts.length > 0) {
@@ -175,6 +175,8 @@ export async function getAllCommunityPosts(query?: CommunityFilterQuery): Promis
           category: p.category,
           zone: p.zone,
           status: p.status,
+          isPinned: Boolean(p.isPinned),
+          isLocked: Boolean(p.isLocked),
           budget: p.budget ? Number(p.budget) : null,
           currency: p.currency || "GHS",
           urgency: p.urgency || "Flexible",
@@ -229,6 +231,8 @@ export async function getAllCommunityPosts(query?: CommunityFilterQuery): Promis
       list = list.filter((p) => p.status === status);
     }
   }
+
+  list.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
 
   return { posts: list, total: list.length };
 }

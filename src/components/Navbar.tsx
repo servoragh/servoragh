@@ -73,10 +73,12 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop E-Commerce Omnibox Quick Search */}
-          <div className="hidden md:block flex-1 max-w-xs lg:max-w-sm xl:max-w-md min-w-[200px] mx-2 lg:mx-4 shrink">
-            <UnifiedEcommerceSearch variant="compact" placeholder="Search products or services..." />
-          </div>
+          {/* Desktop E-Commerce Omnibox Quick Search (Inner pages only) */}
+          {pathname !== "/" && (
+            <div className="hidden md:block flex-1 max-w-xs lg:max-w-sm xl:max-w-md min-w-[200px] mx-2 lg:mx-4 shrink">
+              <UnifiedEcommerceSearch variant="compact" placeholder="Search products or services..." />
+            </div>
+          )}
 
           {/* Navigation Actions */}
           <div className="hidden lg:flex items-center gap-2 lg:gap-3 shrink-0">

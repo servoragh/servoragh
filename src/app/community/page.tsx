@@ -47,7 +47,14 @@ export default function CommunityHubPage() {
   const [commentInput, setCommentInput] = useState("");
   const [commenting, setCommenting] = useState(false);
 
+  const [targetPostId, setTargetPostId] = useState<string | null>(null);
+
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const pid = params.get("postId");
+      if (pid) setTargetPostId(pid);
+    }
     fetchCommunityPosts();
   }, [selectedZone, selectedCategory, selectedStatus]);
 
@@ -294,11 +301,18 @@ export default function CommunityHubPage() {
         ) : (
           /* Active Post Cards Feed */
           <div className="space-y-4">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 shadow-xs transition hover:shadow-md space-y-4"
-              >
+            {posts.map((post) => {
+              const isTargeted = targetPostId === post.id;
+              return (
+                <div
+                  key={post.id}
+                  id={`post-${post.id}`}
+                  className={`border rounded-3xl p-5 sm:p-6 shadow-xs transition duration-300 space-y-4 ${
+                    isTargeted
+                      ? "bg-amber-500/10 dark:bg-amber-950/30 border-amber-500 ring-2 ring-amber-500/50 shadow-lg"
+                      : "bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:shadow-md"
+                  }`}
+                >
                 {/* Header Row */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -491,7 +505,8 @@ export default function CommunityHubPage() {
                   </div>
                 )}
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
       </div>

@@ -686,6 +686,8 @@ model CommunityPost {
   category         PostCategory    @default(ALL_DISCUSSIONS)
   zone             RegionZone      @default(ALL_NORTHERN_GH)
   status           ItemStatus      @default(OPEN_ACTIVE)
+  isPinned         Boolean         @default(false)
+  isLocked         Boolean         @default(false)
   
   // Pricing / Budget (Optional for gigs & rentals)
   budget           Decimal?        @db.Decimal(10, 2)

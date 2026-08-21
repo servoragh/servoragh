@@ -100,6 +100,23 @@ export function AdminProductModerationHub({ isDark = false }: AdminProductModera
   ) {
     try {
       setProcessing(true);
+
+      // Optimistic UI update
+      setListings((prev) =>
+        prev
+          .map((item) => {
+            if (item.id === id) {
+              if (action === "APPROVE") return { ...item, status: "ACTIVE" as ProductListingStatus };
+              if (action === "REJECT") return { ...item, status: "REJECTED" as ProductListingStatus };
+              if (action === "SUSPEND") return { ...item, status: "SUSPENDED" as ProductListingStatus };
+              if (action === "MARK_SOLD") return { ...item, status: "SOLD" as ProductListingStatus };
+              if (action === "FEATURE") return { ...item, isFeatured: !item.isFeatured };
+            }
+            return item;
+          })
+          .filter((item) => (action === "DELETE" ? item.id !== id : true))
+      );
+
       const res = await fetch(`/api/admin/products/listings/${encodeURIComponent(id)}/moderate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -111,9 +128,12 @@ export function AdminProductModerationHub({ isDark = false }: AdminProductModera
         setRejectModalListing(null);
         fetchQueue();
       } else {
+        // Rollback on failure
+        fetchQueue();
         alert(data.error || "Failed to execute moderation action.");
       }
     } catch (e) {
+      fetchQueue();
       alert("Network error executing product moderation.");
     } finally {
       setProcessing(false);
@@ -327,9 +347,18 @@ export function AdminProductModerationHub({ isDark = false }: AdminProductModera
                         )}
                       </div>
 
-                      <h3 className="text-base font-black text-stone-900 dark:text-white">
-                        {item.title}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`/products/${item.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-base font-black text-stone-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline flex items-center gap-1.5 transition"
+                          title="View Public Product Page"
+                        >
+                          <span>{item.title}</span>
+                          <ExternalLink className="w-4 h-4 text-emerald-500 shrink-0" />
+                        </a>
+                      </div>
 
                       <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2 leading-relaxed">
                         {item.description}

@@ -185,6 +185,17 @@ export function AdminLayoutShell({
 
         {/* Right Actions Toolbar */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Direct Public Site Link (Desktop Only) */}
+          <Link
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden md:flex px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 font-extrabold rounded-xl text-xs items-center gap-1.5 shadow-xs transition cursor-pointer border border-slate-200 dark:border-zinc-700 whitespace-nowrap"
+            title="Open Public Marketplace Frontpage in New Tab"
+          >
+            <span>View Public Site 🌐 ↗</span>
+          </Link>
+
           {/* Global Admin Search Button */}
           <button
             onClick={() => setIsGlobalSearchOpen(true)}
