@@ -51,7 +51,7 @@ export function ProviderCard({ provider, onRequestQuote }: ProviderCardProps) {
     yearsExperience: provider.yearsExperience,
   });
 
-  const whatsappMessage = `Hello ${provider.businessName}, I found your artisan profile on Servora Tamale and I would like to inquire about your local service availability.`;
+  const whatsappMessage = `Hello ${provider.businessName}, I found your business on Servora Tamale and I would like to inquire about your local product/service availability.`;
 
   return (
     <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-xs hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700 transition flex flex-col justify-between">
@@ -130,7 +130,7 @@ export function ProviderCard({ provider, onRequestQuote }: ProviderCardProps) {
                 ? `From ${formatGHS(provider.pricingFixedStart)}`
                 : provider.pricingHourly
                 ? `${formatGHS(provider.pricingHourly)}/hr`
-                : "Free Quote"}
+                : "Price Offer"}
             </span>
           </div>
         </div>
@@ -142,7 +142,7 @@ export function ProviderCard({ provider, onRequestQuote }: ProviderCardProps) {
           href={`/provider/${provider.slug}`}
           className="flex-1 py-2 text-center text-xs font-bold text-stone-800 dark:text-stone-200 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-xl transition"
         >
-          View Profile
+          View Business
         </Link>
         <WhatsAppShareButton
           variant="direct"

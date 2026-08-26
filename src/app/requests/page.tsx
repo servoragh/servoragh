@@ -128,7 +128,7 @@ export default function ServiceRequestsPage() {
                     <span>{formatDate(req.createdAt)}</span>
                     <span>&bull;</span>
                     <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                      {req.quotes?.length || 0} Quotes Received
+                      {req.quotes?.length || 0} Price Offers Received
                     </span>
                   </div>
                 </div>
@@ -138,7 +138,7 @@ export default function ServiceRequestsPage() {
                     href={`/requests/${req.id}`}
                     className="w-full md:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition text-center"
                   >
-                    View Request & Submit Quote
+                    View Request & Send Price Offer
                   </Link>
                 </div>
               </div>

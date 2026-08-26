@@ -28,6 +28,10 @@ import {
   Command,
   Activity,
   Truck,
+  Trash2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ShieldAlert,
 } from "lucide-react";
 import { AdminCommandPaletteModal } from "@/components/AdminCommandPaletteModal";
 import { AdminGlobalSearchModal } from "@/components/AdminGlobalSearchModal";
@@ -49,8 +53,8 @@ export function AdminLayoutShell({
   children,
   activeView,
   onSelectView,
-  pendingVerificationsCount = 1,
-  pendingProductsCount = 6,
+  pendingVerificationsCount = 0,
+  pendingProductsCount = 0,
   unresolvedDisputesCount = 0,
   themeMode = "light",
   onToggleTheme,
@@ -58,6 +62,7 @@ export function AdminLayoutShell({
   const [isCmdOpen, setIsCmdOpen] = useState(false);
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [session, setSession] = useState<any>(null);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -104,11 +109,13 @@ export function AdminLayoutShell({
         { id: "crm", label: "Customer CRM & Members", icon: Users, count: "360°" },
         { id: "businesses", label: "Business Profiles & Artisans", icon: Building2, count: null },
         { id: "verification", label: "ID & Verification Queue", icon: ShieldCheck, count: pendingVerificationsCount > 0 ? pendingVerificationsCount : null },
+        { id: "security", label: "Security & Fraud Engine", icon: ShieldAlert, count: "Blacklist" },
       ],
     },
     {
       groupTitle: "MARKETPLACE & SERVICES",
       items: [
+        { id: "escrow", label: "Finance & MoMo Escrow", icon: DollarSign, count: "MoMo" },
         { id: "delivery", label: "Delivery Fleet & Dispatchers", icon: Truck, count: "Fleet" },
         { id: "products", label: "Product Moderation", icon: ShoppingBag, count: pendingProductsCount > 0 ? pendingProductsCount : null },
         { id: "requests", label: "Service Requests & Gigs", icon: MessageSquare, count: null },
@@ -126,12 +133,7 @@ export function AdminLayoutShell({
     {
       groupTitle: "SYSTEM & INFRASTRUCTURE",
       items: [
-        { id: "health", label: "Operations & System Health", icon: Radio, count: "12/12" },
-        { id: "taxonomy", label: "Category & Taxonomy Core", icon: Layers, count: "18 Verticals" },
-        { id: "email", label: "Email Subsystem & Logs", icon: Mail, count: "Mailer" },
-        { id: "storage", label: "Cloud Storage & Backups", icon: HardDrive, count: "100GB" },
-        { id: "flags", label: "Monetization & Commission Flags", icon: DollarSign, count: null },
-        { id: "settings", label: "System Settings", icon: Settings, count: null },
+        { id: "settings", label: "System & Infrastructure Settings", icon: Settings, count: "Master Settings" },
       ],
     },
   ];
@@ -150,6 +152,14 @@ export function AdminLayoutShell({
             aria-label="Toggle Mobile Sidebar"
           >
             <Menu className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+            className="hidden md:flex p-2 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition cursor-pointer"
+            title={isSidebarExpanded ? "Collapse Sidebar to Compact Icons" : "Expand Sidebar"}
+          >
+            {isSidebarExpanded ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5 text-emerald-500" />}
           </button>
 
           <Link href="/admin" className="flex items-center gap-2">
@@ -226,7 +236,7 @@ export function AdminLayoutShell({
               title="Notifications"
             >
               <Bell className="w-4 h-4" />
-              {pendingVerificationsCount > 0 && (
+              {(pendingVerificationsCount > 0 || pendingProductsCount > 0) && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
               )}
             </button>
@@ -317,9 +327,9 @@ export function AdminLayoutShell({
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
         <aside
-          className={`w-72 md:w-64 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 flex flex-col justify-between shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-20 transition-transform duration-200 ease-in-out shadow-2xl md:shadow-none ${
-            mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-          }`}
+          className={`bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 flex flex-col justify-between shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-20 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none ${
+            mobileSidebarOpen ? "translate-x-0 w-72" : "-translate-x-full md:translate-x-0"
+          } ${isSidebarExpanded ? "md:w-64" : "md:w-16"}`}
         >
           {/* Header inside mobile drawer */}
           <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between md:hidden">
@@ -337,14 +347,18 @@ export function AdminLayoutShell({
             </button>
           </div>
 
-          <div className="p-4 space-y-6 overflow-y-auto flex-1 text-xs">
+          <div className={`p-3 space-y-6 overflow-y-auto flex-1 text-xs ${!isSidebarExpanded ? "px-2" : ""}`}>
             {navGroups.map((group, idx) => (
               <div key={idx} className="space-y-1">
-                <span className="text-[10px] font-mono font-bold tracking-wider text-slate-400 dark:text-zinc-500 px-3 uppercase block">
-                  {group.groupTitle}
-                </span>
+                {isSidebarExpanded ? (
+                  <span className="text-[10px] font-mono font-bold tracking-wider text-slate-400 dark:text-zinc-500 px-3 uppercase block truncate">
+                    {group.groupTitle}
+                  </span>
+                ) : (
+                  <div className="h-px bg-slate-200 dark:bg-zinc-800 my-2" />
+                )}
 
-                <div className="space-y-0.5 pt-1">
+                <div className="space-y-1 pt-1">
                   {group.items.map((item) => {
                     const Icon = item.icon;
                     const isActive = activeView === item.id;
@@ -356,20 +370,23 @@ export function AdminLayoutShell({
                           onSelectView(item.id);
                           setMobileSidebarOpen(false);
                         }}
-                        className={`w-full px-3 py-2.5 rounded-xl font-bold flex items-center justify-between transition cursor-pointer ${
+                        title={item.label}
+                        className={`w-full px-2.5 py-2.5 rounded-xl font-bold flex items-center transition cursor-pointer ${
+                          isSidebarExpanded ? "justify-between" : "justify-center"
+                        } ${
                           isActive
                             ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
                             : "text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-white"
                         }`}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`flex items-center gap-2.5 min-w-0 ${!isSidebarExpanded ? "justify-center" : ""}`}>
                           <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"}`} />
-                          <span className="truncate text-xs">{item.label}</span>
+                          {isSidebarExpanded && <span className="truncate text-xs">{item.label}</span>}
                         </div>
 
-                        {item.count !== null && item.count !== undefined && (
+                        {isSidebarExpanded && item.count !== null && item.count !== undefined && (
                           <span
-                            className={`px-2 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+                            className={`px-2 py-0.2 rounded-full text-[10px] font-mono font-bold shrink-0 ${
                               isActive
                                 ? "bg-emerald-600 text-white"
                                 : "bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400"
@@ -387,16 +404,22 @@ export function AdminLayoutShell({
           </div>
 
           {/* Sidebar Footer Metadata */}
-          <div className="p-4 border-t border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-[11px] text-slate-500 dark:text-zinc-500 space-y-1">
-            <div className="flex items-center justify-between font-mono font-bold">
-              <span>Region:</span>
-              <span className="text-slate-800 dark:text-zinc-300">Northern Ghana</span>
+          {isSidebarExpanded ? (
+            <div className="p-4 border-t border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-[11px] text-slate-500 dark:text-zinc-500 space-y-1">
+              <div className="flex items-center justify-between font-mono font-bold">
+                <span>Region:</span>
+                <span className="text-slate-800 dark:text-zinc-300">Northern Ghana</span>
+              </div>
+              <div className="flex items-center justify-between font-mono font-bold">
+                <span>PWA Engine:</span>
+                <span className="text-emerald-600 dark:text-emerald-400">Active</span>
+              </div>
             </div>
-            <div className="flex items-center justify-between font-mono font-bold">
-              <span>PWA Engine:</span>
-              <span className="text-emerald-600 dark:text-emerald-400">Active</span>
+          ) : (
+            <div className="p-3 border-t border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-center">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" title="System Online" />
             </div>
-          </div>
+          )}
         </aside>
 
         {/* Main Content Workspace */}

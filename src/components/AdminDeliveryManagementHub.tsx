@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   Truck,
   ShieldCheck,
@@ -83,10 +84,10 @@ export function AdminDeliveryManagementHub() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Action failed.");
 
-      alert(json.message);
+      toast.success("Delivery Operations Updated 🚚", json.message || "Action processed successfully.");
       fetchDeliveryAdminData();
     } catch (err: any) {
-      alert(err.message);
+      toast.error("Action Failed", err.message || "Could not process delivery update.");
     } finally {
       setProcessingId(null);
     }

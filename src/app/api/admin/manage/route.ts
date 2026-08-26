@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { addRecycleBinItem } from "@/lib/recycleBinStore";
 
 export async function POST(request: Request) {
   try {
@@ -85,6 +86,19 @@ export async function POST(request: Request) {
 
         await prisma.user.delete({ where: { id: targetId } });
 
+        await addRecycleBinItem({
+          entityId: targetId,
+          entityType: "USER_ACCOUNT",
+          title: `User: ${user.name}`,
+          snippet: `User account deleted by Admin (${user.email || user.phone || "N/A"})`,
+          actorType: "ADMIN",
+          deletedByUserId: session.id,
+          deletedByName: session.name || "Master Administrator",
+          deletedByRole: "ADMIN",
+          reason: "Deleted from user management workspace",
+          payload: user,
+        });
+
         await prisma.auditLog.create({
           data: {
             userId: session.id,
@@ -122,6 +136,19 @@ export async function POST(request: Request) {
 
         await prisma.product.delete({ where: { id: targetId } });
 
+        await addRecycleBinItem({
+          entityId: targetId,
+          entityType: "PRODUCT_LISTING",
+          title: product.title,
+          snippet: `Product listing removed from catalog by Admin`,
+          actorType: "ADMIN",
+          deletedByUserId: session.id,
+          deletedByName: session.name || "Master Administrator",
+          deletedByRole: "ADMIN",
+          reason: "Removed during product moderation",
+          payload: product,
+        });
+
         await prisma.auditLog.create({
           data: {
             userId: session.id,
@@ -139,6 +166,19 @@ export async function POST(request: Request) {
 
         await prisma.providerProfile.delete({ where: { id: targetId } });
 
+        await addRecycleBinItem({
+          entityId: targetId,
+          entityType: "BUSINESS_PROFILE",
+          title: provider.businessName,
+          snippet: `Business profile & storefront deleted by Admin`,
+          actorType: "ADMIN",
+          deletedByUserId: session.id,
+          deletedByName: session.name || "Master Administrator",
+          deletedByRole: "ADMIN",
+          reason: "Removed from business profile directory",
+          payload: provider,
+        });
+
         await prisma.auditLog.create({
           data: {
             userId: session.id,
@@ -155,6 +195,19 @@ export async function POST(request: Request) {
         if (!req) return NextResponse.json({ error: "Request not found." }, { status: 404 });
 
         await prisma.serviceRequest.delete({ where: { id: targetId } });
+
+        await addRecycleBinItem({
+          entityId: targetId,
+          entityType: "SERVICE_REQUEST",
+          title: req.title,
+          snippet: `Customer service request deleted by Admin`,
+          actorType: "ADMIN",
+          deletedByUserId: session.id,
+          deletedByName: session.name || "Master Administrator",
+          deletedByRole: "ADMIN",
+          reason: "Removed from request moderation queue",
+          payload: req,
+        });
 
         await prisma.auditLog.create({
           data: {

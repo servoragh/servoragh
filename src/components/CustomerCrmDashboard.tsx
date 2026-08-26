@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   Users,
   Search,
@@ -154,7 +155,7 @@ export function CustomerCrmDashboard({ isDark = false }: CustomerCrmDashboardPro
         };
       } else if (actionModal.type === "SHADOW_LOGIN") {
         if (!formReason.trim()) {
-          alert("Admin reason is required for shadow login impersonation.");
+          toast.warning("Reason Required", "Admin reason is required for shadow login impersonation.");
           setProcessing(false);
           return;
         }
@@ -179,16 +180,18 @@ export function CustomerCrmDashboard({ isDark = false }: CustomerCrmDashboardPro
       if (res.ok) {
         if (actionModal.type === "SHADOW_LOGIN" && data.shadowToken) {
           setShadowResult(data.shadowToken);
+          toast.success("Shadow Token Generated 🔑", "Impersonation session ready.");
         } else {
           setActionModal({ type: null, customer: null });
           setFormReason("");
+          toast.success("CRM Action Completed ✓", "Customer record updated.");
         }
         fetchCrmCustomers();
       } else {
-        alert(data.error || "Failed to execute CRM action.");
+        toast.error("CRM Action Failed", data.error || "Failed to execute CRM action.");
       }
     } catch (e) {
-      alert("Network error executing CRM action.");
+      toast.error("Network Error", "Failed to communicate with CRM endpoint.");
     } finally {
       setProcessing(false);
     }
@@ -208,13 +211,14 @@ export function CustomerCrmDashboard({ isDark = false }: CustomerCrmDashboardPro
       if (res.ok) {
         setNewNoteContent("");
         setNewNoteIsPinned(false);
+        toast.success("Internal Note Added 📝", "Note attached to customer record.");
         fetchCrmCustomers();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to add note.");
+        toast.error("Note Failed", data.error || "Failed to add note.");
       }
     } catch (e) {
-      alert("Network error adding note.");
+      toast.error("Network Error", "Failed to add note.");
     } finally {
       setProcessing(false);
     }

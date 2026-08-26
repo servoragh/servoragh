@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
+import { toast } from "@/lib/toast";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -84,7 +85,7 @@ function DeliveryRequestContent() {
     e.preventDefault();
 
     if (!prohibitedConfirmed) {
-      alert("Please confirm that the package does not contain prohibited or hazardous items.");
+      toast.warning("Hazardous Items Warning", "Please confirm that the package does not contain prohibited or hazardous items.");
       return;
     }
 
@@ -214,7 +215,7 @@ function DeliveryRequestContent() {
             <button
               onClick={() => {
                 if (!pickupAddress || !pickupContactName || !pickupContactPhone) {
-                  alert("Please fill in pickup address, contact name, and phone.");
+                  toast.warning("Pickup Details Required", "Please fill in pickup address, contact name, and phone.");
                   return;
                 }
                 setStep(2);
@@ -290,7 +291,7 @@ function DeliveryRequestContent() {
                 type="button"
                 onClick={() => {
                   if (!destinationAddress || !recipientName || !recipientPhone) {
-                    alert("Please fill in destination address, recipient name, and phone.");
+                    toast.warning("Destination Details Required", "Please fill in destination address, recipient name, and phone.");
                     return;
                   }
                   setStep(3);
@@ -416,7 +417,7 @@ function DeliveryRequestContent() {
                 type="button"
                 onClick={() => {
                   if (!packageDescription) {
-                    alert("Please provide a package description.");
+                    toast.warning("Description Required", "Please provide a package description.");
                     return;
                   }
                   setStep(4);

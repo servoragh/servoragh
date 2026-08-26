@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import Link from "next/link";
 import {
   Truck,
@@ -80,13 +81,14 @@ export default function DeliveryProviderDashboardPage() {
 
       const json = await res.json();
       if (!res.ok) {
-        alert(json.error || "Cannot change online status.");
+        toast.error("Status Failed", json.error || "Cannot change online status.");
       } else {
         setProvider(json.provider);
+        toast.info("Status Changed", `Couriers status updated to ${nextOnlineState ? "ONLINE 🟢" : "OFFLINE 🔴"}.`);
         if (nextOnlineState) fetchDashboardData();
       }
     } catch (err: any) {
-      alert(err.message);
+      toast.error("Network Error", err.message || "Could not change status.");
     } finally {
       setTogglingStatus(false);
     }
@@ -99,10 +101,10 @@ export default function DeliveryProviderDashboardPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to accept job.");
-      alert("Job Accepted! Drive to pickup location.");
+      toast.success("Job Accepted! 🚀", "Drive safely to the pickup location.");
       fetchDashboardData();
     } catch (err: any) {
-      alert(err.message);
+      toast.error("Accept Failed", err.message || "Failed to accept delivery job.");
     }
   };
 
@@ -137,7 +139,7 @@ export default function DeliveryProviderDashboardPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Invalid PIN OTP.");
 
-      alert(`Delivery Completed! Earnings credited to your wallet.`);
+      toast.success("Delivery Completed! 📦🎉", "Earnings credited to your courier wallet.");
       setPinInput("");
       setActiveDelivery(null);
       fetchDashboardData();

@@ -8,83 +8,100 @@ export async function GET() {
   try {
     const session = await getSession();
 
-    // 1. Core Users & Profiles Metrics
-    const totalUsers = await prisma.user.count();
-    const totalCustomers = await prisma.user.count({ where: { role: "CUSTOMER" } });
-    const totalProviders = await prisma.providerProfile.count();
-    const verifiedProviders = await prisma.providerProfile.count({ where: { verificationStatus: "VERIFIED" } });
-    const pendingVerifications = await prisma.providerProfile.count({ where: { verificationStatus: "PENDING" } });
+    // Run all count and find queries in PARALLEL using Promise.all for ultra-fast response
+    const [
+      totalUsers,
+      totalCustomers,
+      totalProviders,
+      verifiedProviders,
+      pendingVerifications,
+      pendingProducts,
+      totalRequests,
+      openRequests,
+      completedJobs,
+      totalQuotes,
+      acceptedQuotes,
+      totalLegacyProducts,
+      totalListings,
+      users,
+      providers,
+      products,
+      categories,
+      serviceRequests,
+      featureFlags,
+      auditLogs,
+      reports,
+      unmetDemandSearchLogs,
+    ] = await Promise.all([
+      prisma.user.count().catch(() => 0),
+      prisma.user.count({ where: { role: "CUSTOMER" } }).catch(() => 0),
+      prisma.providerProfile.count().catch(() => 0),
+      prisma.providerProfile.count({ where: { verificationStatus: "VERIFIED" } }).catch(() => 0),
+      prisma.providerProfile.count({ where: { verificationStatus: "PENDING" } }).catch(() => 0),
+      prisma.productListing.count({ where: { status: "PENDING_APPROVAL" } }).catch(() => 0),
+      prisma.serviceRequest.count().catch(() => 0),
+      prisma.serviceRequest.count({ where: { status: "OPEN" } }).catch(() => 0),
+      prisma.serviceRequest.count({ where: { status: "COMPLETED" } }).catch(() => 0),
+      prisma.quote.count().catch(() => 0),
+      prisma.quote.count({ where: { status: "ACCEPTED" } }).catch(() => 0),
+      prisma.product.count().catch(() => 0),
+      prisma.productListing.count().catch(() => 0),
+      prisma.user.findMany({
+        select: { id: true, name: true, email: true, phone: true, role: true, avatarUrl: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }).catch(() => []),
+      prisma.providerProfile.findMany({
+        include: {
+          user: { select: { id: true, name: true, email: true, phone: true, role: true, avatarUrl: true } },
+          products: true,
+          services: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }).catch(() => []),
+      prisma.product.findMany({
+        include: { provider: { select: { businessName: true, slug: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }).catch(() => []),
+      prisma.category.findMany({
+        include: { services: true },
+        orderBy: { name: "asc" },
+      }).catch(() => []),
+      prisma.serviceRequest.findMany({
+        include: {
+          customer: { select: { name: true, phone: true } },
+          service: { select: { name: true } },
+          quotes: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+      }).catch(() => []),
+      prisma.featureFlag.findMany().catch(() => [
+        { id: "flag-1", name: "WhatsApp Instant Dispatch", isEnabled: true, description: "Automated WhatsApp dispatch for urgent requests" },
+        { id: "flag-2", name: "Ghana Card ID Verification", isEnabled: true, description: "Mandatory Ghana Card checks for service providers" },
+        { id: "flag-3", name: "Dynamic Top Announcement Ticker", isEnabled: true, description: "Vertical swipe-up top announcement bar" },
+      ]),
+      prisma.auditLog.findMany({ take: 30, orderBy: { createdAt: "desc" } }).catch(() => [
+        { id: "log-1", userId: session?.id || "admin", action: "ADMIN_ACCESS", details: "Real PostgreSQL Database connected", createdAt: new Date().toISOString() },
+      ]),
+      prisma.report.findMany({
+        include: {
+          reporter: { select: { name: true, phone: true } },
+          target: { select: { name: true, phone: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }).catch(() => []),
+      prisma.searchQueryLog.findMany({
+        where: { resultCount: 0 },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }).catch(() => []),
+    ]);
 
-    // 2. Marketplace & Delivery Requests
-    const totalRequests = await prisma.serviceRequest.count();
-    const openRequests = await prisma.serviceRequest.count({ where: { status: "OPEN" } });
-    const completedJobs = await prisma.serviceRequest.count({ where: { status: "COMPLETED" } });
-    const totalQuotes = await prisma.quote.count();
-    const acceptedQuotes = await prisma.quote.count({ where: { status: "ACCEPTED" } });
-    const totalLegacyProducts = await prisma.product.count();
-    const totalListings = await prisma.productListing.count();
     const totalProducts = totalLegacyProducts + totalListings;
-
-    // 3. Real PostgreSQL Records
-    const users = await prisma.user.findMany({
-      select: { id: true, name: true, email: true, phone: true, role: true, avatarUrl: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
-
-    const providers = await prisma.providerProfile.findMany({
-      include: {
-        user: { select: { id: true, name: true, email: true, phone: true, role: true, avatarUrl: true } },
-        products: true,
-        services: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const products = await prisma.product.findMany({
-      include: { provider: { select: { businessName: true, slug: true } } },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const categories = await prisma.category.findMany({
-      include: { services: true },
-      orderBy: { name: "asc" },
-    });
-
-    const serviceRequests = await prisma.serviceRequest.findMany({
-      include: {
-        customer: { select: { name: true, phone: true } },
-        service: { select: { name: true } },
-        quotes: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
-
-    const featureFlags = await prisma.featureFlag.findMany().catch(() => [
-      { id: "flag-1", name: "WhatsApp Instant Dispatch", isEnabled: true, description: "Automated WhatsApp dispatch for urgent requests" },
-      { id: "flag-2", name: "Ghana Card ID Verification", isEnabled: true, description: "Mandatory Ghana Card checks for service providers" },
-      { id: "flag-3", name: "Dynamic Top Announcement Ticker", isEnabled: true, description: "Vertical swipe-up top announcement bar" },
-    ]);
-
-    const auditLogs = await prisma.auditLog.findMany({ take: 50, orderBy: { createdAt: "desc" } }).catch(() => [
-      { id: "log-1", userId: session?.id || "admin", action: "ADMIN_ACCESS", details: "Real PostgreSQL Database connected", createdAt: new Date().toISOString() },
-    ]);
-
-    const reports = await prisma.report.findMany({
-      include: {
-        reporter: { select: { name: true, phone: true } },
-        target: { select: { name: true, phone: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }).catch(() => []);
-
-    const unmetDemandSearchLogs = await prisma.searchQueryLog.findMany({
-      where: { resultCount: 0 },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    }).catch(() => []);
-
     const totalProductImages = totalProducts * 2;
     const totalPortfolioImages = providers.length * 3;
     const totalVerificationDocs = pendingVerifications + verifiedProviders;
@@ -109,6 +126,7 @@ export async function GET() {
         totalProviders,
         verifiedProviders,
         pendingVerifications,
+        pendingProducts,
         totalRequests,
         openRequests,
         completedJobs,
@@ -141,7 +159,7 @@ export async function GET() {
       unmetDemandSearchLogs,
     });
   } catch (error: any) {
-    console.error("Admin Stats Real DB Error:", error);
+    console.error("Admin Stats Parallel Query Error:", error);
     return NextResponse.json({ error: "Failed to load database metrics." }, { status: 500 });
   }
 }

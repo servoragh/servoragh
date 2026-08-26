@@ -18,26 +18,34 @@ export async function GET(request: Request) {
     const sellerType = (searchParams.get("sellerType") as SellerType | "ALL") || "ALL";
     const category = searchParams.get("category") || "ALL";
 
-    const { listings, total } = await getAllProductListings({
+    // 1. Fetch all listings matching search/category to calculate total tab counts
+    const { listings: allListings } = await getAllProductListings({
       search,
-      status,
-      sellerType,
       category,
     });
 
     const counts = {
-      pending: listings.filter((l) => l.status === "PENDING_APPROVAL").length,
-      active: listings.filter((l) => l.status === "ACTIVE").length,
-      rejected: listings.filter((l) => l.status === "REJECTED").length,
-      sold: listings.filter((l) => l.status === "SOLD").length,
-      suspended: listings.filter((l) => l.status === "SUSPENDED").length,
-      guestCount: listings.filter((l) => l.sellerType === "GUEST").length,
+      pending: allListings.filter((l) => l.status === "PENDING_APPROVAL").length,
+      active: allListings.filter((l) => l.status === "ACTIVE").length,
+      rejected: allListings.filter((l) => l.status === "REJECTED").length,
+      sold: allListings.filter((l) => l.status === "SOLD").length,
+      suspended: allListings.filter((l) => l.status === "SUSPENDED").length,
+      guestCount: allListings.filter((l) => l.sellerType === "GUEST").length,
     };
+
+    // 2. Filter listings for active tab display
+    let filteredListings = allListings;
+    if (status && status !== "ALL") {
+      filteredListings = filteredListings.filter((l) => l.status === status);
+    }
+    if (sellerType && sellerType !== "ALL") {
+      filteredListings = filteredListings.filter((l) => l.sellerType === sellerType);
+    }
 
     return NextResponse.json({
       success: true,
-      listings,
-      total,
+      listings: filteredListings,
+      total: filteredListings.length,
       counts,
     });
   } catch (error: any) {

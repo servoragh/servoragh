@@ -3,6 +3,7 @@
 import React from "react";
 import { X, QrCode, Share2, PhoneCall, ShieldCheck, MapPin, Download, CheckCircle2 } from "lucide-react";
 import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
+import { toast } from "@/lib/toast";
 
 interface DigitalBusinessCardModalProps {
   isOpen: boolean;
@@ -87,9 +88,9 @@ export function DigitalBusinessCardModal({
           <button
             onClick={() => {
               navigator.clipboard.writeText(profileUrl);
-              alert("Storefront URL copied to clipboard!");
+              toast.info("Storefront Link Copied 🔗", "Web link copied to clipboard.");
             }}
-            className="flex-1 py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs rounded-xl border border-stone-700 transition"
+            className="flex-1 py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs rounded-xl border border-stone-700 transition cursor-pointer"
           >
             Copy Web Link 🔗
           </button>

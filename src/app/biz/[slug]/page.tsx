@@ -272,7 +272,7 @@ export default function PublicDigitalStorefrontPage() {
                   onClick={() => setIsQuoteModalOpen(true)}
                   className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white font-bold rounded-2xl text-xs hover:bg-stone-200 transition-all border border-stone-200 dark:border-stone-700"
                 >
-                  Request Quote
+                  Get Price Estimate
                 </button>
               </div>
             </div>
@@ -518,7 +518,7 @@ export default function PublicDigitalStorefrontPage() {
                       onClick={() => setIsQuoteModalOpen(true)}
                       className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow"
                     >
-                      Request Quote
+                      Get Price Estimate
                     </button>
                   </div>
                 </div>

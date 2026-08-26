@@ -120,8 +120,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/register" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition">
+                  Register as a Customer (100% Free)
+                </Link>
+              </li>
+              <li>
                 <Link href="/provider/register" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition">
-                  Register as an Artisan / Vendor
+                  Register your Business (100% Free)
                 </Link>
               </li>
               <li>

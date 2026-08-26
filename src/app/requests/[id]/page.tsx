@@ -206,7 +206,7 @@ export default function RequestDetailPage() {
               <span className="text-xl font-black text-emerald-400 block">
                 {req.budgetMin || req.budgetMax
                   ? `GH₵ ${req.budgetMin || 0} - GH₵ ${req.budgetMax || "Open"}`
-                  : "Open to Bids / Quotes"}
+                  : "Open to Price Offers"}
               </span>
             </div>
             {tagsList.length > 0 && (
@@ -255,23 +255,23 @@ export default function RequestDetailPage() {
           <div className="flex items-center gap-3 pt-4 border-t border-stone-100 dark:border-stone-800">
             <WhatsAppShareButton
               variant="share"
-              text={`Tamale Job Request: "${req.title}" in ${req.landmark || req.location?.area}. Artisans, view & submit quotes here: https://servora.vercel.app/requests/${req.id}`}
-              label="Share Request to WhatsApp Artisans"
+              text={`Tamale Job Request: "${req.title}" in ${req.landmark || req.location?.area}. Local businesses, view & submit price offers here: https://servora.vercel.app/requests/${req.id}`}
+              label="Share Request on WhatsApp"
               className="text-xs py-2 px-4"
             />
           </div>
         </div>
 
-        {/* Section 2: Bids & Quotes Received */}
+        {/* Section 2: Price Offers Received */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-7 space-y-6">
             <h2 className="text-xl font-bold text-stone-900 dark:text-white">
-              Provider Quotes Received ({req.quotes?.length || 0})
+              Price Offers Received ({req.quotes?.length || 0})
             </h2>
 
             {req.quotes?.length === 0 ? (
               <div className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 text-center text-xs text-stone-500">
-                No provider quotes submitted yet. Verified artisans in Tamale will reply shortly.
+                No price offers submitted yet. Verified local businesses in Tamale will reply shortly.
               </div>
             ) : (
               <div className="space-y-4">
@@ -317,7 +317,7 @@ export default function RequestDetailPage() {
                           onClick={() => handleAcceptQuote(q.id)}
                           className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition"
                         >
-                          Accept Quote & Contact Artisan
+                          Accept Offer & Contact Business
                         </button>
                       )}
 
@@ -334,15 +334,15 @@ export default function RequestDetailPage() {
             )}
           </div>
 
-          {/* Section 3: Submit Quote Sidebar for Providers */}
+          {/* Section 3: Submit Price Offer Sidebar for Sellers */}
           <div className="lg:col-span-5">
             {isProvider ? (
               <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-6 shadow-sm sticky top-24">
                 <h3 className="font-bold text-lg text-stone-900 dark:text-white mb-2">
-                  Submit a Provider Quote
+                  Send a Price Offer
                 </h3>
                 <p className="text-xs text-stone-500 mb-4">
-                  Give a fair, transparent estimate in Ghanaian Cedi (GH₵).
+                  Give a fair, transparent price estimate in Ghanaian Cedi (GH₵).
                 </p>
 
                 <form onSubmit={handleQuoteSubmit} className="space-y-3">
@@ -375,7 +375,7 @@ export default function RequestDetailPage() {
 
                   <div>
                     <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                      Quote Note / Approach
+                      Offer Details / Note
                     </label>
                     <textarea
                       rows={3}
@@ -392,21 +392,21 @@ export default function RequestDetailPage() {
                     disabled={quoteLoading}
                     className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition"
                   >
-                    {quoteLoading ? "Submitting Quote..." : "Send Quote to Customer"}
+                    {quoteLoading ? "Submitting Offer..." : "Send Offer to Customer"}
                   </button>
                 </form>
               </div>
             ) : (
               <div className="bg-stone-900 text-white rounded-3xl p-6 border border-stone-800">
-                <h4 className="font-bold text-base mb-2">Are you a verified service artisan in Tamale?</h4>
+                <h4 className="font-bold text-base mb-2">Are you a registered local business in Tamale?</h4>
                 <p className="text-xs text-stone-300 mb-4">
-                  Log in as a provider to submit quotes for jobs in Sakasaka, Nyohini, and across Tamale.
+                  Log in to send price offers for job requests in Sakasaka, Nyohini, and across Tamale.
                 </p>
                 <Link
                   href="/login"
                   className="block w-full py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl text-center"
                 >
-                  Log In to Submit Quote
+                  Log In to Send Price Offer
                 </Link>
               </div>
             )}

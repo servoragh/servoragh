@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   Activity,
   ShieldAlert,
@@ -130,13 +131,14 @@ export function AdminSystemHealthHub({ isDark }: { isDark?: boolean }) {
           ...prev,
           [pendingControlKey]: pendingState,
         }));
+        toast.warning("Emergency Control Toggled 🚨", `Control ${pendingControlKey} is now ${pendingState ? "Active" : "Disabled"}.`);
         setPendingControlKey(null);
         fetchSystemDiagnostics();
       } else {
-        alert(data.error || "Emergency control update failed.");
+        toast.error("Control Update Failed", data.error || "Emergency control update failed.");
       }
     } catch {
-      alert("Network error updating emergency control.");
+      toast.error("Network Error", "Failed to update emergency control.");
     } finally {
       setApplyingControl(false);
     }

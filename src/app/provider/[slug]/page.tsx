@@ -188,7 +188,7 @@ export default function ProviderProfilePage() {
               onClick={() => setIsWizardOpen(true)}
               className="w-full sm:flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-2xl shadow transition text-center"
             >
-              Request Quote From {provider.businessName}
+              Get Price Estimate From {provider.businessName}
             </button>
             <button
               onClick={() => setIsQrModalOpen(true)}
@@ -229,7 +229,7 @@ export default function ProviderProfilePage() {
           <div className="lg:col-span-2 space-y-8">
             {/* Bio & Description */}
             <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-6 shadow-sm">
-              <h3 className="text-lg font-bold text-stone-900 dark:text-white mb-3">About the Artisan</h3>
+              <h3 className="text-lg font-bold text-stone-900 dark:text-white mb-3">About the Business</h3>
               <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-line">
                 {provider.bio}
               </p>

@@ -42,17 +42,6 @@ export default function LoginPage() {
     }
   }
 
-  function handleDemoLogin(type: "admin" | "provider") {
-    if (type === "admin") {
-      setPhoneOrEmail("admin@servora.gh");
-      setPassword("admin12345");
-    } else {
-      setPhoneOrEmail("+233244889900");
-      setPassword("password123");
-    }
-    setError(null);
-  }
-
   return (
     <div className="py-6 sm:py-12 bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex items-center justify-center p-4 min-h-[calc(100vh-140px)] transition-colors duration-200">
       <div className="bg-white/95 dark:bg-stone-900/95 border border-stone-200 dark:border-stone-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl backdrop-blur-xl transition-all">
@@ -62,7 +51,7 @@ export default function LoginPage() {
             <Wrench className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-black tracking-tight text-stone-900 dark:text-white">Log in to Servora</h1>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">Connect with verified local service artisans in Northern Ghana</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">Connect with verified local businesses, sellers, and services in Northern Ghana</p>
         </div>
 
         {/* Account Role Selector Tabs */}
@@ -87,7 +76,7 @@ export default function LoginPage() {
                 : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white"
             }`}
           >
-            Artisan / Business
+            Business / Seller
           </button>
         </div>
 
@@ -154,36 +143,18 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Demo Credentials Section */}
-        <div className="mt-6 pt-5 border-t border-stone-100 dark:border-stone-800 text-center space-y-2">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
-            Quick Fill Demo Accounts
-          </p>
-          <div className="flex items-center justify-center gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => handleDemoLogin("admin")}
-              className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 font-bold rounded-xl border border-emerald-200 dark:border-emerald-800 transition flex items-center gap-1 cursor-pointer"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Admin Account</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin("provider")}
-              className="px-3 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 text-stone-700 dark:text-stone-300 font-semibold rounded-xl border border-stone-200 dark:border-stone-700 transition cursor-pointer"
-            >
-              Kwame Electrician
-            </button>
+        <div className="text-xs text-stone-500 dark:text-stone-400 text-center mt-6 space-y-1">
+          <p>Don't have an account yet?</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 font-bold pt-1">
+            <Link href="/register" className="text-emerald-600 dark:text-emerald-400 hover:underline">
+              Register as a Customer (100% Free)
+            </Link>
+            <span className="hidden sm:inline text-stone-300 dark:text-stone-700">•</span>
+            <Link href="/provider/register" className="text-amber-600 dark:text-amber-400 hover:underline">
+              Register your Business (100% Free)
+            </Link>
           </div>
         </div>
-
-        <p className="text-xs text-stone-500 dark:text-stone-400 text-center mt-6">
-          Don't have an account?{" "}
-          <Link href="/register" className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
-            Register here
-          </Link>
-        </p>
       </div>
     </div>
   );

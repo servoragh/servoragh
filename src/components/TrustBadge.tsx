@@ -24,7 +24,7 @@ export function TrustBadge({ type, size = "md" }: TrustBadgeProps) {
       icon: Award,
     },
     TOP_RATED: {
-      label: "Top Rated Artisan",
+      label: "Top Rated Seller",
       color: "bg-yellow-100 text-yellow-900 border-yellow-300 dark:bg-yellow-950/60 dark:text-yellow-300 dark:border-yellow-800",
       icon: Star,
     },

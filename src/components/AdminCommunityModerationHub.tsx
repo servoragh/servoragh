@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   MessageSquare,
   Search,
@@ -105,11 +106,13 @@ export function AdminCommunityModerationHub({ isDark }: { isDark?: boolean }) {
       if (!res.ok || !data.success) {
         // Rollback on failure
         fetchCommunityPosts();
-        alert(data.error || "Failed to update pin status.");
+        toast.error("Pin Update Failed", data.error || "Failed to update pin status.");
+      } else {
+        toast.info("Post Pin Toggled 📌", "Community post pin status updated.");
       }
     } catch {
       fetchCommunityPosts();
-      alert("Network error toggling pin status.");
+      toast.error("Network Error", "Failed to toggle pin status.");
     } finally {
       setActioningId(null);
     }
@@ -129,11 +132,13 @@ export function AdminCommunityModerationHub({ isDark }: { isDark?: boolean }) {
       const data = await res.json();
       if (!res.ok || !data.success) {
         fetchCommunityPosts();
-        alert(data.error || "Failed to delete community post.");
+        toast.error("Delete Failed", data.error || "Failed to delete community post.");
+      } else {
+        toast.error("Post Deleted 🗑️", "Community notice removed.");
       }
     } catch {
       fetchCommunityPosts();
-      alert("Network error removing post.");
+      toast.error("Network Error", "Failed to remove post.");
     } finally {
       setActioningId(null);
     }

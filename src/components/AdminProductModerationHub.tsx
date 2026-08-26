@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   ShoppingBag,
   Search,
@@ -126,15 +127,16 @@ export function AdminProductModerationHub({ isDark = false }: AdminProductModera
       const data = await res.json();
       if (res.ok) {
         setRejectModalListing(null);
+        toast.success("Moderation Action Completed ✓", `Product status updated to ${action.toLowerCase()}.`);
         fetchQueue();
       } else {
         // Rollback on failure
         fetchQueue();
-        alert(data.error || "Failed to execute moderation action.");
+        toast.error("Moderation Action Failed", data.error || "Failed to execute moderation action.");
       }
     } catch (e) {
       fetchQueue();
-      alert("Network error executing product moderation.");
+      toast.error("Network Error", "Failed to connect to product moderation endpoint.");
     } finally {
       setProcessing(false);
     }

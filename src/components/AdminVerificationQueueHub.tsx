@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   ShieldCheck,
   Search,
@@ -142,11 +143,16 @@ export function AdminVerificationQueueHub({ isDark }: { isDark?: boolean }) {
         setInspectingItem(null);
         setShowRejectForm(false);
         setRejectionNotes("");
+        if (status === "VERIFIED") {
+          toast.success("Ghana Card Verified ✓", `${inspectingItem.name} verification approved.`);
+        } else {
+          toast.error("Verification Rejected ❌", `${inspectingItem.name} verification rejected.`);
+        }
       } else {
-        alert(data.error || "Verification action failed.");
+        toast.error("Action Failed", data.error || "Verification action failed.");
       }
     } catch (e) {
-      alert("Network error processing verification update.");
+      toast.error("Network Error", "Failed to communicate with verification server.");
     } finally {
       setProcessing(false);
     }

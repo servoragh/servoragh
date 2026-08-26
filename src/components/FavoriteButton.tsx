@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Heart, Bookmark, Sparkles, X, UserCheck, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { toast } from "@/lib/toast";
 
 interface FavoriteButtonProps {
   businessId: string;
@@ -120,16 +121,21 @@ export function FavoriteButton({
         saveLocalFavorite(businessId, nextState);
         setIsFavorited(nextState);
         setShowSyncPrompt(true);
-      } else if (res.ok) {
         setIsFavorited(json.isFavorited);
         window.dispatchEvent(new Event("servora_favorites_updated"));
+        if (json.isFavorited) {
+          toast.success("Saved to Favorites ❤️", `${businessName || "Business"} saved to your favorites.`);
+        } else {
+          toast.info("Removed from Favorites", `${businessName || "Business"} removed from favorites.`);
+        }
       } else {
-        alert(json.error || "Could not update favorite status.");
+        toast.error("Favorite Update Failed", json.error || "Could not update favorite status.");
       }
     } catch {
       // Offline fallback
       saveLocalFavorite(businessId, nextState);
       setIsFavorited(nextState);
+      toast.success(nextState ? "Saved Offline ❤️" : "Removed Offline", "Saved to local browser storage.");
     } finally {
       setLoading(false);
     }

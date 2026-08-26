@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { AIAssistantWidget } from "@/components/AIAssistantWidget";
 import { PwaInstallBanner } from "@/components/PwaInstallBanner";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { ToastProvider } from "@/components/ToastProvider";
 
 export const metadata: Metadata = {
   title: "Servora — Local Services & Business Marketplace | Northern Ghana",
@@ -52,6 +53,7 @@ export default function RootLayout({
         <AIAssistantWidget />
         <PwaInstallBanner />
         <MobileBottomNav />
+        <ToastProvider />
       </body>
     </html>
   );

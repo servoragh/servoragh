@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   Scale,
   Search,
@@ -235,7 +236,7 @@ export function AdminDisputesHub({ isDark }: { isDark?: boolean }) {
             <div className="flex items-center justify-between pt-2">
               <button
                 onClick={() => {
-                  alert(`Dispute ${selectedCase.id} resolved with MoMo escrow release/refund.`);
+                  toast.success("Dispute Resolved ⚖️", `Dispute ${selectedCase.id} resolved with MoMo escrow release.`);
                   setSelectedCase(null);
                 }}
                 className="py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow cursor-pointer"

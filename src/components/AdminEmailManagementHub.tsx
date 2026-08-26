@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   Mail,
   Send,
@@ -99,14 +100,14 @@ export function AdminEmailManagementHub({ isDark }: { isDark?: boolean }) {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        alert(`Test email "${selectedTemplate}" dispatched successfully via [${data.result.provider}] adapter!`);
+        toast.success("Test Email Sent 📧", `Test template "${selectedTemplate}" dispatched via [${data.result.provider}].`);
         setShowTestDrawer(false);
         fetchEmailLogs();
       } else {
-        alert(data.error || "Failed to dispatch test email.");
+        toast.error("Email Dispatch Failed", data.error || "Failed to dispatch test email.");
       }
     } catch {
-      alert("Network error sending test email.");
+      toast.error("Network Error", "Failed to dispatch test email.");
     } finally {
       setTestSending(false);
     }
@@ -123,14 +124,14 @@ export function AdminEmailManagementHub({ isDark }: { isDark?: boolean }) {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        alert("Email re-triggered and dispatched successfully!");
+        toast.success("Email Re-Dispatched 📧", "Email re-triggered successfully.");
         setInspectingLog(null);
         fetchEmailLogs();
       } else {
-        alert(data.error || "Failed to re-trigger email.");
+        toast.error("Resend Failed", data.error || "Failed to re-trigger email.");
       }
     } catch {
-      alert("Network error re-triggering email.");
+      toast.error("Network Error", "Failed to re-trigger email.");
     } finally {
       setResendingId(null);
     }

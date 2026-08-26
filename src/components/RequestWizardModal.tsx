@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   X,
   CheckCircle,
@@ -105,7 +106,7 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
   // Handle GPS location click
   function handleFetchDeviceLocation() {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
+      toast.warning("Browser Warning", "Geolocation is not supported by your browser.");
       return;
     }
     setGettingGps(true);
@@ -116,9 +117,10 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
         setAccuracyRadius(pos.coords.accuracy);
         setLandmark("Exact GPS Position Captured 📍");
         setGettingGps(false);
+        toast.success("GPS Captured 📍", "Exact location coordinates locked.");
       },
       (err) => {
-        alert("Failed to fetch GPS coordinates. Please specify landmark manually.");
+        toast.error("GPS Failed", "Failed to fetch GPS coordinates. Please specify landmark manually.");
         setGettingGps(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -146,8 +148,9 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
         ...prev,
         { mediaUrl: d.url, mediaType, fileName: file.name, fileSize: file.size },
       ]);
+      toast.success("Attachment Uploaded 📎", `${file.name} attached to request.`);
     } catch (err: any) {
-      alert(err.message);
+      toast.error("Upload Failed", err.message || "File upload failed.");
     } finally {
       setUploadingFile(false);
     }
@@ -246,8 +249,9 @@ export function RequestWizardModal({ isOpen, onClose, initialCategorySlug }: Req
 
       setVerifyingGuest(false);
       setSuccess(true);
+      toast.success("Request Verified & Posted! 🎉", "Your request is now live for local businesses.");
     } catch (err: any) {
-      alert(err.message);
+      toast.error("Verification Error", err.message || "Invalid OTP code.");
     } finally {
       setLoading(false);
     }

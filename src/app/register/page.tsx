@@ -45,8 +45,11 @@ export default function CustomerRegisterPage() {
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center mx-auto mb-3 shadow-md">
             <Wrench className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-stone-900 dark:text-white">Create Customer Account</h1>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">Post requests & hire trusted service artisans in Tamale</p>
+          <span className="inline-block px-3 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-extrabold text-[11px] rounded-full uppercase tracking-wider mb-2 border border-emerald-300 dark:border-emerald-800">
+            100% FREE Customer Account — No Fees
+          </span>
+          <h1 className="text-2xl font-black tracking-tight text-stone-900 dark:text-white">Looking to Buy or Hire? Register as a Customer</h1>
+          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">Create your 100% free account to post price requests, buy products, and connect with local sellers in Tamale</p>
         </div>
 
         {/* Social Authentication Buttons */}
@@ -139,15 +142,15 @@ export default function CustomerRegisterPage() {
             disabled={loading}
             className="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm rounded-2xl shadow-lg shadow-emerald-600/20 transition active:scale-98 disabled:opacity-50 cursor-pointer"
           >
-            {loading ? "Creating Account..." : "Create Customer Account"}
+            {loading ? "Creating Account..." : "Register as a Customer (100% Free)"}
           </button>
         </form>
 
         <div className="mt-6 pt-5 border-t border-stone-100 dark:border-stone-800 text-center">
           <p className="text-xs text-stone-600 dark:text-stone-400">
-            Are you a skilled artisan or business?{" "}
+            Are you a business owner or seller?{" "}
             <Link href="/provider/register" className="font-bold text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-1">
-              <span>Register as Provider</span>
+              <span>Register your Business</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </p>

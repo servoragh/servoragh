@@ -244,12 +244,12 @@ export function UnifiedEcommerceSearch({
   // 2. HERO VARIANT (Minimalist, Super-Modern Pill Search Bar)
   // -------------------------------------------------------------
   return (
-    <div ref={searchContainerRef} className={`relative w-full ${className}`}>
+    <div ref={searchContainerRef} className={`relative w-full z-50 ${className}`}>
       <form
         onSubmit={handleFormSubmit}
         className={`bg-white/90 dark:bg-stone-900/90 border ${
           isOpen ? "border-emerald-500 ring-4 ring-emerald-500/15 shadow-2xl" : "border-stone-200/90 dark:border-stone-800/90 shadow-xl"
-        } rounded-full p-2 backdrop-blur-xl transition-all duration-200 relative z-30 flex items-center gap-2`}
+        } rounded-full p-2 backdrop-blur-xl transition-all duration-200 relative z-50 flex items-center gap-2`}
       >
         {/* Main Input Box */}
         <div
@@ -368,7 +368,7 @@ export function UnifiedEcommerceSearch({
       : "absolute top-full left-0 right-0 w-full";
 
     return (
-      <div className={`${popoverPositionClass} mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl z-50 max-h-[75vh] overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800 text-stone-900 dark:text-stone-100 transition pointer-events-auto`}>
+      <div className={`${popoverPositionClass} mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl z-[100] max-h-[75vh] overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800 text-stone-900 dark:text-stone-100 transition pointer-events-auto`}>
         
         {/* POPULAR QUICK SEARCH SUGGESTIONS */}
         {!query.trim() && totalResultsCount === 0 && (

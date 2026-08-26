@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   Layers,
   Plus,
@@ -81,15 +82,15 @@ export function AdminUniversalTaxonomyHub({ isDark }: { isDark?: boolean }) {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        alert("Category saved successfully to PostgreSQL!");
+        toast.success("Category Saved 🏷️", `"${editingCategory.name}" saved to taxonomy core.`);
         setShowModal(false);
         setEditingCategory(null);
         fetchTaxonomy();
       } else {
-        alert(data.error || "Failed to save category.");
+        toast.error("Category Save Failed", data.error || "Failed to save category.");
       }
     } catch {
-      alert("Network error saving category.");
+      toast.error("Network Error", "Failed to connect to taxonomy API.");
     } finally {
       setSaving(false);
     }

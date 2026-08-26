@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   Megaphone,
   Plus,
@@ -111,13 +112,14 @@ export function AdminTickersManager({ isDark = false }: AdminTickersManagerProps
         body: JSON.stringify({ action: "TOGGLE", id }),
       });
       if (res.ok) {
+        toast.info("Ticker Toggled 📢", "Announcement state updated.");
         fetchTickers();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to toggle ticker active state.");
+        toast.error("Toggle Failed", data.error || "Failed to toggle ticker active state.");
       }
     } catch (e) {
-      alert("Network error toggling ticker.");
+      toast.error("Network Error", "Failed to toggle ticker.");
     }
   }
 
@@ -129,13 +131,14 @@ export function AdminTickersManager({ isDark = false }: AdminTickersManagerProps
         method: "DELETE",
       });
       if (res.ok) {
+        toast.error("Ticker Deleted 🗑️", "Announcement removed.");
         fetchTickers();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to delete ticker.");
+        toast.error("Delete Failed", data.error || "Failed to delete ticker.");
       }
     } catch (e) {
-      alert("Network error deleting ticker.");
+      toast.error("Network Error", "Failed to delete ticker.");
     }
   }
 
@@ -149,20 +152,21 @@ export function AdminTickersManager({ isDark = false }: AdminTickersManagerProps
         body: JSON.stringify({ action: "RESET" }),
       });
       if (res.ok) {
+        toast.success("Tickers Reset 🔄", "Default announcement tickers restored.");
         fetchTickers();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to reset tickers.");
+        toast.error("Reset Failed", data.error || "Failed to reset tickers.");
       }
     } catch (e) {
-      alert("Network error resetting tickers.");
+      toast.error("Network Error", "Failed to reset tickers.");
     }
   }
 
   async function handleSubmitForm(e: React.FormEvent) {
     e.preventDefault();
     if (!formData.text.trim()) {
-      alert("Please enter a valid announcement message.");
+      toast.warning("Validation Warning", "Please enter a valid announcement message.");
       return;
     }
 
@@ -181,13 +185,14 @@ export function AdminTickersManager({ isDark = false }: AdminTickersManagerProps
 
       if (res.ok) {
         setIsModalOpen(false);
+        toast.success("Ticker Saved! 📢", "Announcement updated successfully.");
         fetchTickers();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to save announcement ticker.");
+        toast.error("Save Failed", data.error || "Failed to save announcement ticker.");
       }
     } catch (e) {
-      alert("Network error saving announcement ticker.");
+      toast.error("Network Error", "Failed to save announcement ticker.");
     } finally {
       setSaving(false);
     }

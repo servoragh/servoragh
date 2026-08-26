@@ -124,10 +124,10 @@ export default function ProviderRegisterPage() {
               <Building2 className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-300 block mb-0.5">
-                Step {step} of 3 &bull; Provider Registration
+              <span className="inline-block px-2.5 py-0.5 bg-amber-400 text-stone-950 font-black text-[10px] uppercase tracking-wider rounded-full mb-1">
+                100% Free Business Registration
               </span>
-              <h1 className="text-xl font-black text-white">Join Servora as a Provider</h1>
+              <h1 className="text-xl font-black text-white">Are you a Business Owner or Seller? Register your Business for Free</h1>
             </div>
           </div>
         </div>
@@ -171,9 +171,9 @@ export default function ProviderRegisterPage() {
                 <div className="pb-2 border-b border-stone-100 dark:border-stone-800">
                   <h3 className="font-bold text-sm text-stone-900 dark:text-white flex items-center gap-2">
                     <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Step 1: Contact & Security Credentials</span>
+                    <span>Step 1: Contact Details</span>
                   </h3>
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400">Enter your official name & WhatsApp contact for instant client leads.</p>
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400">Enter your full name & WhatsApp number so customers can contact you.</p>
                 </div>
 
                 {/* Social Authentication */}
@@ -225,7 +225,7 @@ export default function ProviderRegisterPage() {
                     </button>
                   </div>
                   <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-1">
-                    If your phone is already registered, enter your existing password to upgrade to a Business Provider account.
+                    If your phone is already registered, enter your existing password to upgrade to a Business Account.
                   </p>
                 </div>
               </div>
@@ -361,11 +361,21 @@ export default function ProviderRegisterPage() {
                   disabled={loading}
                   className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer ml-auto"
                 >
-                  {loading ? "Creating Business Profile..." : "Register & Open Business Portal"}
+                  {loading ? "Creating Business Profile..." : "Register your Business (100% Free)"}
                 </button>
               )}
             </div>
           </form>
+
+          <div className="pt-4 border-t border-stone-200 dark:border-stone-800 text-center">
+            <p className="text-xs text-stone-600 dark:text-stone-400">
+              Looking to buy items or hire a service?{" "}
+              <Link href="/register" className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
+                <span>Register as a Customer</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
