@@ -14,7 +14,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  String _selectedLocation = 'Tamale - Sakasaka';
+  String _selectedLocation = 'Sakasaka';
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.arrow_drop_down_rounded, size: 18),
                     items: ServoraConstants.northernNeighborhoods.map((loc) {
                       return DropdownMenuItem<String>(
-                        value: loc.contains('Tamale') ? loc : '$loc, Tamale',
+                        value: loc,
                         child: Text(
                           loc.length > 18 ? '${loc.substring(0, 16)}...' : loc,
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
