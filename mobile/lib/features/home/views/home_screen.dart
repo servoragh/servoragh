@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/constants.dart';
 import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/status_badge.dart';
+import '../../../shared/widgets/servora_dropdown_sheet.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,6 +17,21 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   String _selectedLocation = 'Sakasaka';
 
+  Future<void> _openLocationPicker() async {
+    final result = await ServoraBottomSheetPicker.show(
+      context: context,
+      title: 'Select Northern Ghana Zone 📍',
+      items: ServoraConstants.northernNeighborhoods,
+      selectedValue: _selectedLocation,
+      searchHint: 'Search Sakasaka, Nyohini, Choggu...',
+      titleIcon: Icons.location_on_rounded,
+    );
+
+    if (result != null && mounted) {
+      setState(() => _selectedLocation = result);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -25,35 +41,32 @@ class _HomeScreenState extends State<HomeScreen> {
         titleSpacing: 16,
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1F2937) : const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFF059669)),
-                  const SizedBox(width: 4),
-                  DropdownButton<String>(
-                    value: _selectedLocation,
-                    underline: const SizedBox(),
-                    isDense: true,
-                    icon: const Icon(Icons.arrow_drop_down_rounded, size: 18),
-                    items: ServoraConstants.northernNeighborhoods.map((loc) {
-                      return DropdownMenuItem<String>(
-                        value: loc,
-                        child: Text(
-                          loc.length > 18 ? '${loc.substring(0, 16)}...' : loc,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _selectedLocation = val);
-                    },
+            GestureDetector(
+              onTap: _openLocationPicker,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1F2937) : const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF059669).withOpacity(0.3),
                   ),
-                ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.location_on_rounded, size: 16, color: Color(0xFF059669)),
+                    const SizedBox(width: 6),
+                    Text(
+                      _selectedLocation.length > 16
+                          ? '${_selectedLocation.substring(0, 14)}...'
+                          : _selectedLocation,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: Color(0xFF059669)),
+                  ],
+                ),
               ),
             ),
           ],
@@ -92,102 +105,202 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Search Bar Trigger
-            GestureDetector(
-              onTap: () => context.push('/search'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF111827) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark ? const Color(0xFF1F2937) : const Color(0xFFE2E8F0),
-                  ),
-                  boxShadow: isDark
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.search_rounded, color: Color(0xFF059669), size: 22),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'What do you need in Northern Ghana?',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.grey[400] : Colors.grey[500],
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF059669).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'SEARCH',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF059669),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // 2. Urgent Local Gigs Live Ticker
+            // 1. WEB PARITY HERO BANNER & SEARCH TRIGGER
             Container(
-              padding: const EdgeInsets.all(12),
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF059669), Color(0xFF047857)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF059669).withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'NORTHERN MARKETPLACE 🇬🇭',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const StatusBadge(
+                        label: '100% FREE',
+                        backgroundColor: Colors.amber,
+                        textColor: Colors.black,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Trade, Hire Artisans & Buy Authentic Fugu',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Direct WhatsApp access & Safe MoMo Escrow protection across $_selectedLocation.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Search Bar Trigger Input
+                  GestureDetector(
+                    onTap: () => context.push('/search'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.search_rounded, color: Color(0xFF059669), size: 20),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Search electricians, smocks, plumbers...',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_rounded, color: Color(0xFF059669), size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 2. WEB PARITY 8-TILE CATEGORY GRID
+            const Text(
+              'Browse Marketplace Categories',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                childAspectRatio: 0.82,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: ServoraConstants.categories.length,
+              itemBuilder: (context, index) {
+                final cat = ServoraConstants.categories[index];
+                return GestureDetector(
+                  onTap: () => context.push('/search'),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: const Color(0xFF059669).withOpacity(0.2),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(cat['icon']!, style: const TextStyle(fontSize: 26)),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        cat['name']!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          height: 1.1,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+
+            // 3. URGENT GIG TICKER BANNER
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1B4B) : const Color(0xFFFEF3C7),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B).withOpacity(0.4),
+                ),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF59E0B),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.bolt_rounded, color: Colors.amber, size: 20),
+                    child: const Icon(Icons.bolt_rounded, color: Colors.black, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'URGENT GIG TICKER ⚡',
+                        const Text(
+                          'URGENT LOCAL GIG TICKER ⚡',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
-                            color: Colors.amber,
+                            color: Color(0xFFB45309),
                             letterSpacing: 0.5,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Solar Inverter Wire Leakage in Sakasaka • GH₵ 450',
-                          style: TextStyle(
+                          '3-Phase Solar Inverter Wiring in $_selectedLocation • GH₵ 450',
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -197,8 +310,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber,
-                      foregroundColor: Colors.black,
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -212,45 +325,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // 3. Quick Action Buttons Bar (4 Buttons)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildQuickActionButton(
-                  context,
-                  label: 'Hire Artisan',
-                  icon: '🛠️',
-                  color: const Color(0xFF059669),
-                  onTap: () => context.push('/services/request'),
-                ),
-                _buildQuickActionButton(
-                  context,
-                  label: 'Rent Tools',
-                  icon: '🚜',
-                  color: const Color(0xFF2563EB),
-                  onTap: () => context.push('/search'),
-                ),
-                _buildQuickActionButton(
-                  context,
-                  label: 'Trade Board',
-                  icon: '📢',
-                  color: const Color(0xFFD97706),
-                  onTap: () => context.push('/community'),
-                ),
-                _buildQuickActionButton(
-                  context,
-                  label: 'Safe Escrow',
-                  icon: '🛡️',
-                  color: const Color(0xFF7C3AED),
-                  onTap: () => context.push('/escrow'),
-                ),
-              ],
-            ),
             const SizedBox(height: 24),
 
-            // 4. Verified Merchants Spotlight Section
+            // 4. VERIFIED MERCHANTS SPOTLIGHT
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -304,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
 
-            // 5. Equipment & Tools for Rent Section
+            // 5. EQUIPMENT & TOOLS FOR RENT
             const Text(
               'Equipment & Tools for Rent 🚜',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -383,38 +460,6 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded), label: 'Trade Board'),
           BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined), label: 'Activity'),
           BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionButton(
-    BuildContext context, {
-    required String label,
-    required String icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Center(
-              child: Text(icon, style: const TextStyle(fontSize: 26)),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-          ),
         ],
       ),
     );
