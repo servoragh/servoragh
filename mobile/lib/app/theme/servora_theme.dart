@@ -1,69 +1,47 @@
 import 'package:flutter/material.dart';
 
-class ServoraColors {
-  static const Color primaryEmerald = Color(0xFF059669);
-  static const Color primaryDarkEmerald = Color(0xFF047857);
-  static const Color accentMint = Color(0xFF10B981);
-  
-  static const Color darkBg = Color(0xFF090D16);
-  static const Color darkSurface = Color(0xFF111827);
-  static const Color darkBorder = Color(0xFF1F2937);
-  
-  static const Color lightBg = Color(0xFFF8FAFC);
-  static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightBorder = Color(0xFFE2E8F0);
-  
-  static const Color amberUrgent = Color(0xFFF59E0B);
-  static const Color crimsonAlert = Color(0xFFEF4444);
-  static const Color whatsappGreen = Color(0xFF25D366);
-}
-
 class ServoraTheme {
+  static const Color primaryEmerald = Color(0xFF059669);
+  static const Color accentMint = Color(0xFF10B981);
+  static const Color darkBg = Color(0xFF090D16);
+  static const Color darkCard = Color(0xFF111827);
+  static const Color lightBg = Color(0xFFF8FAFC);
+  static const Color lightCard = Color(0xFFFFFFFF);
+  static const Color amberUrgent = Color(0xFFF59E0B);
+  static const Color whatsappGreen = Color(0xFF25D366);
+  static const Color escrowBg = Color(0xFFFEF3C7);
+  static const Color escrowText = Color(0xFFB45309);
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      primaryColor: ServoraColors.primaryEmerald,
-      scaffoldBackgroundColor: ServoraColors.lightBg,
+      primaryColor: primaryEmerald,
+      scaffoldBackgroundColor: lightBg,
+      cardColor: lightCard,
       colorScheme: const ColorScheme.light(
-        primary: ServoraColors.primaryEmerald,
-        secondary: ServoraColors.accentMint,
-        surface: ServoraColors.lightSurface,
-        error: ServoraColors.crimsonAlert,
+        primary: primaryEmerald,
+        secondary: accentMint,
+        surface: lightCard,
+        error: Color(0xFFEF4444),
       ),
-      fontFamily: 'Roboto',
       appBarTheme: const AppBarTheme(
-        backgroundColor: ServoraColors.lightSurface,
+        backgroundColor: lightBg,
         elevation: 0,
         scrolledUnderElevation: 0,
-        iconTheme: IconThemeData(color: Colors.black87),
+        iconTheme: IconThemeData(color: Color(0xFF0F172A)),
         titleTextStyle: TextStyle(
-          color: Colors.black87,
+          color: Color(0xFF0F172A),
           fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
       ),
       cardTheme: CardTheme(
-        color: ServoraColors.lightSurface,
-        elevation: 1,
+        color: lightCard,
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: ServoraColors.lightBorder, width: 1),
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ServoraColors.primaryEmerald,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
         ),
       ),
     );
@@ -73,17 +51,17 @@ class ServoraTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      primaryColor: ServoraColors.primaryEmerald,
-      scaffoldBackgroundColor: ServoraColors.darkBg,
+      primaryColor: primaryEmerald,
+      scaffoldBackgroundColor: darkBg,
+      cardColor: darkCard,
       colorScheme: const ColorScheme.dark(
-        primary: ServoraColors.primaryEmerald,
-        secondary: ServoraColors.accentMint,
-        surface: ServoraColors.darkSurface,
-        error: ServoraColors.crimsonAlert,
+        primary: primaryEmerald,
+        secondary: accentMint,
+        surface: darkCard,
+        error: Color(0xFFEF4444),
       ),
-      fontFamily: 'Roboto',
       appBarTheme: const AppBarTheme(
-        backgroundColor: ServoraColors.darkSurface,
+        backgroundColor: darkBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
@@ -94,26 +72,11 @@ class ServoraTheme {
         ),
       ),
       cardTheme: CardTheme(
-        color: ServoraColors.darkSurface,
+        color: darkCard,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: ServoraColors.darkBorder, width: 1),
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ServoraColors.primaryEmerald,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFF1F2937), width: 1),
         ),
       ),
     );
