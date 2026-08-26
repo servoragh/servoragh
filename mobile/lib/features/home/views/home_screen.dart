@@ -1033,23 +1033,29 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedFontSize: 10,
         unselectedFontSize: 10,
         onTap: (index) {
-          if (index == 2) {
+          if (index == 0) {
+            setState(() => _currentIndex = 0);
+          } else if (index == 1) {
+            context.push('/products');
+          } else if (index == 2) {
+            context.push('/delivery');
+          } else if (index == 3) {
             context.push('/services/request');
-            return;
+          } else if (index == 4) {
+            context.push('/community');
+          } else if (index == 5) {
+            context.push('/profile');
           }
-          setState(() => _currentIndex = index);
-          if (index == 1) context.push('/search');
-          if (index == 3) context.push('/community');
-          if (index == 4) context.push('/profile');
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_outlined), label: 'Products'),
+          BottomNavigationBarItem(icon: Icon(Icons.local_shipping_outlined), label: 'Delivery'),
           BottomNavigationBarItem(
             icon: CircleAvatar(
-              radius: 18,
+              radius: 16,
               backgroundColor: Color(0xFF059669),
-              child: Icon(Icons.add_rounded, color: Colors.white, size: 22),
+              child: Icon(Icons.add_rounded, color: Colors.white, size: 20),
             ),
             label: 'Post',
           ),

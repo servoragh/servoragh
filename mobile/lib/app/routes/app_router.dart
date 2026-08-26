@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/home/views/home_screen.dart';
+import '../../features/products/views/products_screen.dart';
+import '../../features/delivery/views/delivery_screen.dart';
 import '../../features/search/views/search_screen.dart';
 import '../../features/community/views/community_screen.dart';
 import '../../features/services/views/request_wizard_screen.dart';
@@ -18,6 +20,14 @@ final appRouter = GoRouter(
       builder: (BuildContext context, GoRouterState state) => const HomeScreen(),
     ),
     GoRoute(
+      path: '/products',
+      builder: (BuildContext context, GoRouterState state) => const ProductsScreen(),
+    ),
+    GoRoute(
+      path: '/delivery',
+      builder: (BuildContext context, GoRouterState state) => const DeliveryScreen(),
+    ),
+    GoRoute(
       path: '/search',
       builder: (BuildContext context, GoRouterState state) => const SearchScreen(),
     ),
@@ -26,7 +36,15 @@ final appRouter = GoRouter(
       builder: (BuildContext context, GoRouterState state) => const CommunityScreen(),
     ),
     GoRoute(
+      path: '/notice-board',
+      builder: (BuildContext context, GoRouterState state) => const CommunityScreen(),
+    ),
+    GoRoute(
       path: '/services/request',
+      builder: (BuildContext context, GoRouterState state) => const RequestWizardScreen(),
+    ),
+    GoRoute(
+      path: '/request',
       builder: (BuildContext context, GoRouterState state) => const RequestWizardScreen(),
     ),
     GoRoute(
@@ -49,7 +67,15 @@ final appRouter = GoRouter(
       builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
     ),
     GoRoute(
+      path: '/account',
+      builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+    ),
+    GoRoute(
       path: '/auth/login',
+      builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/register',
       builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
     ),
   ],
