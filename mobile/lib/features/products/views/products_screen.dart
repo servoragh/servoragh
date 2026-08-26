@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/servora_dropdown_sheet.dart';
 import '../../../core/utils/whatsapp_helper.dart';
+import '../../../core/services/marketplace_api_service.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -14,6 +15,38 @@ class ProductsScreen extends StatefulWidget {
 class _ProductsScreenState extends State<ProductsScreen> {
   String _selectedCategory = 'All';
   String _selectedZone = 'All Northern Ghana';
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _apiProducts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLiveProducts();
+  }
+
+  Future<void> _fetchLiveProducts() async {
+    setState(() => _isLoading = true);
+    final results = await MarketplaceApiService.fetchProducts();
+    if (mounted && results.isNotEmpty) {
+      setState(() {
+        _apiProducts = results.map((p) {
+          final provider = p['provider'] ?? {};
+          return {
+            'id': p['id'] ?? 'prod',
+            'title': p['title'] ?? 'Product',
+            'category': p['category'] ?? 'General',
+            'price': 'GH₵ ${(p['price'] ?? 0).toString()}',
+            'location': provider['serviceArea'] ?? 'Tamale',
+            'seller': provider['businessName'] ?? 'Verified Seller',
+            'rating': 5.0,
+            'phone': provider['user']?['phone'] ?? '+233240000000',
+            'escrow': true,
+          };
+        }).toList();
+      });
+    }
+    if (mounted) setState(() => _isLoading = false);
+  }
 
   final List<String> _categories = [
     'All',
@@ -102,7 +135,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final filtered = _productsList.where((p) {
+    final dataset = _apiProducts.isNotEmpty ? _apiProducts : _productsList;
+    final filtered = dataset.where((p) {
       final matchesCategory = _selectedCategory == 'All' || p['category'] == _selectedCategory;
       final matchesZone = _selectedZone == 'All Northern Ghana' || p['location'].contains(_selectedZone);
       return matchesCategory && matchesZone;
@@ -124,6 +158,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
       body: Column(
         children: [
+          if (_isLoading)
+            const LinearProgressIndicator(
+              backgroundColor: Colors.transparent,
+              color: Color(0xFF059669),
+              minHeight: 2,
+            ),
           // Category Filter Pills
           SizedBox(
             height: 48,

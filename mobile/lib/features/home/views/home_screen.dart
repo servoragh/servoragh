@@ -5,6 +5,7 @@ import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/servora_dropdown_sheet.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../core/services/marketplace_api_service.dart';
+import '../../../main.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,6 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   String _selectedLocation = 'Tamale';
   bool _isLoadingLiveApi = false;
+  List<Map<String, dynamic>> _liveProducts = [];
 
   @override
   void initState() {
@@ -27,10 +29,22 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadLiveProductionData() async {
     setState(() => _isLoadingLiveApi = true);
     try {
-      final liveProducts = await MarketplaceApiService.fetchProducts();
-      final liveBiz = await MarketplaceApiService.fetchBusinesses();
-      if (mounted && (liveProducts.isNotEmpty || liveBiz.isNotEmpty)) {
-        // Updated live backend records dynamically
+      final fetchedProducts = await MarketplaceApiService.fetchProducts();
+      if (mounted && fetchedProducts.isNotEmpty) {
+        setState(() {
+          _liveProducts = fetchedProducts.map((p) {
+            final provider = p['provider'] ?? {};
+            return {
+              'title': p['title'] ?? 'Marketplace Item',
+              'tag': p['category'] ?? 'General',
+              'discount': p['originalPrice'] != null ? 'PROMO' : null,
+              'price': 'GH₵ ${(p['price'] ?? 0).toString()}',
+              'seller': provider['businessName'] ?? 'Verified Enterprise',
+              'location': provider['serviceArea'] ?? 'Tamale',
+              'phone': provider['user']?['phone'] ?? '+233240000000',
+            };
+          }).toList();
+        });
       }
     } catch (_) {}
     if (mounted) setState(() => _isLoadingLiveApi = false);
@@ -368,10 +382,24 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundColor: isDark ? const Color(0xFF1F2937) : const Color(0xFFF1F5F9),
-                          child: const Icon(Icons.dark_mode_outlined, size: 18),
+                        GestureDetector(
+                          onTap: () {
+                            themeModeNotifier.value =
+                                isDark ? ThemeMode.light : ThemeMode.dark;
+                          },
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: isDark
+                                ? const Color(0xFF1F2937)
+                                : const Color(0xFFE2E8F0),
+                            child: Icon(
+                              isDark
+                                  ? Icons.light_mode_rounded
+                                  : Icons.dark_mode_rounded,
+                              size: 18,
+                              color: isDark ? Colors.amber : const Color(0xFF059669),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -939,9 +967,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
                       ),
-                      itemCount: _products.length,
+                      itemCount: _liveProducts.isNotEmpty ? _liveProducts.length : _products.length,
                       itemBuilder: (context, index) {
-                        final p = _products[index];
+                        final displayList = _liveProducts.isNotEmpty ? _liveProducts : _products;
+                        final p = displayList[index];
 
                         return ServoraCard(
                           padding: const EdgeInsets.all(10),

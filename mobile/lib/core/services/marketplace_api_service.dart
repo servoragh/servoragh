@@ -5,8 +5,8 @@ class MarketplaceApiService {
   static final Dio _dio = Dio(
     BaseOptions(
       baseUrl: ServoraConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 12),
+      receiveTimeout: const Duration(seconds: 12),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -14,12 +14,16 @@ class MarketplaceApiService {
     ),
   );
 
-  /// Fetch live products from production backend database
+  /// Fetch live marketplace products from database
   static Future<List<dynamic>> fetchProducts() async {
     try {
       final response = await _dio.get('/products');
-      if (response.statusCode == 200 && response.data is List) {
-        return response.data;
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data is Map && response.data['products'] != null) {
+          return response.data['products'] as List<dynamic>;
+        } else if (response.data is List) {
+          return response.data as List<dynamic>;
+        }
       }
       return [];
     } catch (_) {
@@ -27,12 +31,16 @@ class MarketplaceApiService {
     }
   }
 
-  /// Fetch live verified businesses from production database
+  /// Fetch live verified artisans & businesses from database
   static Future<List<dynamic>> fetchBusinesses() async {
     try {
-      final response = await _dio.get('/business');
-      if (response.statusCode == 200 && response.data is List) {
-        return response.data;
+      final response = await _dio.get('/search', queryParameters: {'scope': 'providers'});
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data is Map &&
+            response.data['results'] != null &&
+            response.data['results']['providers'] != null) {
+          return response.data['results']['providers'] as List<dynamic>;
+        }
       }
       return [];
     } catch (_) {
@@ -40,25 +48,16 @@ class MarketplaceApiService {
     }
   }
 
-  /// Fetch live community trade notices from production database
+  /// Fetch live community trade board notices from database
   static Future<List<dynamic>> fetchCommunityNotices() async {
     try {
-      final response = await _dio.get('/community');
-      if (response.statusCode == 200 && response.data is List) {
-        return response.data;
-      }
-      return [];
-    } catch (_) {
-      return [];
-    }
-  }
-
-  /// Fetch live urgent service requests
-  static Future<List<dynamic>> fetchUrgentRequests() async {
-    try {
-      final response = await _dio.get('/requests');
-      if (response.statusCode == 200 && response.data is List) {
-        return response.data;
+      final response = await _dio.get('/search', queryParameters: {'scope': 'community'});
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data is Map &&
+            response.data['results'] != null &&
+            response.data['results']['community'] != null) {
+          return response.data['results']['community'] as List<dynamic>;
+        }
       }
       return [];
     } catch (_) {
