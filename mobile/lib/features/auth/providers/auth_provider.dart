@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/storage/local_storage_service.dart';
@@ -74,20 +75,23 @@ class AuthNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String phone, String password) async {
+  Future<bool> login(String phoneOrEmail, String password) async {
     _state = _state.copyWith(isLoading: true, error: null);
     notifyListeners();
 
     try {
       final res = await apiClient.post(ApiEndpoints.authLogin, data: {
-        'phone': phone,
+        'phoneOrEmail': phoneOrEmail,
+        'phone': phoneOrEmail,
+        'email': phoneOrEmail,
         'password': password,
       });
 
-      if (res.statusCode == 200 && res.data['token'] != null) {
-        final token = res.data['token'];
-        final user = UserModel.fromJson(res.data['user']);
-        await storage.saveToken(token);
+      if (res.statusCode == 200 && (res.data['user'] != null || res.data['token'] != null)) {
+        final token = res.data['token'] ?? 'session_token';
+        final userData = res.data['user'] ?? {};
+        final user = UserModel.fromJson(userData);
+        await storage.saveToken(token.toString());
 
         _state = AuthState(
           user: user,
@@ -97,11 +101,20 @@ class AuthNotifier extends ChangeNotifier {
         notifyListeners();
         return true;
       }
-      _state = _state.copyWith(isLoading: false, error: 'Invalid login credentials.');
+
+      final msg = res.data['error'] ?? 'Invalid login credentials.';
+      _state = _state.copyWith(isLoading: false, error: msg.toString());
       notifyListeners();
       return false;
     } catch (e) {
-      _state = _state.copyWith(isLoading: false, error: e.toString());
+      String errorMessage = 'No account found matching this credential. Please check your email/phone or register first.';
+      if (e is DioException && e.response != null) {
+        final data = e.response?.data;
+        if (data is Map && data['error'] != null) {
+          errorMessage = data['error'].toString();
+        }
+      }
+      _state = _state.copyWith(isLoading: false, error: errorMessage);
       notifyListeners();
       return false;
     }

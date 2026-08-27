@@ -67,9 +67,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
 
                 ServoraTextField(
-                  label: 'Ghana Mobile Phone Number *',
-                  hint: '+233 24 000 0000',
-                  keyboardType: TextInputType.phone,
+                  label: 'Ghana Phone Number or Email Address *',
+                  hint: 'e.g. +233240000000 or user@domain.com',
+                  keyboardType: TextInputType.emailAddress,
                   controller: _phoneController,
                 ),
                 const SizedBox(height: 16),
