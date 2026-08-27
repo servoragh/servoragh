@@ -11,20 +11,46 @@ import '../../features/escrow/views/escrow_deal_screen.dart';
 import '../../features/activity/views/activity_screen.dart';
 import '../../features/profile/views/profile_screen.dart';
 import '../../features/auth/views/login_screen.dart';
-
 import '../../features/products/views/product_detail_screen.dart';
+import '../../shared/widgets/main_shell_scaffold.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/home',
   routes: [
-    GoRoute(
-      path: '/home',
-      builder: (BuildContext context, GoRouterState state) => const HomeScreen(),
+    // ShellRoute for persistent bottom navigation bar across all main screens
+    ShellRoute(
+      builder: (BuildContext context, GoRouterState state, Widget child) {
+        return MainShellScaffold(child: child);
+      },
+      routes: [
+        GoRoute(
+          path: '/home',
+          builder: (BuildContext context, GoRouterState state) => const HomeScreen(),
+        ),
+        GoRoute(
+          path: '/products',
+          builder: (BuildContext context, GoRouterState state) => const ProductsScreen(),
+        ),
+        GoRoute(
+          path: '/community',
+          builder: (BuildContext context, GoRouterState state) => const CommunityScreen(),
+        ),
+        GoRoute(
+          path: '/notice-board',
+          builder: (BuildContext context, GoRouterState state) => const CommunityScreen(),
+        ),
+        GoRoute(
+          path: '/profile',
+          builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+        ),
+        GoRoute(
+          path: '/account',
+          builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+        ),
+      ],
     ),
-    GoRoute(
-      path: '/products',
-      builder: (BuildContext context, GoRouterState state) => const ProductsScreen(),
-    ),
+
+    // Full-screen overlay routes (without persistent bottom bar)
     GoRoute(
       path: '/products/detail',
       builder: (BuildContext context, GoRouterState state) {
@@ -39,14 +65,6 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/search',
       builder: (BuildContext context, GoRouterState state) => const SearchScreen(),
-    ),
-    GoRoute(
-      path: '/community',
-      builder: (BuildContext context, GoRouterState state) => const CommunityScreen(),
-    ),
-    GoRoute(
-      path: '/notice-board',
-      builder: (BuildContext context, GoRouterState state) => const CommunityScreen(),
     ),
     GoRoute(
       path: '/services/request',
@@ -70,14 +88,6 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/activity',
       builder: (BuildContext context, GoRouterState state) => const ActivityScreen(),
-    ),
-    GoRoute(
-      path: '/profile',
-      builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
-    ),
-    GoRoute(
-      path: '/account',
-      builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
     ),
     GoRoute(
       path: '/auth/login',

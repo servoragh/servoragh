@@ -912,41 +912,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-
-      // 7. FLOATING MATERIAL 3 BOTTOM NAVIGATION BAR
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          if (index == 0) {
-            setState(() => _currentIndex = 0);
-          } else if (index == 1) {
-            context.push('/products');
-          } else if (index == 2) {
-            context.push('/delivery');
-          } else if (index == 3) {
-            context.push('/services/request');
-          } else if (index == 4) {
-            context.push('/community');
-          } else if (index == 5) {
-            context.push('/profile');
-          }
-        },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_filled, color: ServoraColors.emerald600), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.shopping_bag_outlined), selectedIcon: Icon(Icons.shopping_bag_rounded, color: ServoraColors.emerald600), label: 'Products'),
-          NavigationDestination(icon: Icon(Icons.local_shipping_outlined), selectedIcon: Icon(Icons.local_shipping_rounded, color: ServoraColors.emerald600), label: 'Delivery'),
-          NavigationDestination(
-            icon: CircleAvatar(
-              radius: 14,
-              backgroundColor: ServoraColors.emerald600,
-              child: Icon(Icons.add_rounded, color: Colors.white, size: 18),
-            ),
-            label: 'Post',
-          ),
-          NavigationDestination(icon: Icon(Icons.people_outline_rounded), selectedIcon: Icon(Icons.people_rounded, color: ServoraColors.emerald600), label: 'Notice Board'),
-          NavigationDestination(icon: Icon(Icons.person_outline_rounded), selectedIcon: Icon(Icons.person_rounded, color: ServoraColors.emerald600), label: 'Account'),
-        ],
-      ),
     );
   }
 }
