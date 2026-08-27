@@ -74,4 +74,21 @@ class MarketplaceApiService {
       return false;
     }
   }
+
+  /// Fetch live top announcement tickers from database
+  static Future<List<dynamic>> fetchTickers() async {
+    try {
+      final response = await _dio.get('/tickers');
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data is Map && response.data['tickers'] != null) {
+          return response.data['tickers'] as List<dynamic>;
+        } else if (response.data is List) {
+          return response.data as List<dynamic>;
+        }
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
 }
