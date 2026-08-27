@@ -12,6 +12,7 @@ import '../../features/activity/views/activity_screen.dart';
 import '../../features/profile/views/profile_screen.dart';
 import '../../features/auth/views/login_screen.dart';
 import '../../features/products/views/product_detail_screen.dart';
+import '../../features/businesses/views/businesses_screen.dart';
 import '../../shared/widgets/main_shell_scaffold.dart';
 
 final appRouter = GoRouter(
@@ -61,6 +62,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/delivery',
       builder: (BuildContext context, GoRouterState state) => const DeliveryScreen(),
+    ),
+    GoRoute(
+      path: '/businesses',
+      builder: (BuildContext context, GoRouterState state) => const BusinessesScreen(),
     ),
     GoRoute(
       path: '/search',

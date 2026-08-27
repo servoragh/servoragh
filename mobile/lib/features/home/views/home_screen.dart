@@ -535,7 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // 5. VERIFIED MERCHANTS CAROUSEL
+                // 5. VERIFIED LOCAL BUSINESSES CAROUSEL
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
@@ -544,9 +544,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Verified Local Merchants', style: ServoraTypography.titleLarge(isDark)),
+                          Text('Verified Local Businesses', style: ServoraTypography.titleLarge(isDark)),
                           GestureDetector(
-                            onTap: () => context.push('/search'),
+                            onTap: () => context.push('/businesses'),
                             child: const Text('View All ↗', style: TextStyle(color: ServoraColors.emerald600, fontSize: 12, fontWeight: FontWeight.bold)),
                           ),
                         ],
@@ -554,7 +554,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Gap(12),
 
                       SizedBox(
-                        height: 255,
+                        height: 310,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: _liveMerchants.isNotEmpty ? _liveMerchants.length : _fallbackMerchants.length,
