@@ -91,6 +91,13 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
+      path: '/provider/:slug',
+      builder: (BuildContext context, GoRouterState state) {
+        final slug = state.pathParameters['slug'] ?? 'kwame-electrical-tamale';
+        return ArtisanStorefrontScreen(slug: slug);
+      },
+    ),
+    GoRoute(
       path: '/escrow',
       builder: (BuildContext context, GoRouterState state) => const EscrowDealScreen(),
     ),
