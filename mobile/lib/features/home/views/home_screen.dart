@@ -844,7 +844,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.46,
+                          childAspectRatio: 0.60,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
@@ -854,7 +854,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           final imageUrl = p['image'] as String?;
 
                           return GestureDetector(
-                            onTap: () => _showProductDetailModal(context, p),
+                            onTap: () => context.push('/products/detail', extra: p),
                             child: ServoraCard(
                               padding: EdgeInsets.zero,
                               child: Column(

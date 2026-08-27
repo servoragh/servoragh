@@ -422,7 +422,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     padding: const EdgeInsets.all(16),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      childAspectRatio: 0.46,
+                      childAspectRatio: 0.60,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                     ),
@@ -432,7 +432,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       final imageUrl = p['image'] as String?;
 
                       return GestureDetector(
-                        onTap: () => _showProductDetailModal(context, p),
+                        onTap: () => context.push('/products/detail', extra: p),
                         child: ServoraCard(
                           padding: EdgeInsets.zero,
                           child: Column(

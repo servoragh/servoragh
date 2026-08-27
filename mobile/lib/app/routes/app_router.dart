@@ -12,6 +12,8 @@ import '../../features/activity/views/activity_screen.dart';
 import '../../features/profile/views/profile_screen.dart';
 import '../../features/auth/views/login_screen.dart';
 
+import '../../features/products/views/product_detail_screen.dart';
+
 final appRouter = GoRouter(
   initialLocation: '/home',
   routes: [
@@ -22,6 +24,13 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/products',
       builder: (BuildContext context, GoRouterState state) => const ProductsScreen(),
+    ),
+    GoRoute(
+      path: '/products/detail',
+      builder: (BuildContext context, GoRouterState state) {
+        final product = state.extra as Map<String, dynamic>? ?? {};
+        return ProductDetailScreen(product: product);
+      },
     ),
     GoRoute(
       path: '/delivery',
