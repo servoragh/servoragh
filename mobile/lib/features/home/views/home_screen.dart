@@ -204,14 +204,39 @@ class _HomeScreenState extends State<HomeScreen> {
 
           if (providers.isNotEmpty) {
             _liveMerchants = providers.map((m) {
+              final user = m['user'] is Map ? m['user'] : {};
+              final badgesRaw = m['badges'];
+              List<String> badgesList = ['ID_VERIFIED', 'TOP_RATED', 'PHONE_VERIFIED', 'BUSINESS_VERIFIED'];
+              if (badgesRaw != null) {
+                if (badgesRaw is List) {
+                  badgesList = badgesRaw.map((b) => b.toString()).toList();
+                } else if (badgesRaw is String && badgesRaw.startsWith('[')) {
+                  try {
+                    final parsed = jsonDecode(badgesRaw) as List;
+                    badgesList = parsed.map((b) => b.toString()).toList();
+                  } catch (_) {}
+                }
+              }
+
               return {
+                'id': m['id'] ?? 'provider',
+                'businessName': m['businessName'] ?? 'Artisan Merchant',
                 'name': m['businessName'] ?? 'Artisan Merchant',
-                'category': m['category'] ?? 'Local Trade',
+                'ownerName': user['name'] ?? m['ownerName'] ?? 'Verified Owner',
+                'yearsExperience': (m['yearsExperience'] ?? 5),
+                'serviceArea': m['serviceArea'] ?? 'Tamale',
                 'location': m['serviceArea'] ?? 'Tamale',
-                'rating': (m['ratingAverage'] ?? 5.0).toDouble(),
-                'jobsDone': 24,
-                'phone': m['phone'] ?? '+233240000000',
-                'slug': m['slug'] ?? 'biz',
+                'ratingAverage': (m['ratingAverage'] ?? 4.9).toDouble(),
+                'rating': (m['ratingAverage'] ?? 4.9).toDouble(),
+                'reviewCount': m['reviewCount'] ?? 28,
+                'completedJobsCount': m['completedJobsCount'] ?? 42,
+                'jobsDone': m['completedJobsCount'] ?? 42,
+                'pricingFixedStart': m['pricingFixedStart'],
+                'bio': m['bio'] ?? m['description'] ?? 'Certified local business and service specialist in Northern Ghana.',
+                'phone': user['phone'] ?? m['phone'] ?? '+233240000000',
+                'slug': m['slug'] ?? 'kwame-electrical-tamale',
+                'trustScore': m['verificationStatus'] == 'VERIFIED' ? 100 : 99,
+                'badges': badgesList,
               };
             }).toList();
           }

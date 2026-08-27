@@ -41,6 +41,10 @@ final appRouter = GoRouter(
           builder: (BuildContext context, GoRouterState state) => const CommunityScreen(),
         ),
         GoRoute(
+          path: '/businesses',
+          builder: (BuildContext context, GoRouterState state) => const BusinessesScreen(),
+        ),
+        GoRoute(
           path: '/profile',
           builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
         ),
