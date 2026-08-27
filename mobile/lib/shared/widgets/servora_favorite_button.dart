@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/servora_colors.dart';
+import '../../core/services/marketplace_api_service.dart';
 
 class ServoraFavoriteButton extends StatefulWidget {
   final String businessId;
@@ -17,21 +18,37 @@ class ServoraFavoriteButton extends StatefulWidget {
 
 class _ServoraFavoriteButtonState extends State<ServoraFavoriteButton> {
   bool _isFavorited = false;
-  static final Set<String> _favoriteIds = {};
+  static final Set<String> _localFavorites = {};
+  static bool _hasLoadedFromApi = false;
 
   @override
   void initState() {
     super.initState();
-    _isFavorited = _favoriteIds.contains(widget.businessId);
+    _isFavorited = _localFavorites.contains(widget.businessId);
+    if (!_hasLoadedFromApi) {
+      _syncFavoritesFromApi();
+    }
   }
 
-  void _toggleFavorite() {
+  Future<void> _syncFavoritesFromApi() async {
+    _hasLoadedFromApi = true;
+    final favIds = await MarketplaceApiService.fetchUserFavoriteIds();
+    if (mounted && favIds.isNotEmpty) {
+      setState(() {
+        _localFavorites.addAll(favIds);
+        _isFavorited = _localFavorites.contains(widget.businessId);
+      });
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final nextState = !_isFavorited;
     setState(() {
-      _isFavorited = !_isFavorited;
-      if (_isFavorited) {
-        _favoriteIds.add(widget.businessId);
+      _isFavorited = nextState;
+      if (nextState) {
+        _localFavorites.add(widget.businessId);
       } else {
-        _favoriteIds.remove(widget.businessId);
+        _localFavorites.remove(widget.businessId);
       }
     });
 
@@ -39,17 +56,20 @@ class _ServoraFavoriteButtonState extends State<ServoraFavoriteButton> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          _isFavorited
+          nextState
               ? '❤️ Saved "${widget.businessName}" to Favorites'
               : 'Removed "${widget.businessName}" from Favorites',
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: _isFavorited ? ServoraColors.emerald600 : Colors.grey[800],
+        backgroundColor: nextState ? ServoraColors.emerald600 : Colors.grey[800],
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+
+    // Sync over backend API so web app updates
+    await MarketplaceApiService.toggleBusinessFavorite(widget.businessId);
   }
 
   @override

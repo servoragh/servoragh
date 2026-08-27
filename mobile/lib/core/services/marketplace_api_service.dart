@@ -91,4 +91,29 @@ class MarketplaceApiService {
       return [];
     }
   }
+
+  /// Fetch user saved favorite business IDs from backend API
+  static Future<Set<String>> fetchUserFavoriteIds() async {
+    try {
+      final response = await _dio.get('/favorites');
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data['favorites'] is List) {
+          final list = response.data['favorites'] as List;
+          return list.map((f) => (f['businessId'] ?? f['id']).toString()).toSet();
+        }
+      }
+    } catch (_) {}
+    return {};
+  }
+
+  /// Toggle favorite status on backend API (syncs between Web & Mobile)
+  static Future<bool> toggleBusinessFavorite(String businessId) async {
+    try {
+      final response = await _dio.post('/favorites', data: {'businessId': businessId});
+      if (response.statusCode == 200 && response.data != null) {
+        return (response.data['isFavorited'] == true);
+      }
+    } catch (_) {}
+    return false;
+  }
 }
