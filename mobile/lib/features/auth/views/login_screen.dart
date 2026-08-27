@@ -17,6 +17,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
 
+  void _fillDemoCredentials(String identifier, String pass) {
+    setState(() {
+      _phoneController.text = identifier;
+      _passwordController.text = pass;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -55,7 +62,44 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
+
+                // Quick Demo Account Auto-Fill Chips
+                if (!_isSignUp) ...[
+                  const Text(
+                    'Quick Demo Sign In Chips:',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ActionChip(
+                        avatar: const Text('👑', style: TextStyle(fontSize: 12)),
+                        label: const Text('Master Admin', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        backgroundColor: const Color(0xFFFEF2F2),
+                        side: const BorderSide(color: Colors.redAccent),
+                        onPressed: () => _fillDemoCredentials('admin@servora.gh', 'admin12345'),
+                      ),
+                      ActionChip(
+                        avatar: const Text('⚡', style: TextStyle(fontSize: 12)),
+                        label: const Text('Merchant', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        backgroundColor: const Color(0xFFFEF3C7),
+                        side: const BorderSide(color: Colors.amber),
+                        onPressed: () => _fillDemoCredentials('kwame.electric@gmail.com', 'password123'),
+                      ),
+                      ActionChip(
+                        avatar: const Text('🛒', style: TextStyle(fontSize: 12)),
+                        label: const Text('Customer', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        backgroundColor: const Color(0xFFECFDF5),
+                        side: const BorderSide(color: Color(0xFF059669)),
+                        onPressed: () => _fillDemoCredentials('amina@gmail.com', 'password123'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
 
                 if (_isSignUp) ...[
                   ServoraTextField(
@@ -68,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 ServoraTextField(
                   label: 'Ghana Phone Number or Email Address *',
-                  hint: 'e.g. +233240000000 or user@domain.com',
+                  hint: 'e.g. +233240000000 or admin@servora.gh',
                   keyboardType: TextInputType.emailAddress,
                   controller: _phoneController,
                 ),
