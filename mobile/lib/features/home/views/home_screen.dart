@@ -14,6 +14,7 @@ import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/servora_dropdown_sheet.dart';
 import '../../../shared/widgets/servora_shimmer_skeleton.dart';
 import '../../../shared/widgets/servora_live_ticker_bar.dart';
+import '../../../shared/widgets/servora_provider_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -553,94 +554,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Gap(12),
 
                       SizedBox(
-                        height: 160,
+                        height: 255,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: _liveMerchants.isNotEmpty ? _liveMerchants.length : _fallbackMerchants.length,
                           itemBuilder: (context, index) {
                             final m = _liveMerchants.isNotEmpty ? _liveMerchants[index] : _fallbackMerchants[index];
 
-                            return GestureDetector(
-                              onTap: () => context.push('/biz/${m['slug']}'),
-                              child: Container(
-                                width: 220,
-                                margin: const EdgeInsets.only(right: 12),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: cardBg,
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(
-                                    color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder,
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 18,
-                                          backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
-                                          child: Text(
-                                            m['name'][0],
-                                            style: const TextStyle(fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
-                                          ),
-                                        ),
-                                        const Gap(10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                m['name'],
-                                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              Text(
-                                                m['location'],
-                                                style: TextStyle(fontSize: 10, color: Colors.grey[500]),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const Spacer(),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
-                                            const Gap(4),
-                                            Text(
-                                              '${m['rating']} (${m['jobsDone']} jobs)',
-                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                                            ),
-                                          ],
-                                        ),
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: ServoraColors.emerald600,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                            minimumSize: Size.zero,
-                                          ),
-                                          onPressed: () {
-                                            WhatsAppHelper.openWhatsApp(
-                                              phone: m['phone'],
-                                              message: 'Hello ${m['name']}, I found your business profile on Servora.gh app.',
-                                            );
-                                          },
-                                          child: const Text('Contact', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 14),
+                              child: ServoraProviderCard(
+                                provider: Map<String, dynamic>.from(m as Map),
+                                width: 310,
                               ),
                             );
                           },
