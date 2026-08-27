@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/servora_colors.dart';
 import '../../core/utils/whatsapp_helper.dart';
+import 'servora_favorite_button.dart';
 
 class ServoraProviderCard extends StatelessWidget {
   final Map<String, dynamic> provider;
@@ -119,32 +120,41 @@ class ServoraProviderCard extends StatelessWidget {
                 ),
                 const Gap(6),
 
-                // 100% Trust Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: ServoraColors.emerald600.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: ServoraColors.emerald600.withOpacity(0.3),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.shield_outlined, size: 12, color: ServoraColors.emerald600),
-                      const Gap(4),
-                      Text(
-                        '$trustScore% Trust',
-                        style: const TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w900,
-                          color: ServoraColors.emerald600,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: ServoraColors.emerald600.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: ServoraColors.emerald600.withOpacity(0.3),
+                          width: 0.8,
                         ),
                       ),
-                    ],
-                  ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.shield_outlined, size: 11, color: ServoraColors.emerald600),
+                          const Gap(3),
+                          Text(
+                            '$trustScore% Trust',
+                            style: const TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w900,
+                              color: ServoraColors.emerald600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Gap(6),
+                    ServoraFavoriteButton(
+                      businessId: (provider['id'] ?? slug).toString(),
+                      businessName: name,
+                    ),
+                  ],
                 ),
               ],
             ),
