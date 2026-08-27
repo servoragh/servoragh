@@ -13,6 +13,7 @@ import '../../../main.dart';
 import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/servora_dropdown_sheet.dart';
 import '../../../shared/widgets/servora_shimmer_skeleton.dart';
+import '../../../shared/widgets/servora_live_ticker_bar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -250,60 +251,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. TOP ANNOUNCEMENT BAR
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: isDark ? const Color(0xFF0F172A) : ServoraColors.emerald900,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: ServoraColors.emerald500,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const Gap(8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1D4ED8).withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFF3B82F6), width: 0.8),
-                        ),
-                        child: const Text(
-                          'BUSINESS OWNER',
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                      ),
-                      const Gap(8),
-                      const Expanded(
-                        child: Text(
-                          'Are you a seller in Northern Ghana?',
-                          style: TextStyle(fontSize: 11, color: Colors.white70),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => context.push('/auth/login'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: ServoraColors.emerald600,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'Register ➔',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // 1. LIVE ANNOUNCEMENT TICKER BAR (WEB PARITY)
+                const ServoraLiveTickerBar(),
 
                 // 2. LOGO HEADER & EDITORIAL ACTIONS
                 if (_isLoadingLiveApi)
