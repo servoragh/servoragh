@@ -22,18 +22,18 @@ class ServoraProviderCard extends StatelessWidget {
 
     final String name = provider['businessName'] ?? provider['name'] ?? 'Artisan Merchant';
     final String ownerName = provider['ownerName'] ?? provider['user']?['name'] ?? 'Verified Owner';
-    final int yearsExp = (provider['yearsExperience'] ?? provider['yearsExp'] ?? 5) as int;
+    final int yearsExp = int.tryParse((provider['yearsExperience'] ?? provider['yearsExp'] ?? 5).toString()) ?? 5;
     final String bio = provider['bio'] ?? provider['description'] ?? 'Certified local business and service specialist in Northern Ghana.';
     final String location = provider['serviceArea'] ?? provider['location'] ?? 'Tamale';
-    final double rating = (provider['ratingAverage'] ?? provider['rating'] ?? 4.9) as double;
-    final int reviews = (provider['reviewCount'] ?? provider['reviews'] ?? 28) as int;
-    final int jobs = (provider['completedJobsCount'] ?? provider['jobsDone'] ?? 42) as int;
+    final double rating = double.tryParse((provider['ratingAverage'] ?? provider['rating'] ?? 4.9).toString()) ?? 4.9;
+    final int reviews = int.tryParse((provider['reviewCount'] ?? provider['reviews'] ?? 28).toString()) ?? 28;
+    final int jobs = int.tryParse((provider['completedJobsCount'] ?? provider['jobsDone'] ?? 42).toString()) ?? 42;
     final double? startingPrice = (provider['pricingFixedStart'] != null)
         ? double.tryParse(provider['pricingFixedStart'].toString())
         : null;
     final String phone = provider['phone'] ?? provider['user']?['phone'] ?? '+233240000000';
     final String slug = provider['slug'] ?? 'biz';
-    final int trustScore = (provider['trustScore'] ?? 99) as int;
+    final int trustScore = int.tryParse((provider['trustScore'] ?? 100).toString()) ?? 100;
 
     final List<String> badges = (provider['badges'] is List)
         ? (provider['badges'] as List).map((b) => b.toString()).toList()

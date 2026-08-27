@@ -219,13 +219,13 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
     final data = _storeData ?? {};
     final String name = data['businessName'] ?? 'Tamale Solar & Heavy Power Solutions';
     final String artisanName = data['artisanName'] ?? 'Eng. Rashid Mohammed';
-    final int experienceYears = (data['experienceYears'] ?? 1) as int;
+    final int experienceYears = int.tryParse((data['experienceYears'] ?? 1).toString()) ?? 1;
     final String phone = data['phone'] ?? '+233240000000';
     final String whatsapp = data['whatsappNumber'] ?? phone;
     final String coverage = data['zone'] ?? 'Tamale, Bolgatanga, Wa, Yendi, All Northern Region';
-    final double rating = (data['ratingAverage'] ?? data['rating'] ?? 5.0) as double;
-    final int reviewsCount = (data['reviewsCount'] ?? data['reviewCount'] ?? 36) as int;
-    final int completedJobs = (data['completedJobsCount'] ?? data['completedJobs'] ?? 85) as int;
+    final double rating = double.tryParse((data['ratingAverage'] ?? data['rating'] ?? 5.0).toString()) ?? 5.0;
+    final int reviewsCount = int.tryParse((data['reviewsCount'] ?? data['reviewCount'] ?? 36).toString()) ?? 36;
+    final int completedJobs = int.tryParse((data['completedJobsCount'] ?? data['completedJobs'] ?? 85).toString()) ?? 85;
     final String aboutText = data['aboutText'] ?? data['bio'] ?? "Northern Ghana's leading distributor of high-efficiency solar panels, lithium wall batteries, pure sine wave inverters, and heavy water pump generators.";
     final String hourlyRate = data['hourlyRate'] ?? 'GH₵ 100.00/hr';
     final String startingPrice = data['startingPrice'] ?? 'GH₵ 250.00';
