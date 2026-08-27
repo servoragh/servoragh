@@ -269,14 +269,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Row(
                         children: [
-                          Container(
+                          Image.asset(
+                            'assets/images/logo.png',
                             width: 42,
                             height: 42,
-                            decoration: const BoxDecoration(
-                              color: ServoraColors.emerald600,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.build_circle_rounded, color: Colors.white, size: 24),
+                            fit: BoxFit.contain,
                           ),
                           const Gap(10),
                           Column(

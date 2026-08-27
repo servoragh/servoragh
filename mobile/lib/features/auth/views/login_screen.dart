@@ -42,10 +42,11 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 10),
                 Center(
-                  child: CircleAvatar(
-                    radius: 36,
-                    backgroundColor: const Color(0xFF059669).withOpacity(0.15),
-                    child: const Text('S', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Color(0xFF059669))),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(height: 20),

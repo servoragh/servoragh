@@ -15,10 +15,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Col 1: Brand & Mission */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold">
-                <Wrench className="w-4 h-4" />
-              </div>
+            <div className="flex items-center gap-2.5">
+              <img src="/logo.png" alt="Servora.gh Logo" className="w-9 h-9 object-contain" />
               <span className="text-xl font-black text-stone-900 dark:text-white">Servora.gh</span>
             </div>
             <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
