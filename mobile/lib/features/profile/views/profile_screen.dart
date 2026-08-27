@@ -22,6 +22,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = authNotifier.state.user;
+    final String userRole = user?.role ?? 'CUSTOMER';
+    final bool isAdmin = userRole == 'ADMIN' || userRole == 'SUPER_ADMIN';
 
     return Scaffold(
       appBar: AppBar(
@@ -57,9 +59,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          user?.name ?? 'Alhassan Ibrahim',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Text(
+                              user?.name ?? 'Alhassan Ibrahim',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            if (isAdmin) ...[
+                              const Gap(6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'ADMIN',
+                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         const Gap(2),
                         Text(
@@ -94,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _isMerchantMode ? 'MERCHANT PROVIDER MODE' : 'CUSTOMER BUYER MODE',
+                        _isMerchantMode ? 'MERCHANT PROVIDER MODE 🏬' : 'CUSTOMER BUYER MODE 🛒',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
@@ -139,6 +159,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
             const Gap(24),
+
+            // Admin Control Hub Section (Visible for Admin Users)
+            if (isAdmin) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.admin_panel_settings_rounded, color: Colors.red, size: 20),
+                        Gap(8),
+                        Text(
+                          'MASTER ADMIN CONTROL HUB',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.red),
+                        ),
+                      ],
+                    ),
+                    const Gap(6),
+                    const Text(
+                      'You have administrative privileges to moderate listings, approve business profiles, and inspect system audit logs.',
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(16),
+            ],
 
             // Account Actions Navigation List
             Column(
