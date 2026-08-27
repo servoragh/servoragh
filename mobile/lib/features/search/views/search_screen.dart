@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import '../../../app/theme/servora_colors.dart';
+import '../../../core/services/marketplace_api_service.dart';
 import '../../../shared/widgets/servora_card.dart';
-import '../../../shared/widgets/status_badge.dart';
+import '../../../shared/widgets/servora_shimmer_skeleton.dart';
+import '../../../core/utils/whatsapp_helper.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -11,206 +16,287 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  String _selectedFilter = 'ALL';
+  final TextEditingController _queryController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
-  final List<Map<String, dynamic>> _allResults = [
-    {
-      'title': 'Kwame Electrical & Solar Tamale',
-      'category': 'ARTISAN',
-      'type': 'Artisan Merchant',
-      'area': 'Sakasaka, Tamale',
-      'rating': 4.9,
-      'slug': 'kwame-electrical-tamale',
-      'icon': '⚡',
-    },
-    {
-      'title': 'Handwoven Royal Dagbon Smock (Fugu)',
-      'category': 'PRODUCT',
-      'type': 'Product Listing',
-      'area': 'Nyohini, Tamale',
-      'price': 'GH₵ 450',
-      'slug': 'northern-fugu-fabrics',
-      'icon': '🧵',
-    },
-    {
-      'title': 'DeWalt 20V Max Power Drill Kit',
-      'category': 'RENTAL',
-      'type': 'Tool Rental',
-      'area': 'Sakasaka, Tamale',
-      'price': 'GH₵ 150 / day',
-      'slug': 'northern-hardware',
-      'icon': '🚜',
-    },
-    {
-      'title': 'Urgent Solar Inverter Cable Repair',
-      'category': 'REQUEST',
-      'type': 'Customer Call',
-      'area': 'Choggu, Tamale',
-      'price': 'GH₵ 300 Budget',
-      'slug': 'kwame-electrical-tamale',
-      'icon': '🔧',
-    },
+  bool _isSearching = false;
+  List<dynamic> _searchResults = [];
+  String _activeScope = 'all';
+
+  final List<String> _recentSearches = [
+    'Solar Inverter Sakasaka',
+    'Fugu Smock Nyohini',
+    'Plumber Choggu',
+    'Heavy Drill Rental',
   ];
+
+  final List<String> _popularSearches = [
+    '⚡ 3-Phase Solar Cabling',
+    '📱 Smartphone Screen Repair',
+    '🧵 Dagbon Royal Fugu',
+    '🚜 Borehole Rig Lease',
+    '🚚 Kia Haulage Truck',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.requestFocus();
+  }
+
+  Future<void> _performSearch(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _isSearching = false;
+        _searchResults = [];
+      });
+      return;
+    }
+
+    setState(() => _isSearching = true);
+    final results = await MarketplaceApiService.fetchProducts();
+    if (mounted) {
+      setState(() {
+        _isSearching = false;
+        _searchResults = results.where((item) {
+          final title = (item['title'] ?? '').toString().toLowerCase();
+          final cat = (item['category'] ?? '').toString().toLowerCase();
+          final q = query.toLowerCase().trim();
+          return title.contains(q) || cat.contains(q);
+        }).toList();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final filtered = _allResults.where((item) {
-      if (_selectedFilter != 'ALL' && item['category'] != _selectedFilter) {
-        return false;
-      }
-      final query = _searchController.text.toLowerCase();
-      if (query.isEmpty) return true;
-      return item['title'].toString().toLowerCase().contains(query) ||
-          item['area'].toString().toLowerCase().contains(query);
-    }).toList();
-
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
-        ),
-        title: TextField(
-          controller: _searchController,
-          autofocus: true,
-          onChanged: (_) => setState(() {}),
-          decoration: const InputDecoration(
-            hintText: 'Search products, plumbers, smocks, rentals...',
-            border: InputBorder.none,
-          ),
-        ),
-        actions: [
-          if (_searchController.text.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear_rounded),
-              onPressed: () {
-                _searchController.clear();
-                setState(() {});
-              },
-            ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Filter Chips Row
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: isDark ? const Color(0xFF111827) : const Color(0xFFF1F5F9),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildFilterChip('ALL', 'All Indices'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('ARTISAN', 'Artisans 🛠️'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('PRODUCT', 'Products 📦'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('RENTAL', 'Tool Rentals 🚜'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('REQUEST', 'Customer Calls 🔧'),
-                ],
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isDark ? ServoraColors.darkSurface : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: ServoraColors.emerald600.withOpacity(0.4)),
+                ),
+                child: TextField(
+                  controller: _queryController,
+                  focusNode: _focusNode,
+                  onChanged: _performSearch,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  decoration: InputDecoration(
+                    hintText: 'Search plumbers, smocks, solar, trucks...',
+                    hintStyle: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? ServoraColors.textMutedDark : ServoraColors.textMutedLight,
+                    ),
+                    prefixIcon: const Icon(Icons.search_rounded, color: ServoraColors.emerald600, size: 20),
+                    suffixIcon: _queryController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.cancel_rounded, size: 18),
+                            onPressed: () {
+                              _queryController.clear();
+                              _performSearch('');
+                            },
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
             ),
-          ),
-
-          // Search Results Feed
-          Expanded(
-            child: filtered.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('🔍', style: TextStyle(fontSize: 48)),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No matching results found',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.grey[400] : Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Try searching for "electrician", "smock", or "drill"',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final item = filtered[index];
-                      return ServoraCard(
-                        onTap: () => context.push('/biz/${item['slug']}'),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF059669).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: Text(item['icon'], style: const TextStyle(fontSize: 22)),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item['title'],
-                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${item['type']} • ${item['area']}',
-                                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                                  ),
-                                  if (item['price'] != null) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      item['price'],
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF059669)),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            StatusBadge.verifiedGhanaCard(),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
+            const Gap(10),
+            TextButton(
+              onPressed: () => context.pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: ServoraColors.emerald600,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+      body: _queryController.text.trim().isEmpty
+          ? _buildDefaultDiscoveryView(isDark)
+          : _buildSearchResultsView(isDark),
     );
   }
 
-  Widget _buildFilterChip(String key, String label) {
-    final isSelected = _selectedFilter == key;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      selectedColor: const Color(0xFF059669),
-      labelStyle: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-        color: isSelected ? Colors.white : Colors.black87,
+  Widget _buildDefaultDiscoveryView(bool isDark) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Recent Searches Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Recent Searches',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              GestureDetector(
+                onTap: () => setState(() => _recentSearches.clear()),
+                child: const Text(
+                  'Clear',
+                  style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          const Gap(10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _recentSearches.map((item) {
+              return ActionChip(
+                backgroundColor: isDark ? ServoraColors.darkSurface : const Color(0xFFF1F5F9),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                label: Text(item, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                onPressed: () {
+                  _queryController.text = item;
+                  _performSearch(item);
+                },
+              );
+            }).toList(),
+          ),
+          const Gap(24),
+
+          // Popular Searches Section
+          const Text(
+            'Popular Searches Today 🔥',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          const Gap(12),
+          Column(
+            children: _popularSearches.map((item) {
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Color(0xFFECFDF5),
+                  child: Icon(Icons.trending_up_rounded, size: 16, color: ServoraColors.emerald600),
+                ),
+                title: Text(item, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+                onTap: () {
+                  final cleanQuery = item.replaceAll(RegExp(r'^[^\w\s]+'), '').trim();
+                  _queryController.text = cleanQuery;
+                  _performSearch(cleanQuery);
+                },
+              );
+            }).toList(),
+          ),
+        ],
       ),
-      onSelected: (_) => setState(() => _selectedFilter = key),
+    ).animate().fadeIn(duration: 200.ms);
+  }
+
+  Widget _buildSearchResultsView(bool isDark) {
+    if (_isSearching) {
+      return ListView.separated(
+        padding: const EdgeInsets.all(20),
+        itemCount: 4,
+        separatorBuilder: (_, __) => const Gap(14),
+        itemBuilder: (context, index) => ServoraShimmerSkeleton.productCardSkeleton(context),
+      );
+    }
+
+    if (_searchResults.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('🔍', style: TextStyle(fontSize: 48)),
+            const Gap(12),
+            Text(
+              'No results found for "${_queryController.text}"',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            const Gap(6),
+            const Text(
+              'Try searching for "Solar", "Fugu", or "Plumbing"',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _searchResults.length,
+      separatorBuilder: (_, __) => const Gap(12),
+      itemBuilder: (context, index) {
+        final item = _searchResults[index];
+        final provider = item['provider'] ?? {};
+
+        return ServoraCard(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: ServoraColors.emerald600.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Center(
+                  child: Icon(Icons.inventory_2_rounded, color: ServoraColors.emerald600, size: 28),
+                ),
+              ),
+              const Gap(14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item['title'] ?? 'Marketplace Listing',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Gap(4),
+                    Text(
+                      'GH₵ ${item['price'] ?? 0} • ${provider['businessName'] ?? 'Verified Seller'}',
+                      style: const TextStyle(fontSize: 12, color: ServoraColors.emerald600, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ServoraColors.emerald600,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                ),
+                onPressed: () {
+                  WhatsAppHelper.openWhatsApp(
+                    phone: provider['user']?['phone'] ?? '+233240000000',
+                    message: 'Hello, I found your listing "${item['title']}" via Servora.gh search.',
+                  );
+                },
+                child: const Text('Contact', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ).animate().fadeIn(duration: (150 + index * 50).ms).slideY(begin: 0.1, end: 0);
+      },
     );
   }
 }

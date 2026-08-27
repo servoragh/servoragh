@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
+import '../../../app/theme/servora_colors.dart';
+import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/status_badge.dart';
-import '../../../shared/widgets/servora_button.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 
 class ArtisanStorefrontScreen extends StatefulWidget {
@@ -20,7 +22,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -29,267 +31,298 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen>
     super.dispose();
   }
 
-  void _showShareQrSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Digital Business Storefront QR 🔗',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 16),
-              QrImageView(
-                data: 'https://servora.gh/biz/${widget.slug}',
-                version: QrVersions.auto,
-                size: 180.0,
-              ),
-              const SizedBox(height: 16),
-              ServoraButton(
-                label: 'Share Storefront on WhatsApp 📱',
-                variant: ServoraButtonVariant.whatsapp,
-                onPressed: () {
-                  WhatsAppHelper.openWhatsApp(
-                    phone: '+233244889900',
-                    message: 'Check out Kwame Electrical & Solar Tamale storefront on Servora.gh: https://servora.gh/biz/${widget.slug}',
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // Cover Banner & Profile App Bar
-          SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.qr_code_2_rounded, color: Colors.white),
-                onPressed: _showShareQrSheet,
-              ),
-              IconButton(
-                icon: const Icon(Icons.share_rounded, color: Colors.white),
-                onPressed: _showShareQrSheet,
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF059669), Color(0xFF047857)],
-                  ),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 220,
+              pinned: true,
+              leading: IconButton(
+                icon: const CircleAvatar(
+                  backgroundColor: Colors.black54,
+                  child: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
                 ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircleAvatar(
-                        radius: 36,
-                        backgroundColor: Colors.white,
-                        child: Text(
-                          widget.slug[0].toUpperCase(),
-                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Color(0xFF059669)),
+                onPressed: () => context.pop(),
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [ServoraColors.emerald800, ServoraColors.emerald600],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Kwame Electrical & Solar Tamale',
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      child: const Center(
+                        child: Icon(Icons.storefront_rounded, size: 80, color: Colors.white24),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Sakasaka, Tamale • Northern Ghana',
-                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
+                    ),
+                    Positioned(
+                      left: 20,
+                      bottom: 20,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 36,
+                            backgroundColor: Colors.white,
+                            child: CircleAvatar(
+                              radius: 34,
+                              backgroundColor: ServoraColors.emerald600.withOpacity(0.2),
+                              child: const Text('K', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                            ),
+                          ),
+                          const Gap(14),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'Kwame Electrical & Solar',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white),
+                              ),
+                              const Gap(4),
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_on_rounded, size: 14, color: Colors.amber),
+                                  const Gap(4),
+                                  const Text(
+                                    'Sakasaka, Tamale • Open 8am-6pm',
+                                    style: TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-
-          // Business Metadata Header
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      StatusBadge.verifiedGhanaCard(),
-                      const SizedBox(width: 8),
-                      StatusBadge.safeEscrow(),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Certified master electrician & solar installer with 8+ years experience servicing Sakasaka, Nyohini, Choggu, and all Northern Ghana.',
-                    style: TextStyle(fontSize: 13, height: 1.4),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildMetricItem('Rating', '4.9 ★ (38)'),
-                      _buildMetricItem('Completed', '83 Jobs'),
-                      _buildMetricItem('Response', '15 mins'),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Tabbed Catalog Bar
-                  TabBar(
-                    controller: _tabController,
-                    labelColor: const Color(0xFF059669),
-                    unselectedLabelColor: isDark ? Colors.grey[400] : Colors.grey[600],
-                    indicatorColor: const Color(0xFF059669),
-                    tabs: const [
-                      Tab(text: 'Services'),
-                      Tab(text: 'Rentals'),
-                      Tab(text: 'Products'),
-                      Tab(text: 'Reviews'),
-                    ],
-                  ),
-                ],
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const StatusBadge(
+                          label: 'GHANA CARD VERIFIED',
+                          backgroundColor: Color(0xFFD1FAE5),
+                          textColor: Color(0xFF047857),
+                        ),
+                        Row(
+                          children: [
+                            const Icon(Icons.star_rounded, color: Colors.amber, size: 18),
+                            const Gap(4),
+                            const Text('4.9 (48 Reviews)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Gap(16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF25D366),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            icon: const Icon(Icons.chat_rounded, size: 18),
+                            label: const Text('WhatsApp Direct', style: TextStyle(fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              WhatsAppHelper.openWhatsApp(
+                                phone: '+233244889900',
+                                message: 'Hello Kwame Electrical, I viewed your storefront on Servora.gh app.',
+                              );
+                            },
+                          ),
+                        ),
+                        const Gap(10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ServoraColors.emerald600,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            icon: const Icon(Icons.request_quote_rounded, size: 18),
+                            label: const Text('Request Quote', style: TextStyle(fontWeight: FontWeight.bold)),
+                            onPressed: () => context.push('/services/request'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-
-          // Tabbed Content Body
-          SliverFillRemaining(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildServicesTab(),
-                _buildRentalsTab(),
-                _buildProductsTab(),
-                _buildReviewsTab(),
-              ],
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverTabBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  indicatorColor: ServoraColors.emerald600,
+                  labelColor: ServoraColors.emerald600,
+                  unselectedLabelColor: isDark ? Colors.grey[400] : Colors.grey[600],
+                  labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  tabs: const [
+                    Tab(text: 'Services (6)'),
+                    Tab(text: 'Products (4)'),
+                    Tab(text: 'Reviews (48)'),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
-
-      // Sticky Bottom Action Bar
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF111827) : Colors.white,
-          border: Border(
-            top: BorderSide(
-              color: isDark ? const Color(0xFF1F2937) : const Color(0xFFE2E8F0),
-            ),
-          ),
-        ),
-        child: Row(
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
           children: [
-            IconButton(
-              icon: const Icon(Icons.phone_rounded, color: Color(0xFF059669)),
-              onPressed: () => WhatsAppHelper.makePhoneCall('+233244889900'),
+            // Services Tab
+            ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: 3,
+              separatorBuilder: (_, __) => const Gap(12),
+              itemBuilder: (context, index) {
+                final titles = ['Solar Inverter Wiring & Installation', '3-Phase Circuit Breaker Maintenance', 'Generator Servicing & Gas Refill'];
+                return ServoraCard(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(titles[index], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                          const Gap(4),
+                          const Text('From GH₵ 250 • Same-day dispatch', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: ServoraColors.emerald600, foregroundColor: Colors.white),
+                        onPressed: () => context.push('/services/request'),
+                        child: const Text('Book', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ServoraButton(
-                label: 'WhatsApp Inquiry 💬',
-                variant: ServoraButtonVariant.whatsapp,
-                onPressed: () {
-                  WhatsAppHelper.openWhatsApp(
-                    phone: '+233244889900',
-                    message: 'Hello Kwame Electrical, I am contacting you via Servora.gh app.',
-                  );
-                },
-              ),
+
+            // Products Tab
+            ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: 2,
+              separatorBuilder: (_, __) => const Gap(12),
+              itemBuilder: (context, index) {
+                final titles = ['300W Monocrystalline Solar Panel', 'DeWalt Power Drill Machine'];
+                final prices = ['GH₵ 2,400.00', 'GH₵ 1,200.00'];
+                return ServoraCard(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(titles[index], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                          const Gap(4),
+                          Text(prices[index], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
+                        ],
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: ServoraColors.emerald600, foregroundColor: Colors.white),
+                        onPressed: () {
+                          WhatsAppHelper.openWhatsApp(phone: '+233244889900', message: 'I want to buy ${titles[index]}.');
+                        },
+                        child: const Text('Buy Now', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            // Reviews Tab
+            ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: 3,
+              separatorBuilder: (_, __) => const Gap(12),
+              itemBuilder: (context, index) {
+                final reviewers = ['Alhassan I.', 'Fatima A.', 'Salifu M.'];
+                final comments = [
+                  'Fixed my solar inverter cabling within 2 hours in Sakasaka. Excellent service!',
+                  'Very professional work on our shop wiring project.',
+                  'Highly recommended certified electrician in Tamale.'
+                ];
+                return ServoraCard(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(reviewers[index], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          const Row(
+                            children: [
+                              Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                              Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                              Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                              Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                              Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const Gap(6),
+                      Text(comments[index], style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildMetricItem(String label, String value) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-      ],
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+
+  _SliverTabBarDelegate(this.tabBar);
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: tabBar,
     );
   }
 
-  Widget _buildServicesTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: const [
-        ListTile(
-          leading: Text('⚡', style: TextStyle(fontSize: 24)),
-          title: Text('3-Phase Solar Inverter Wiring', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          subtitle: Text('Starting from GH₵ 350 • Warranty Included'),
-        ),
-        Divider(),
-        ListTile(
-          leading: Text('🔌', style: TextStyle(fontSize: 24)),
-          title: Text('Commercial Workshop Electrical Maintenance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          subtitle: Text('Starting from GH₵ 200'),
-        ),
-      ],
-    );
-  }
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
 
-  Widget _buildRentalsTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: const [
-        ListTile(
-          leading: Text('🚜', style: TextStyle(fontSize: 24)),
-          title: Text('DeWalt Heavy Duty Power Drill Kit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          subtitle: Text('GH₵ 150 / day • Sakasaka Workshop'),
-        ),
-      ],
-    );
-  }
+  @override
+  double get minExtent => tabBar.preferredSize.height;
 
-  Widget _buildProductsTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: const [
-        ListTile(
-          leading: Text('🔋', style: TextStyle(fontSize: 24)),
-          title: Text('200Ah Deep Cycle Gel Solar Battery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          subtitle: Text('GH₵ 2,400 • In Stock'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildReviewsTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: const [
-        ListTile(
-          leading: Icon(Icons.star_rounded, color: Colors.amber),
-          title: Text('Alhassan Fuseini (5.0 ★)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          subtitle: Text('Kwame installed our 3-phase solar inverter in Sakasaka. Excellent work, fast and reliable!'),
-        ),
-      ],
-    );
+  @override
+  bool shouldRebuild(covariant _SliverTabBarDelegate oldDelegate) {
+    return false;
   }
 }
