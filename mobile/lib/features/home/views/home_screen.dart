@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../app/theme/servora_typography.dart';
 import '../../../core/constants/constants.dart';
@@ -9,6 +11,7 @@ import '../../../core/services/marketplace_api_service.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../main.dart';
 import '../../../shared/widgets/servora_card.dart';
+import '../../../shared/widgets/status_badge.dart';
 import '../../../shared/widgets/servora_dropdown_sheet.dart';
 import '../../../shared/widgets/servora_shimmer_skeleton.dart';
 
@@ -44,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'seller': 'Kwame Electrical',
       'location': 'Sakasaka, Tamale',
       'phone': '+233244889900',
+      'image': 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80',
     },
     {
       'title': 'Handwoven Royal Dagbon Fugu (Heavy Thread Smock)',
@@ -52,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'seller': 'Northern Authentic Fugu',
       'location': 'Nyohini, Tamale',
       'phone': '+233501234567',
+      'image': 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80',
     },
     {
       'title': 'DeWalt Heavy Duty Rotary Hammer Power Drill',
@@ -60,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'seller': 'Salifu Hardware',
       'location': 'Choggu, Tamale',
       'phone': '+233201122334',
+      'image': 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&q=80',
     },
     {
       'title': 'HP EliteBook 840 G8 Core i7 (16GB RAM, 512GB SSD)',
@@ -68,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'seller': 'Tamale Tech Hub',
       'location': 'Central Market',
       'phone': '+233240000000',
+      'image': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&q=80',
     },
   ];
 
@@ -120,6 +127,21 @@ class _HomeScreenState extends State<HomeScreen> {
           if (products.isNotEmpty) {
             _liveProducts = products.map((p) {
               final provider = p['provider'] ?? {};
+              String? imgUrl;
+              final rawImgs = p['images'];
+              if (rawImgs != null) {
+                if (rawImgs is List && rawImgs.isNotEmpty) {
+                  imgUrl = rawImgs[0].toString();
+                } else if (rawImgs is String && rawImgs.startsWith('[')) {
+                  try {
+                    final parsed = jsonDecode(rawImgs) as List;
+                    if (parsed.isNotEmpty) imgUrl = parsed[0].toString();
+                  } catch (_) {}
+                } else if (rawImgs is String && rawImgs.startsWith('http')) {
+                  imgUrl = rawImgs;
+                }
+              }
+
               return {
                 'title': p['title'] ?? 'Marketplace Item',
                 'category': p['category'] ?? 'General',
@@ -127,6 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 'seller': provider['businessName'] ?? 'Verified Enterprise',
                 'location': provider['serviceArea'] ?? 'Tamale',
                 'phone': provider['user']?['phone'] ?? '+233240000000',
+                'image': imgUrl,
               };
             }).toList();
           }
@@ -164,6 +187,187 @@ class _HomeScreenState extends State<HomeScreen> {
     if (result != null && mounted) {
       setState(() => _selectedLocation = result);
     }
+  }
+
+  void _showProductDetailModal(BuildContext context, Map<String, dynamic> p) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) {
+        final isDark = Theme.of(modalCtx).brightness == Brightness.dark;
+        final imageUrl = p['image'] as String?;
+
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(modalCtx).size.height * 0.85,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? ServoraColors.darkBackground : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const Gap(16),
+                if (imageUrl != null && imageUrl.isNotEmpty) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      height: 200,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => const ServoraShimmerSkeleton(
+                          width: double.infinity, height: 200, borderRadius: 20),
+                      errorWidget: (_, __, ___) => Container(
+                        height: 160,
+                        color: ServoraColors.emerald600.withOpacity(0.1),
+                        child: const Icon(Icons.inventory_2_rounded,
+                            size: 50, color: ServoraColors.emerald600),
+                      ),
+                    ),
+                  ),
+                  const Gap(16),
+                ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: ServoraColors.emerald600.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        p['category'] ?? 'General',
+                        style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: ServoraColors.emerald600),
+                      ),
+                    ),
+                    const StatusBadge(
+                      label: 'IN STOCK',
+                      backgroundColor: Color(0xFFD1FAE5),
+                      textColor: Color(0xFF047857),
+                    ),
+                  ],
+                ),
+                const Gap(12),
+                Text(
+                  p['title'] ?? 'Marketplace Item',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w900, height: 1.25),
+                ),
+                const Gap(8),
+                Text(
+                  p['price'] ?? 'GH₵ 0.00',
+                  style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: ServoraColors.emerald600),
+                ),
+                const Divider(height: 30),
+                ServoraCard(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
+                        child: Text(
+                          (p['seller'] ?? 'S')[0],
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: ServoraColors.emerald600),
+                        ),
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              p['seller'] ?? 'Verified Merchant',
+                              style: const TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Location: ${p['location']} • Verified Ghana Card',
+                              style: TextStyle(
+                                  fontSize: 11, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF25D366),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25)),
+                    ),
+                    icon: const Icon(Icons.chat_rounded, size: 20),
+                    label: const Text('Buy via WhatsApp Direct 💬',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      WhatsAppHelper.openWhatsApp(
+                        phone: p['phone'] ?? '+233240000000',
+                        message:
+                            'Hello, I am interested in buying "${p['title']}" listed on Servora.gh app.',
+                      );
+                    },
+                  ),
+                ),
+                const Gap(10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ServoraColors.amberDark,
+                      side: const BorderSide(
+                          color: ServoraColors.amberGold, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25)),
+                    ),
+                    icon: const Icon(Icons.shield_rounded, size: 20),
+                    label: const Text('Buy with Safe MoMo Escrow 🛡️',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      Navigator.of(modalCtx).pop();
+                      context.push('/escrow');
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -526,84 +730,87 @@ class _HomeScreenState extends State<HomeScreen> {
                           itemBuilder: (context, index) {
                             final m = _liveMerchants.isNotEmpty ? _liveMerchants[index] : _fallbackMerchants[index];
 
-                            return Container(
-                              width: 220,
-                              margin: const EdgeInsets.only(right: 12),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: cardBg,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder,
+                            return GestureDetector(
+                              onTap: () => context.push('/biz/${m['slug']}'),
+                              child: Container(
+                                width: 220,
+                                margin: const EdgeInsets.only(right: 12),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder,
+                                  ),
                                 ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 18,
-                                        backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
-                                        child: Text(
-                                          m['name'][0],
-                                          style: const TextStyle(fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 18,
+                                          backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
+                                          child: Text(
+                                            m['name'][0],
+                                            style: const TextStyle(fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                                          ),
                                         ),
-                                      ),
-                                      const Gap(10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                        const Gap(10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                m['name'],
+                                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              Text(
+                                                m['location'],
+                                                style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const Spacer(),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
                                           children: [
+                                            const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                                            const Gap(4),
                                             Text(
-                                              m['name'],
-                                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            Text(
-                                              m['location'],
-                                              style: TextStyle(fontSize: 10, color: Colors.grey[500]),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
+                                              '${m['rating']} (${m['jobsDone']} jobs)',
+                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                                             ),
                                           ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  const Spacer(),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
-                                          const Gap(4),
-                                          Text(
-                                            '${m['rating']} (${m['jobsDone']} jobs)',
-                                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: ServoraColors.emerald600,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            minimumSize: Size.zero,
                                           ),
-                                        ],
-                                      ),
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: ServoraColors.emerald600,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                          minimumSize: Size.zero,
+                                          onPressed: () {
+                                            WhatsAppHelper.openWhatsApp(
+                                              phone: m['phone'],
+                                              message: 'Hello ${m['name']}, I found your business profile on Servora.gh app.',
+                                            );
+                                          },
+                                          child: const Text('Contact', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                                         ),
-                                        onPressed: () {
-                                          WhatsAppHelper.openWhatsApp(
-                                            phone: m['phone'],
-                                            message: 'Hello ${m['name']}, I found your business profile on Servora.gh app.',
-                                          );
-                                        },
-                                        child: const Text('Contact', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             );
                           },
@@ -614,7 +821,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const Gap(24),
 
-                // 6. MARKETPLACE PRODUCTS FEED (2-COLUMN GRID - EXACT RATIO 0.53)
+                // 6. MARKETPLACE PRODUCTS FEED (WITH PRODUCT IMAGE DISPLAY & CLICKABLE MODAL DETAILED VIEW)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
@@ -637,94 +844,146 @@ class _HomeScreenState extends State<HomeScreen> {
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.53,
+                          childAspectRatio: 0.46,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
                         itemCount: _liveProducts.isNotEmpty ? _liveProducts.length : _fallbackProducts.length,
                         itemBuilder: (context, index) {
                           final p = _liveProducts.isNotEmpty ? _liveProducts[index] : _fallbackProducts[index];
+                          final imageUrl = p['image'] as String?;
 
-                          return ServoraCard(
-                            padding: const EdgeInsets.all(10),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: ServoraColors.emerald600.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(6),
+                          return GestureDetector(
+                            onTap: () => _showProductDetailModal(context, p),
+                            child: ServoraCard(
+                              padding: EdgeInsets.zero,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Product Cover Image
+                                  ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                    child: imageUrl != null && imageUrl.isNotEmpty
+                                        ? CachedNetworkImage(
+                                            imageUrl: imageUrl,
+                                            height: 110,
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                            placeholder: (_, __) => const ServoraShimmerSkeleton(
+                                                width: double.infinity, height: 110, borderRadius: 0),
+                                            errorWidget: (_, __, ___) => Container(
+                                              height: 110,
+                                              color: ServoraColors.emerald600.withOpacity(0.1),
+                                              child: const Center(
+                                                child: Icon(Icons.inventory_2_rounded,
+                                                    size: 32, color: ServoraColors.emerald600),
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
+                                            height: 110,
+                                            color: ServoraColors.emerald600.withOpacity(0.1),
+                                            child: const Center(
+                                              child: Icon(Icons.inventory_2_rounded,
+                                                  size: 32, color: ServoraColors.emerald600),
+                                            ),
+                                          ),
                                   ),
-                                  child: Text(
-                                    p['category'],
-                                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const Gap(8),
-                                Expanded(
-                                  child: Text(
-                                    p['title'],
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, height: 1.2),
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const Gap(6),
-                                Text(
-                                  p['price'],
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w900,
-                                    color: ServoraColors.emerald600,
-                                  ),
-                                ),
-                                const Gap(4),
-                                Text(
-                                  '${p['seller']} • ${p['location']}',
-                                  style: TextStyle(fontSize: 9, color: Colors.grey[600]),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const Gap(10),
 
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: ServoraColors.emerald600,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(vertical: 6),
-                                          minimumSize: Size.zero,
+                                  Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: ServoraColors.emerald600.withOpacity(0.12),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            p['category'],
+                                            style: const TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                                color: ServoraColors.emerald600),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
-                                        icon: const Icon(Icons.send_rounded, size: 12),
-                                        label: const Text('Buy', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                        onPressed: () {
-                                          WhatsAppHelper.openWhatsApp(
-                                            phone: p['phone'],
-                                            message: 'Hello, I want to buy "${p['title']}" listed on Servora.gh.',
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const Gap(4),
-                                    GestureDetector(
-                                      onTap: () => context.push('/escrow'),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: ServoraColors.amberLight,
-                                          borderRadius: BorderRadius.circular(8),
+                                        const Gap(6),
+                                        Text(
+                                          p['title'],
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1.2),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        child: const Icon(Icons.shield_rounded, size: 16, color: ServoraColors.amberDark),
-                                      ),
+                                        const Gap(4),
+                                        Text(
+                                          p['price'],
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w900,
+                                            color: ServoraColors.emerald600,
+                                          ),
+                                        ),
+                                        const Gap(2),
+                                        Text(
+                                          '${p['seller']} • ${p['location']}',
+                                          style: TextStyle(
+                                              fontSize: 9, color: Colors.grey[600]),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const Gap(8),
+
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: ElevatedButton.icon(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: ServoraColors.emerald600,
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                                  minimumSize: Size.zero,
+                                                ),
+                                                icon: const Icon(Icons.send_rounded, size: 12),
+                                                label: const Text('Buy',
+                                                    style: TextStyle(
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.bold)),
+                                                onPressed: () {
+                                                  WhatsAppHelper.openWhatsApp(
+                                                    phone: p['phone'],
+                                                    message:
+                                                        'Hello, I want to buy "${p['title']}" listed on Servora.gh.',
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            const Gap(4),
+                                            GestureDetector(
+                                              onTap: () => context.push('/escrow'),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: ServoraColors.amberLight,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: const Icon(Icons.shield_rounded,
+                                                    size: 16, color: ServoraColors.amberDark),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
