@@ -17,7 +17,14 @@ export function Footer() {
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
               <img src="/logo.png" alt="Servora.gh Logo" className="w-9 h-9 object-contain" />
-              <span className="text-xl font-black text-stone-900 dark:text-white">Servora.gh</span>
+              <div>
+                <span className="text-xl font-black text-stone-900 dark:text-white">
+                  Servora<span className="text-emerald-600 dark:text-emerald-400">.gh</span>
+                </span>
+                <span className="block text-[9.5px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest -mt-0.5">
+                  NORTHERN MARKETPLACE
+                </span>
+              </div>
             </div>
             <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
               Zero-capital local marketplace connecting residents across Northern Ghana with verified artisans, skilled service professionals, equipment rentals, and local businesses.

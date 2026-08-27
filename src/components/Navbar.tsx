@@ -69,8 +69,8 @@ export function Navbar() {
               <span className="text-lg sm:text-xl font-black tracking-tight text-stone-900 dark:text-white">
                 Servora<span className="text-emerald-600 dark:text-emerald-400">.gh</span>
               </span>
-              <span className="block text-[9px] sm:text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest -mt-1">
-                Northern Marketplace
+              <span className="block text-[9px] sm:text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest -mt-0.5">
+                NORTHERN MARKETPLACE
               </span>
             </div>
           </Link>

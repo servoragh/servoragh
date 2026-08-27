@@ -50,8 +50,12 @@ export default function LoginPage() {
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center mx-auto mb-3 shadow-md">
             <Wrench className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-stone-900 dark:text-white">Log in to Servora</h1>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">Connect with verified local businesses, sellers, and services in Northern Ghana</p>
+          <h1 className="text-2xl font-black tracking-tight text-stone-900 dark:text-white">
+            Log in to Servora<span className="text-emerald-600 dark:text-emerald-400">.gh</span>
+          </h1>
+          <p className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mt-1">
+            NORTHERN MARKETPLACE & ARTISAN TRADE HUB
+          </p>
         </div>
 
         {/* Account Role Selector Tabs */}

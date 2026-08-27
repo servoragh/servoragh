@@ -281,13 +281,32 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Text('Servora', style: ServoraTypography.titleLarge(isDark)),
-                                  const Text('.gh', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
+                                  Text(
+                                    'Servora',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                      color: isDark ? Colors.white : const Color(0xFF18181B),
+                                    ),
+                                  ),
+                                  const Text(
+                                    '.gh',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                      color: ServoraColors.emerald600,
+                                    ),
+                                  ),
                                 ],
                               ),
                               const Text(
                                 'NORTHERN MARKETPLACE',
-                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: ServoraColors.emerald600, letterSpacing: 0.8),
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w900,
+                                  color: ServoraColors.emerald600,
+                                  letterSpacing: 0.9,
+                                ),
                               ),
                             ],
                           ),

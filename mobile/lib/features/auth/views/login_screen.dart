@@ -30,6 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
       listenable: authNotifier,
       builder: (context, _) {
         final authState = authNotifier.state;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Scaffold(
           appBar: AppBar(
@@ -51,16 +52,40 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 20),
                 Center(
-                  child: Text(
-                    _isSignUp ? 'Create Free Account' : 'Welcome Back to Servora',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Center(
-                  child: Text(
-                    'Northern Marketplace & Artisan Trade Hub',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _isSignUp ? 'Sign Up on Servora' : 'Welcome to Servora',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: isDark ? Colors.white : const Color(0xFF18181B),
+                            ),
+                          ),
+                          const Text(
+                            '.gh',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF059669),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'NORTHERN MARKETPLACE & ARTISAN TRADE HUB',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF059669),
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
