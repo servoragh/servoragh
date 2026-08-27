@@ -17,23 +17,14 @@ class ArtisanStorefrontScreen extends StatefulWidget {
   State<ArtisanStorefrontScreen> createState() => _ArtisanStorefrontScreenState();
 }
 
-class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
   bool _isLoading = true;
   Map<String, dynamic>? _storeData;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
     _loadStorefront();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadStorefront() async {
@@ -49,112 +40,76 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen>
 
   Map<String, dynamic> _getFallbackData() {
     final cleanName = widget.slug.replaceAll('-', ' ').replaceAllMapped(RegExp(r'\b\w'), (m) => m.group(0)!.toUpperCase());
+    final isSolar = cleanName.toLowerCase().contains('solar') || widget.slug.contains('solar');
+    final name = isSolar ? 'Tamale Solar & Heavy Power Solutions' : cleanName;
+
     return {
       'id': 'prov_${widget.slug}',
       'slug': widget.slug,
-      'businessName': cleanName.contains('Solar') ? cleanName : '$cleanName Power & Trade Enterprise',
-      'category': 'Solar & Electrical Engineering Services',
+      'businessName': name,
+      'artisanName': 'Eng. Rashid Mohammed',
+      'experienceYears': 1,
+      'category': 'Solar & Heavy Power Solutions',
       'verificationTier': 'TIER_3_REGISTERED_ENTERPRISE',
       'isVerified': true,
       'logoUrl': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
       'bannerUrl': 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&auto=format&fit=crop&q=80',
-      'ratingAverage': 4.9,
-      'reviewsCount': 28,
-      'completedJobsCount': 64,
-      'joinedDate': '2024-03-12T00:00:00.000Z',
+      'trustScore': 100,
+      'ratingAverage': 5.0,
+      'reviewsCount': 36,
+      'completedJobsCount': 85,
+      'hourlyRate': 'GH₵ 100.00/hr',
+      'startingPrice': 'GH₵ 250.00',
+      'responseSpeed': '< 15 minutes',
+      'coverageZones': ['Tamale, Bolgatanga, Wa, Yendi, All Northern Region'],
       'phone': '+233240000000',
       'whatsappNumber': '+233240000000',
-      'zone': 'Sakasaka, Tamale',
-      'latitude': 9.407,
-      'longitude': -0.841,
-      'isOpenNow': true,
-      'businessHours': {
-        'monday': {'open': '08:00', 'close': '18:00', 'closed': false},
-        'tuesday': {'open': '08:00', 'close': '18:00', 'closed': false},
-        'wednesday': {'open': '08:00', 'close': '18:00', 'closed': false},
-        'thursday': {'open': '08:00', 'close': '18:00', 'closed': false},
-        'friday': {'open': '08:00', 'close': '18:00', 'closed': false},
-        'saturday': {'open': '08:00', 'close': '17:00', 'closed': false},
-        'sunday': {'open': '10:00', 'close': '16:00', 'closed': false},
-      },
-      'bio': 'Certified solar & electrical engineers specializing in residential inverter setups, lithium battery bank maintenance, and deep-well solar pump installations across Northern Ghana.',
+      'zone': 'Tamale, Bolgatanga, Wa, Yendi, All Northern Region',
+      'aboutText': "Northern Ghana's leading distributor of high-efficiency solar panels, lithium wall batteries, pure sine wave inverters, and heavy water pump generators.",
       'catalogs': {
         'products': [
           {
             'id': 'prod_1',
-            'title': '300W Monocrystalline Solar Panel Kit',
-            'price': 2500.0,
-            'originalPrice': 2800.0,
-            'condition': 'Brand New',
-            'inStock': true,
+            'title': '300W Monocrystalline Heavy Duty Solar Panel Kit',
+            'price': 1800.0,
+            'originalPrice': 2000.0,
+            'category': 'Community & NGOs',
+            'discountPercent': 10,
+            'location': 'Lamashegu, Tamale',
+            'images': ['https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80'],
           },
           {
             'id': 'prod_2',
-            'title': '100Ah Lithium Wall-Mounted Storage Battery',
+            'title': '100Ah 48V Lithium Storage Battery Wall Bank',
             'price': 4200.0,
-            'originalPrice': 4600.0,
-            'condition': 'Brand New',
-            'inStock': true,
-          },
-        ],
-        'services': [
-          {
-            'id': 'serv_1',
-            'name': 'Solar Panel Inverter Diagnostics',
-            'description': 'Comprehensive testing of solar inverters & MPPT charge controllers.',
-            'startingPrice': 150.0,
-            'estimatedTime': '2 Hours',
-          },
-          {
-            'id': 'serv_2',
-            'name': 'Borehole Solar Pump Wiring',
-            'description': 'Heavy-duty 3-phase DC solar pump controller installation.',
-            'startingPrice': 350.0,
-            'estimatedTime': '4 Hours',
-          },
-        ],
-        'rentals': [
-          {
-            'id': 'rent_1',
-            'title': '5kVA Mobile Pure Sine Wave Inverter Rig',
-            'dailyRate': 200.0,
-            'depositRequired': 500.0,
-            'isAvailable': true,
-          },
-        ],
-        'portfolio': [
-          {
-            'id': 'port_1',
-            'title': '10kVA Hybrid Solar Inverter Installation',
+            'originalPrice': 4800.0,
+            'category': 'Jobs & Freelance Gigs',
+            'discountPercent': 12,
             'location': 'Sakasaka, Tamale',
-            'completionDate': '2024-02-15',
+            'images': ['https://images.unsplash.com/photo-1548611635-b6e7827d7d4a?w=600&q=80'],
           },
           {
-            'id': 'port_2',
-            'title': 'Lithium Wall Battery Bank Setup',
+            'id': 'prod_3',
+            'title': '5kVA Pure Sine Wave Hybrid Solar Inverter',
+            'price': 3500.0,
+            'originalPrice': 4000.0,
+            'category': 'Tools & Equipment',
+            'discountPercent': 12,
             'location': 'Choggu, Tamale',
-            'completionDate': '2024-01-20',
+            'images': ['https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80'],
+          },
+          {
+            'id': 'prod_4',
+            'title': '3-Phase Submersible Borehole Solar Pump Rig',
+            'price': 6500.0,
+            'originalPrice': 7200.0,
+            'category': 'Heavy Machinery',
+            'discountPercent': 10,
+            'location': 'Nyohini, Tamale',
+            'images': ['https://images.unsplash.com/photo-1548611635-b6e7827d7d4a?w=600&q=80'],
           },
         ],
       },
-      'reviews': [
-        {
-          'id': 'rev_1',
-          'authorName': 'Alhaji Haruna',
-          'rating': 5,
-          'comment': 'Excellent solar installation! My power has been steady 24/7 without any interruptions.',
-          'date': '2024-03-01',
-          'isVerifiedPurchase': true,
-        },
-        {
-          'id': 'rev_2',
-          'authorName': 'Dr. Fuseini Abdulai',
-          'rating': 5,
-          'comment': 'Fast responder and clean wiring work. Highly recommended solar engineer in Northern Ghana.',
-          'date': '2024-02-18',
-          'isVerifiedPurchase': true,
-        },
-      ],
     };
   }
 
@@ -201,7 +156,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.qr_code_2_rounded, color: Colors.amber),
-                title: const Text('Digital QR Business Card'),
+                title: const Text('📱 Digital QR Business Card'),
                 subtitle: const Text('Show QR code for instant scanning'),
                 onTap: () {
                   Navigator.pop(context);
@@ -262,465 +217,622 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen>
     }
 
     final data = _storeData ?? {};
-    final String name = data['businessName'] ?? 'Business Storefront';
-    final String category = data['category'] ?? 'Verified Enterprise';
+    final String name = data['businessName'] ?? 'Tamale Solar & Heavy Power Solutions';
+    final String artisanName = data['artisanName'] ?? 'Eng. Rashid Mohammed';
+    final int experienceYears = (data['experienceYears'] ?? 1) as int;
     final String phone = data['phone'] ?? '+233240000000';
     final String whatsapp = data['whatsappNumber'] ?? phone;
-    final String zone = data['zone'] ?? 'Tamale Central';
-    final double rating = (data['ratingAverage'] ?? 4.9).toDouble();
-    final int reviewsCount = data['reviewsCount'] ?? 28;
-    final int jobs = data['completedJobsCount'] ?? 64;
-    final String bio = data['bio'] ?? '';
+    final String coverage = data['zone'] ?? 'Tamale, Bolgatanga, Wa, Yendi, All Northern Region';
+    final double rating = (data['ratingAverage'] ?? data['rating'] ?? 5.0) as double;
+    final int reviewsCount = (data['reviewsCount'] ?? data['reviewCount'] ?? 36) as int;
+    final int completedJobs = (data['completedJobsCount'] ?? data['completedJobs'] ?? 85) as int;
+    final String aboutText = data['aboutText'] ?? data['bio'] ?? "Northern Ghana's leading distributor of high-efficiency solar panels, lithium wall batteries, pure sine wave inverters, and heavy water pump generators.";
+    final String hourlyRate = data['hourlyRate'] ?? 'GH₵ 100.00/hr';
+    final String startingPrice = data['startingPrice'] ?? 'GH₵ 250.00';
+    final String responseSpeed = data['responseSpeed'] ?? '< 15 minutes';
     final Map<String, dynamic> catalogs = data['catalogs'] ?? {};
     final List productsList = catalogs['products'] ?? [];
-    final List servicesList = catalogs['services'] ?? [];
-    final List rentalsList = catalogs['rentals'] ?? [];
-    final List portfolioList = catalogs['portfolio'] ?? [];
-    final List reviewsList = data['reviews'] ?? [];
 
     final String whatsappMessage = "Hello $name, I found your profile on Servora and I would like to inquire about your services/products.";
 
     return Scaffold(
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            // 1. Storefront Hero & Identity Header Banner
-            SliverAppBar(
-              expandedHeight: 230,
-              pinned: true,
-              leading: IconButton(
-                icon: const CircleAvatar(
-                  backgroundColor: Colors.black54,
-                  child: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
-                ),
-                onPressed: () => context.pop(),
-              ),
-              actions: [
-                IconButton(
-                  icon: const CircleAvatar(
-                    backgroundColor: Colors.black54,
-                    child: Icon(Icons.share_rounded, color: Colors.white, size: 18),
+      backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('← Back to Marketplace', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        actions: [
+          ServoraFavoriteButton(businessId: widget.slug, businessName: name),
+          const Gap(12),
+        ],
+      ),
+      body: CustomScrollView(
+        slivers: [
+          // Section A: Main Provider Identity Header Card
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: isDark ? ServoraColors.darkSurface : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder,
                   ),
-                  onPressed: () => _shareStorefront(name, widget.slug),
-                ),
-                const Gap(8),
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.network(
-                      data['bannerUrl'] ?? 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&auto=format&fit=crop&q=80',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(color: ServoraColors.emerald800),
-                    ),
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.transparent, Colors.black87],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 16,
-                      bottom: 16,
-                      right: 16,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: ServoraColors.emerald600, width: 2),
-                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
-                            ),
-                            child: CircleAvatar(
-                              backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
-                              child: Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                                style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
-                              ),
-                            ),
-                          ),
-                          const Gap(12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  name,
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const Gap(2),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: ServoraColors.emerald600,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    '✓ VERIFIED ENTERPRISE • $category',
-                                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const Gap(4),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.location_on_rounded, size: 12, color: Colors.amber),
-                                    const Gap(3),
-                                    Text(
-                                      '$zone • 🟢 Open Now',
-                                      style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-              ),
-            ),
-
-            // Identity Stats & Verification Bar
-            SliverToBoxAdapter(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                color: isDark ? ServoraColors.darkSurface : Colors.white,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Top Avatar & Title & Trust Score Row
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Avatar / Profile Image
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: ServoraColors.emerald600.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: ServoraColors.emerald600.withOpacity(0.3), width: 1.5),
+                          ),
+                          child: Center(
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : 'T',
+                              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
+                            ),
+                          ),
+                        ),
+                        const Gap(12),
+
+                        // Title, ID Verified Badge, Subtitle & Metadata
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      name,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w900,
+                                        color: isDark ? Colors.white : const Color(0xFF18181B),
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const Gap(6),
+                                  // ID Verification Badge
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEF3C7),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text('🛡️', style: TextStyle(fontSize: 10)),
+                                        Gap(3),
+                                        Text('ID Verified', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFD97706))),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Gap(4),
+
+                              // Subtitle
+                              Text(
+                                'Artisan: $artisanName • $experienceYears Years Experience in Tamale',
+                                style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.grey[700], fontWeight: FontWeight.w500),
+                              ),
+                              const Gap(6),
+
+                              // Metadata Row (Location, Star Rating, Jobs Completed)
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 4,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.location_on_rounded, size: 13, color: ServoraColors.emerald600),
+                                      const Gap(3),
+                                      Text(
+                                        coverage,
+                                        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : Colors.grey[800]),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.star_rounded, size: 13, color: Colors.amber),
+                                      const Gap(3),
+                                      Text('$rating ($reviewsCount reviews)', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.work_outline_rounded, size: 13, color: Color(0xFF2563EB)),
+                                      const Gap(3),
+                                      Text('$completedJobs Jobs Completed', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(16),
+
+                    // Top-Right Verification & Trust Score Widget
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: ServoraColors.emerald600.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: ServoraColors.emerald600.withOpacity(0.25)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('VERIFICATION & TRUST SCORE', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Colors.grey, letterSpacing: 0.5)),
+                              const Gap(2),
+                              const Text('Verified Local Business', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                            ],
+                          ),
+                          const Text('100%', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
+                        ],
+                      ),
+                    ),
+                    const Gap(12),
+
+                    // Status Badges Row
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _buildStatusTag('✓ Phone Verified', const Color(0xFFECFDF5), ServoraColors.emerald600),
+                        _buildStatusTag('✓ MoMo Escrow Verified', const Color(0xFFECFDF5), ServoraColors.emerald600),
+                        _buildStatusTag('⭐ Top Rated Seller', const Color(0xFFFEF3C7), const Color(0xFFD97706)),
+                        _buildStatusTag('🏢 Business Verified', const Color(0xFFEFF6FF), const Color(0xFF2563EB)),
+                      ],
+                    ),
+                    const Gap(16),
+
+                    // Multi-Button Horizontal Action Grid
+                    Column(
+                      children: [
+                        // Button 1: Primary Dark Teal CTA
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ServoraColors.emerald800,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            onPressed: () => context.push('/services/request'),
+                            child: Text('Get Price Estimate From $name', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        const Gap(8),
+
                         Row(
                           children: [
-                            const Icon(Icons.star_rounded, color: Colors.amber, size: 18),
-                            const Gap(4),
-                            Text('$rating ($reviewsCount reviews)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            // Button 2: Dark Slate QR Card
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1E293B),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 11),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                icon: const Text('📱', style: TextStyle(fontSize: 12)),
+                                label: const Text('QR Card', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                onPressed: () => _showQrDialog(name, 'https://servora.vercel.app/provider/${widget.slug}'),
+                              ),
+                            ),
+                            const Gap(6),
+
+                            // Button 3: Bright Green WhatsApp
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF25D366),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 11),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                icon: const Text('✈️', style: TextStyle(fontSize: 12)),
+                                label: const Text('WhatsApp', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                onPressed: () => WhatsAppHelper.openWhatsApp(phone: whatsapp, message: whatsappMessage),
+                              ),
+                            ),
                           ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text('🧰 $jobs Jobs Done', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                        const Gap(6),
+
+                        Row(
+                          children: [
+                            // Button 4: Light Amber Outline Safe MoMo Escrow
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFEF3C7),
+                                  side: const BorderSide(color: Color(0xFFF59E0B)),
+                                  padding: const EdgeInsets.symmetric(vertical: 11),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                icon: const Text('🛡️', style: TextStyle(fontSize: 12)),
+                                label: const Text('Safe MoMo Escrow', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFB45309))),
+                                onPressed: () => context.push('/escrow'),
+                              ),
+                            ),
+                            const Gap(6),
+
+                            // Button 5: Emerald Outline Share on WhatsApp
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: ServoraColors.emerald600),
+                                  padding: const EdgeInsets.symmetric(vertical: 11),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                icon: const Text('↗', style: TextStyle(fontSize: 12, color: ServoraColors.emerald600)),
+                                label: const Text('Share Store', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                                onPressed: () => _shareStorefront(name, widget.slug),
+                              ),
+                            ),
+                          ],
                         ),
-                        ServoraFavoriteButton(businessId: widget.slug, businessName: name),
                       ],
                     ),
                   ],
                 ),
               ),
             ),
-
-            // Persistent 5 Tab Bar Header
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _SliverTabBarDelegate(
-                TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  labelColor: ServoraColors.emerald600,
-                  unselectedLabelColor: isDark ? Colors.white60 : Colors.grey[600],
-                  indicatorColor: ServoraColors.emerald600,
-                  indicatorWeight: 3,
-                  labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  tabs: [
-                    Tab(text: 'Products (${productsList.length})'),
-                    Tab(text: 'Services (${servicesList.length})'),
-                    Tab(text: 'Rentals (${rentalsList.length})'),
-                    Tab(text: 'Portfolio (${portfolioList.length})'),
-                    Tab(text: 'Reviews (${reviewsList.length})'),
-                  ],
-                ),
-                isDark: isDark,
-              ),
-            ),
-          ];
-        },
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            // Tab 1: Products
-            _buildProductsTab(productsList, isDark),
-            // Tab 2: Services
-            _buildServicesTab(servicesList, isDark),
-            // Tab 3: Rentals
-            _buildRentalsTab(rentalsList, isDark),
-            // Tab 4: Portfolio
-            _buildPortfolioTab(portfolioList, isDark),
-            // Tab 5: Reviews & About
-            _buildAboutAndReviewsTab(bio, zone, reviewsList, isDark),
-          ],
-        ),
-      ),
-
-      // 2. Persistent Sticky Contact & Action Strip (Mobile Bottom Bar)
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isDark ? ServoraColors.darkSurface : Colors.white,
-          border: Border(top: BorderSide(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, -4))],
-        ),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.phone_in_talk_rounded, color: ServoraColors.emerald600),
-              onPressed: () => _makePhoneCall(phone),
-              tooltip: 'Call Direct',
-            ),
-            const Gap(6),
-            Expanded(
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF25D366),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                icon: const Icon(Icons.chat_rounded, size: 18),
-                label: const Text('Chat on WhatsApp', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                onPressed: () => WhatsAppHelper.openWhatsApp(phone: whatsapp, message: whatsappMessage),
-              ),
-            ),
-            const Gap(8),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ServoraColors.emerald600,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              child: const Text('Get Quote', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              onPressed: () => context.push('/services/request'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProductsTab(List products, bool isDark) {
-    if (products.isEmpty) {
-      return const Center(child: Text('No products listed in catalog yet.', style: TextStyle(color: Colors.grey)));
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: products.length,
-      separatorBuilder: (_, __) => const Gap(12),
-      itemBuilder: (context, index) {
-        final p = products[index];
-        return Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-            leading: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(color: ServoraColors.emerald600.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.inventory_2_rounded, color: ServoraColors.emerald600),
-            ),
-            title: Text(p['title'] ?? 'Product Item', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: Text('Condition: ${p['condition'] ?? "Brand New"} • In Stock', style: const TextStyle(fontSize: 11)),
-            trailing: Text('GH₵ ${p['price']}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
           ),
-        );
-      },
-    );
-  }
 
-  Widget _buildServicesTab(List services, bool isDark) {
-    if (services.isEmpty) {
-      return const Center(child: Text('No custom labor services listed yet.', style: TextStyle(color: Colors.grey)));
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: services.length,
-      separatorBuilder: (_, __) => const Gap(12),
-      itemBuilder: (context, index) {
-        final s = services[index];
-        return Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-            leading: const CircleAvatar(backgroundColor: Color(0xFFFEF3C7), child: Icon(Icons.build_rounded, color: Color(0xFFD97706))),
-            title: Text(s['name'] ?? 'Labor Service', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: Text(s['description'] ?? 'Diagnostics & Repair', style: const TextStyle(fontSize: 11)),
-            trailing: Text('From GH₵ ${s['startingPrice']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildRentalsTab(List rentals, bool isDark) {
-    if (rentals.isEmpty) {
-      return const Center(child: Text('No equipment rental items available.', style: TextStyle(color: Colors.grey)));
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: rentals.length,
-      separatorBuilder: (_, __) => const Gap(12),
-      itemBuilder: (context, index) {
-        final r = rentals[index];
-        return Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-            leading: const CircleAvatar(backgroundColor: Color(0xFFEFF6FF), child: Icon(Icons.construction_rounded, color: Color(0xFF2563EB))),
-            title: Text(r['title'] ?? 'Tool Equipment', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: Text('Deposit: GH₵ ${r['depositRequired'] ?? 500}', style: const TextStyle(fontSize: 11)),
-            trailing: Text('GH₵ ${r['dailyRate']}/day', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPortfolioTab(List portfolio, bool isDark) {
-    if (portfolio.isEmpty) {
-      return const Center(child: Text('No past work photos uploaded yet.', style: TextStyle(color: Colors.grey)));
-    }
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12),
-      itemCount: portfolio.length,
-      itemBuilder: (context, index) {
-        final item = portfolio[index];
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: ServoraColors.emerald600.withOpacity(0.1),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          // Section B: Overview Cards (About the Business & Pricing & Availability)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  // Left Card: About the Business
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? ServoraColors.darkSurface : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('About the Business', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        const Gap(8),
+                        Text(
+                          aboutText,
+                          style: TextStyle(fontSize: 12, height: 1.4, color: isDark ? Colors.white70 : Colors.grey[800]),
+                        ),
+                        const Gap(12),
+                        const Text('Services Offered', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                        const Gap(6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _buildServiceTag('General Services'),
+                            _buildServiceTag('Solar Installations'),
+                            _buildServiceTag('AC Maintenance'),
+                            _buildServiceTag('Heavy Pumps'),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  child: const Center(child: Icon(Icons.camera_alt_rounded, size: 36, color: ServoraColors.emerald600)),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(item['title'] ?? 'Past Project', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+                  const Gap(14),
 
-  Widget _buildAboutAndReviewsTab(String bio, String zone, List reviews, bool isDark) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Bio Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? ServoraColors.darkSurface : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('About the Business', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                const Gap(8),
-                Text(bio, style: const TextStyle(fontSize: 12, height: 1.4)),
-                const Gap(12),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_rounded, size: 14, color: ServoraColors.emerald600),
-                    const Gap(4),
-                    Text('Location: $zone', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Gap(16),
-
-          // Reviews Section
-          const Text('Customer Reviews', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-          const Gap(8),
-          if (reviews.isEmpty)
-            const Text('No reviews recorded yet.', style: TextStyle(fontSize: 12, color: Colors.grey))
-          else
-            ...reviews.map((r) => Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? ServoraColors.darkSurface : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
+                  // Right Card: Pricing & Availability
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? ServoraColors.darkSurface : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Pricing & Availability', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        const Gap(12),
+                        _buildPricingRow('Hourly Rate', hourlyRate, isDark, valueColor: isDark ? Colors.white : Colors.black),
+                        const Divider(height: 16),
+                        _buildPricingRow('Starting Price', startingPrice, isDark, valueColor: ServoraColors.emerald600, isBold: true),
+                        const Divider(height: 16),
+                        _buildPricingRow('Response Speed', responseSpeed, isDark, valueColor: const Color(0xFF9333EA), isBold: true),
+                        const Divider(height: 16),
+                        _buildPricingRow('Service Coverage', coverage, isDark, valueColor: isDark ? Colors.white70 : Colors.grey[700]),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const Gap(20),
+
+                  // Section C Header: Products & Catalog
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(r['authorName'] ?? 'Customer', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                          Row(children: const [Icon(Icons.star_rounded, size: 14, color: Colors.amber), Text('5.0', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold))]),
-                        ],
+                      Text('Products & Catalog (${productsList.length})', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+                      TextButton(
+                        onPressed: () {},
+                        child: const Text('Filter Items ↗', style: TextStyle(color: ServoraColors.emerald600, fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
-                      const Gap(4),
-                      Text(r['comment'] ?? '', style: const TextStyle(fontSize: 11)),
                     ],
                   ),
-                )),
+                  const Gap(10),
+                ],
+              ),
+            ),
+          ),
+
+          // Section C: Products Catalog Grid (2-Column Responsive Cards)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.64,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final p = productsList[index];
+                  final List images = p['images'] is List ? p['images'] : [];
+                  final String imgUrl = images.isNotEmpty ? images[0] : 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80';
+
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? ServoraColors.darkSurface : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Thumbnail Image Container
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                              child: AspectRatio(
+                                aspectRatio: 1.2,
+                                child: Image.network(
+                                  imgUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: ServoraColors.emerald600.withOpacity(0.12),
+                                    child: const Center(child: Icon(Icons.inventory_2_rounded, color: ServoraColors.emerald600, size: 36)),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // Top-Left Category Badge
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.65),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  p['category'] ?? 'Community & NGOs',
+                                  style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              ),
+                            ),
+
+                            // Top-Right Discount Badge
+                            if (p['discountPercent'] != null)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF59E0B),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '🏷️ ${p['discountPercent']}%',
+                                    style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+
+                        // Card Details Content
+                        Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Clamped Title
+                              Text(
+                                p['title'] ?? 'Product Catalog Item',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : const Color(0xFF18181B),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const Gap(6),
+
+                              // Price Row
+                              Row(
+                                children: [
+                                  Text(
+                                    'GH₵ ${p['price']}',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
+                                  ),
+                                  const Gap(4),
+                                  if (p['originalPrice'] != null)
+                                    Text(
+                                      'GH₵ ${p['originalPrice']}',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        decoration: TextDecoration.lineThrough,
+                                        color: isDark ? Colors.white38 : Colors.grey[500],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const Gap(4),
+
+                              // Verified Enterprise & Location Row
+                              Row(
+                                children: [
+                                  const Icon(Icons.check_circle_rounded, size: 10, color: ServoraColors.emerald600),
+                                  const Gap(2),
+                                  const Expanded(
+                                    child: Text(
+                                      'Verified Enterprise',
+                                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Text(
+                                    '📍 ${p['location'] ?? "Lamashegu"}',
+                                    style: TextStyle(fontSize: 8.5, color: isDark ? Colors.white60 : Colors.grey[600]),
+                                  ),
+                                ],
+                              ),
+                              const Gap(8),
+
+                              // Action Bar (Buy & Safe MoMo Escrow)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: ServoraColors.emerald600,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 6),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                      onPressed: () => WhatsAppHelper.openWhatsApp(
+                                        phone: phone,
+                                        message: "Hello $name, I want to inquire/buy '${p['title']}' listed on Servora.",
+                                      ),
+                                      child: const Text('✈️ Buy', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ),
+                                  const Gap(4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEF3C7),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFFF59E0B)),
+                                    ),
+                                    child: const Text('🛡️ Escrow', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFFB45309))),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                childCount: productsList.length,
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),
     );
   }
-}
 
-class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar tabBar;
-  final bool isDark;
-
-  _SliverTabBarDelegate(this.tabBar, {required this.isDark});
-
-  @override
-  double get minExtent => tabBar.preferredSize.height;
-  @override
-  double get maxExtent => tabBar.preferredSize.height;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget _buildStatusTag(String label, Color bg, Color text) {
     return Container(
-      color: isDark ? ServoraColors.darkSurface : Colors.white,
-      child: tabBar,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+      child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: text)),
     );
   }
 
-  @override
-  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
-    return oldDelegate.tabBar != tabBar || oldDelegate.isDark != isDark;
+  Widget _buildServiceTag(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: ServoraColors.emerald600.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+    );
+  }
+
+  Widget _buildPricingRow(String label, String value, bool isDark, {Color? valueColor, bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: 11.5, color: isDark ? Colors.white60 : Colors.grey[700])),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: isBold ? FontWeight.w900 : FontWeight.w600,
+            color: valueColor ?? (isDark ? Colors.white : Colors.black),
+          ),
+        ),
+      ],
+    );
   }
 }
