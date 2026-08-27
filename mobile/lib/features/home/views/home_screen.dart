@@ -11,7 +11,6 @@ import '../../../core/services/marketplace_api_service.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../main.dart';
 import '../../../shared/widgets/servora_card.dart';
-import '../../../shared/widgets/status_badge.dart';
 import '../../../shared/widgets/servora_dropdown_sheet.dart';
 import '../../../shared/widgets/servora_shimmer_skeleton.dart';
 
@@ -43,38 +42,63 @@ class _HomeScreenState extends State<HomeScreen> {
     {
       'title': '300W Monocrystalline Solar Panel & Inverter Kit',
       'category': 'Solar & Tech',
-      'price': 'GH₵ 2,400.00',
+      'price': 2400.0,
+      'originalPrice': 3000.0,
       'seller': 'Kwame Electrical',
       'location': 'Sakasaka, Tamale',
       'phone': '+233244889900',
       'image': 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80',
+      'images': [
+        'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80',
+        'https://images.unsplash.com/photo-1548611635-b6e7827d7d4a?w=600&q=80',
+      ],
+      'description':
+          'Complete 300W Monocrystalline Solar System kit including pure sine wave inverter, MPPT charge controller, heavy-duty mounting rails, and MC4 cabling. Ideal for homes and shops across Tamale and Northern Region to beat power cuts.\n\n• Warranty: 2 Years Manufacturers Guarantee\n• Delivery: Same-Day Installation Available in Sakasaka, Choggu, and Nyohini.',
     },
     {
       'title': 'Handwoven Royal Dagbon Fugu (Heavy Thread Smock)',
       'category': 'Fugu Smocks',
-      'price': 'GH₵ 850.00',
+      'price': 850.0,
+      'originalPrice': 1000.0,
       'seller': 'Northern Authentic Fugu',
       'location': 'Nyohini, Tamale',
       'phone': '+233501234567',
       'image': 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80',
+      'images': [
+        'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80',
+      ],
+      'description':
+          'Authentic 100% handwoven Northern Ghana Dagbon Royal Fugu smock crafted with heavy traditional cotton thread. Tailored for chieftaincy ceremonies, weddings, and formal occasions.\n\n• Size: XL (Custom sizing on request)\n• Origin: Handwoven in Nyohini, Tamale',
     },
     {
       'title': 'DeWalt Heavy Duty Rotary Hammer Power Drill',
       'category': 'Tool Rentals',
-      'price': 'GH₵ 1,200.00',
+      'price': 1200.0,
+      'originalPrice': 1500.0,
       'seller': 'Salifu Hardware',
       'location': 'Choggu, Tamale',
       'phone': '+233201122334',
       'image': 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&q=80',
+      'images': [
+        'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&q=80',
+      ],
+      'description':
+          'DeWalt 800W corded SDS-Plus Rotary Hammer drill for concrete, stone, and masonry work. Comes with SDS drill bits set, depth gauge, and heavy carrying case.\n\n• Condition: Brand New in Box\n• Warranty: 6 Months Local Repair Warranty',
     },
     {
       'title': 'HP EliteBook 840 G8 Core i7 (16GB RAM, 512GB SSD)',
       'category': 'Phones & Tech',
-      'price': 'GH₵ 4,600.00',
+      'price': 4600.0,
+      'originalPrice': 5200.0,
       'seller': 'Tamale Tech Hub',
       'location': 'Central Market',
       'phone': '+233240000000',
       'image': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&q=80',
+      'images': [
+        'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&q=80',
+      ],
+      'description':
+          'HP EliteBook 840 G8 ultrabook featuring 11th Gen Intel Core i7 processor, 16GB DDR4 RAM, 512GB NVMe SSD, backlit keyboard, fingerprint reader, aluminum chassis, and crisp FHD display.\n\n• Condition: Refurbished Grade A (Clean as new)\n• Battery: 6+ Hours Backup',
     },
   ];
 
@@ -127,29 +151,51 @@ class _HomeScreenState extends State<HomeScreen> {
           if (products.isNotEmpty) {
             _liveProducts = products.map((p) {
               final provider = p['provider'] ?? {};
-              String? imgUrl;
+
+              // Extract Images list
+              final imageList = <String>[];
               final rawImgs = p['images'];
               if (rawImgs != null) {
-                if (rawImgs is List && rawImgs.isNotEmpty) {
-                  imgUrl = rawImgs[0].toString();
+                if (rawImgs is List) {
+                  for (final item in rawImgs) {
+                    if (item != null && item.toString().isNotEmpty) imageList.add(item.toString());
+                  }
                 } else if (rawImgs is String && rawImgs.startsWith('[')) {
                   try {
                     final parsed = jsonDecode(rawImgs) as List;
-                    if (parsed.isNotEmpty) imgUrl = parsed[0].toString();
+                    for (final item in parsed) {
+                      if (item != null && item.toString().isNotEmpty) imageList.add(item.toString());
+                    }
                   } catch (_) {}
                 } else if (rawImgs is String && rawImgs.startsWith('http')) {
-                  imgUrl = rawImgs;
+                  imageList.add(rawImgs);
                 }
               }
 
+              final mainImage = imageList.isNotEmpty ? imageList[0] : null;
+
+              double priceNum = 0.0;
+              if (p['price'] != null) {
+                priceNum = double.tryParse(p['price'].toString()) ?? 0.0;
+              }
+
+              double? originalPriceNum;
+              if (p['originalPrice'] != null) {
+                originalPriceNum = double.tryParse(p['originalPrice'].toString());
+              }
+
               return {
+                'id': p['id'] ?? 'prod',
                 'title': p['title'] ?? 'Marketplace Item',
                 'category': p['category'] ?? 'General',
-                'price': 'GH₵ ${(p['price'] ?? 0).toString()}',
+                'price': priceNum,
+                'originalPrice': originalPriceNum,
+                'description': p['description'] ?? 'No detailed description provided by seller.',
                 'seller': provider['businessName'] ?? 'Verified Enterprise',
                 'location': provider['serviceArea'] ?? 'Tamale',
                 'phone': provider['user']?['phone'] ?? '+233240000000',
-                'image': imgUrl,
+                'image': mainImage,
+                'images': imageList,
               };
             }).toList();
           }
@@ -187,187 +233,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (result != null && mounted) {
       setState(() => _selectedLocation = result);
     }
-  }
-
-  void _showProductDetailModal(BuildContext context, Map<String, dynamic> p) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalCtx) {
-        final isDark = Theme.of(modalCtx).brightness == Brightness.dark;
-        final imageUrl = p['image'] as String?;
-
-        return Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(modalCtx).size.height * 0.85,
-          ),
-          decoration: BoxDecoration(
-            color: isDark ? ServoraColors.darkBackground : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const Gap(16),
-                if (imageUrl != null && imageUrl.isNotEmpty) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => const ServoraShimmerSkeleton(
-                          width: double.infinity, height: 200, borderRadius: 20),
-                      errorWidget: (_, __, ___) => Container(
-                        height: 160,
-                        color: ServoraColors.emerald600.withOpacity(0.1),
-                        child: const Icon(Icons.inventory_2_rounded,
-                            size: 50, color: ServoraColors.emerald600),
-                      ),
-                    ),
-                  ),
-                  const Gap(16),
-                ],
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: ServoraColors.emerald600.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        p['category'] ?? 'General',
-                        style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: ServoraColors.emerald600),
-                      ),
-                    ),
-                    const StatusBadge(
-                      label: 'IN STOCK',
-                      backgroundColor: Color(0xFFD1FAE5),
-                      textColor: Color(0xFF047857),
-                    ),
-                  ],
-                ),
-                const Gap(12),
-                Text(
-                  p['title'] ?? 'Marketplace Item',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w900, height: 1.25),
-                ),
-                const Gap(8),
-                Text(
-                  p['price'] ?? 'GH₵ 0.00',
-                  style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: ServoraColors.emerald600),
-                ),
-                const Divider(height: 30),
-                ServoraCard(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
-                        child: Text(
-                          (p['seller'] ?? 'S')[0],
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: ServoraColors.emerald600),
-                        ),
-                      ),
-                      const Gap(12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p['seller'] ?? 'Verified Merchant',
-                              style: const TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              'Location: ${p['location']} • Verified Ghana Card',
-                              style: TextStyle(
-                                  fontSize: 11, color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Gap(24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF25D366),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25)),
-                    ),
-                    icon: const Icon(Icons.chat_rounded, size: 20),
-                    label: const Text('Buy via WhatsApp Direct 💬',
-                        style: TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.bold)),
-                    onPressed: () {
-                      WhatsAppHelper.openWhatsApp(
-                        phone: p['phone'] ?? '+233240000000',
-                        message:
-                            'Hello, I am interested in buying "${p['title']}" listed on Servora.gh app.',
-                      );
-                    },
-                  ),
-                ),
-                const Gap(10),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ServoraColors.amberDark,
-                      side: const BorderSide(
-                          color: ServoraColors.amberGold, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25)),
-                    ),
-                    icon: const Icon(Icons.shield_rounded, size: 20),
-                    label: const Text('Buy with Safe MoMo Escrow 🛡️',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold)),
-                    onPressed: () {
-                      Navigator.of(modalCtx).pop();
-                      context.push('/escrow');
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -821,7 +686,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const Gap(24),
 
-                // 6. MARKETPLACE PRODUCTS FEED (WITH PRODUCT IMAGE DISPLAY & CLICKABLE MODAL DETAILED VIEW)
+                // 6. MARKETPLACE PRODUCTS FEED (WITH DISCOUNT BADGE & CANCELLED STRIKETHROUGH PRICE)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
@@ -844,7 +709,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.60,
+                          childAspectRatio: 0.62,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
@@ -853,6 +718,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           final p = _liveProducts.isNotEmpty ? _liveProducts[index] : _fallbackProducts[index];
                           final imageUrl = p['image'] as String?;
 
+                          final double price = (p['price'] is num) ? (p['price'] as num).toDouble() : 0.0;
+                          final double? originalPrice = (p['originalPrice'] is num) ? (p['originalPrice'] as num).toDouble() : null;
+
+                          final hasDiscount = originalPrice != null && originalPrice > price;
+                          final discountPct = hasDiscount ? (((originalPrice - price) / originalPrice) * 100).round() : 0;
+
                           return GestureDetector(
                             onTap: () => context.push('/products/detail', extra: p),
                             child: ServoraCard(
@@ -860,34 +731,60 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Product Cover Image
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                    child: imageUrl != null && imageUrl.isNotEmpty
-                                        ? CachedNetworkImage(
-                                            imageUrl: imageUrl,
-                                            height: 110,
-                                            width: double.infinity,
-                                            fit: BoxFit.cover,
-                                            placeholder: (_, __) => const ServoraShimmerSkeleton(
-                                                width: double.infinity, height: 110, borderRadius: 0),
-                                            errorWidget: (_, __, ___) => Container(
-                                              height: 110,
-                                              color: ServoraColors.emerald600.withOpacity(0.1),
-                                              child: const Center(
-                                                child: Icon(Icons.inventory_2_rounded,
-                                                    size: 32, color: ServoraColors.emerald600),
+                                  // Product Cover Image + Discount Tag Badge
+                                  Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                        child: imageUrl != null && imageUrl.isNotEmpty
+                                            ? CachedNetworkImage(
+                                                imageUrl: imageUrl,
+                                                height: 110,
+                                                width: double.infinity,
+                                                fit: BoxFit.cover,
+                                                placeholder: (_, __) => const ServoraShimmerSkeleton(
+                                                    width: double.infinity, height: 110, borderRadius: 0),
+                                                errorWidget: (_, __, ___) => Container(
+                                                  height: 110,
+                                                  color: ServoraColors.emerald600.withOpacity(0.1),
+                                                  child: const Center(
+                                                    child: Icon(Icons.inventory_2_rounded,
+                                                        size: 32, color: ServoraColors.emerald600),
+                                                  ),
+                                                ),
+                                              )
+                                            : Container(
+                                                height: 110,
+                                                color: ServoraColors.emerald600.withOpacity(0.1),
+                                                child: const Center(
+                                                  child: Icon(Icons.inventory_2_rounded,
+                                                      size: 32, color: ServoraColors.emerald600),
+                                                ),
+                                              ),
+                                      ),
+
+                                      // Yellow Discount Badge
+                                      if (hasDiscount)
+                                        Positioned(
+                                          top: 6,
+                                          right: 6,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: ServoraColors.amberGold,
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              '$discountPct% OFF',
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w900,
+                                                color: Colors.black,
                                               ),
                                             ),
-                                          )
-                                        : Container(
-                                            height: 110,
-                                            color: ServoraColors.emerald600.withOpacity(0.1),
-                                            child: const Center(
-                                              child: Icon(Icons.inventory_2_rounded,
-                                                  size: 32, color: ServoraColors.emerald600),
-                                            ),
                                           ),
+                                        ),
+                                    ],
                                   ),
 
                                   Padding(
@@ -896,7 +793,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
                                             color: ServoraColors.emerald600.withOpacity(0.12),
                                             borderRadius: BorderRadius.circular(6),
@@ -911,24 +808,42 @@ class _HomeScreenState extends State<HomeScreen> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        const Gap(6),
+                                        const Gap(4),
                                         Text(
                                           p['title'],
                                           style: const TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold,
-                                              height: 1.2),
+                                              height: 1.15),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         const Gap(4),
-                                        Text(
-                                          p['price'],
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w900,
-                                            color: ServoraColors.emerald600,
-                                          ),
+
+                                        // Price & Strikethrough Cancelled Price
+                                        Wrap(
+                                          crossAxisAlignment: WrapCrossAlignment.center,
+                                          spacing: 6,
+                                          children: [
+                                            Text(
+                                              'GH₵ ${price.toStringAsFixed(0)}',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w900,
+                                                color: ServoraColors.emerald600,
+                                              ),
+                                            ),
+                                            if (hasDiscount)
+                                              Text(
+                                                'GH₵ ${originalPrice.toStringAsFixed(0)}',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.grey[500],
+                                                  decoration: TextDecoration.lineThrough,
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                         const Gap(2),
                                         Text(

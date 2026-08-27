@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -66,7 +65,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     final title = widget.product['title'] ?? 'Marketplace Product Listing';
     final category = widget.product['category'] ?? 'General Marketplace';
-    final price = widget.product['price'] ?? 'GH₵ 0.00';
+
+    final double price = (widget.product['price'] is num) ? (widget.product['price'] as num).toDouble() : 0.0;
+    final double? originalPrice = (widget.product['originalPrice'] is num) ? (widget.product['originalPrice'] as num).toDouble() : null;
+
+    final hasDiscount = originalPrice != null && originalPrice > price;
+    final discountPct = hasDiscount ? (((originalPrice - price) / originalPrice) * 100).round() : 0;
+
     final seller = widget.product['seller'] ?? 'Verified Enterprise';
     final location = widget.product['location'] ?? 'Sakasaka, Tamale';
     final phone = widget.product['phone'] ?? '+233240000000';
@@ -90,13 +95,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   onPressed: () => context.pop(),
                 ),
                 actions: [
-                  IconButton(
-                    icon: const CircleAvatar(
-                      backgroundColor: Colors.black54,
-                      child: Icon(Icons.share_rounded, color: Colors.white, size: 18),
+                  if (hasDiscount)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 16),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: ServoraColors.amberGold,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '$discountPct% OFF',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black),
+                          ),
+                        ),
+                      ),
                     ),
-                    onPressed: () {},
-                  ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
@@ -191,7 +206,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const Gap(14),
 
-                      // Title & Price Tag
+                      // Title & Price Tag with Strikethrough
                       Text(
                         title,
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, height: 1.25),
@@ -203,13 +218,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            price,
+                            'GH₵ ${price.toStringAsFixed(0)}',
                             style: const TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w900,
                               color: ServoraColors.emerald600,
                             ),
                           ),
+                          if (hasDiscount) ...[
+                            const Gap(10),
+                            Text(
+                              'GH₵ ${originalPrice.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[500],
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ],
                           const Gap(10),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -222,7 +249,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 Icon(Icons.shield_rounded, size: 14, color: ServoraColors.amberDark),
                                 Gap(4),
                                 Text(
-                                  'MoMo Escrow Protected',
+                                  'MoMo Escrow',
                                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ServoraColors.amberDark),
                                 ),
                               ],
@@ -271,7 +298,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const Gap(24),
 
-                      // Full Product Description Section
+                      // Full Product Description Section from Database
                       const Text(
                         'Product Description & Details',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
