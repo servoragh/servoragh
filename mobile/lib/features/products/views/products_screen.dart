@@ -253,35 +253,45 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
           // Products Feed Grid
           Expanded(
-            child: filtered.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('🛒', style: TextStyle(fontSize: 48)),
-                        const Gap(12),
-                        Text(
-                          'No products found in $_selectedCategory',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            child: RefreshIndicator(
+              color: ServoraColors.emerald600,
+              onRefresh: _fetchLiveProducts,
+              child: filtered.isEmpty
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.5,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('🛒', style: TextStyle(fontSize: 48)),
+                              const Gap(12),
+                              Text(
+                                'No products found in $_selectedCategory',
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  )
-                : LayoutBuilder(
-                    builder: (context, constraints) {
-                      final double itemWidth = (constraints.maxWidth - 44) / 2;
-                      final double dynamicAspectRatio = (itemWidth / 268.0).clamp(0.60, 0.68);
-                      final double imgHeight = (itemWidth * 0.55).clamp(86.0, 102.0);
+                      ),
+                    )
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final double itemWidth = (constraints.maxWidth - 44) / 2;
+                        final double dynamicAspectRatio = (itemWidth / 268.0).clamp(0.60, 0.68);
+                        final double imgHeight = (itemWidth * 0.55).clamp(86.0, 102.0);
 
-                      return GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: dynamicAspectRatio,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemCount: filtered.length,
+                        return GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: dynamicAspectRatio,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           final p = filtered[index];
                           final imageUrl = p['image'] as String?;
@@ -458,6 +468,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   );
                 },
               ),
+            ),
           ),
         ],
       ),

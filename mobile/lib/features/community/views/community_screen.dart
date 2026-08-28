@@ -145,34 +145,47 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
           // Community Feed Cards
           Expanded(
-            child: filteredPosts.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('📢', style: TextStyle(fontSize: 48)),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No trade notices in $_selectedZone',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+            child: RefreshIndicator(
+              color: const Color(0xFF059669),
+              onRefresh: () async {
+                await Future.delayed(const Duration(milliseconds: 600));
+                if (mounted) setState(() {});
+              },
+              child: filteredPosts.isEmpty
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.5,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('📢', style: TextStyle(fontSize: 48)),
+                              const SizedBox(height: 12),
+                              Text(
+                                'No trade notices in $_selectedZone',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Be the first to post a call or notice!',
+                                style: TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Be the first to post a call or notice!',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredPosts.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
-                    itemBuilder: (context, index) {
+                      ),
+                    )
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredPosts.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 14),
+                      itemBuilder: (context, index) {
                       final post = filteredPosts[index];
                       return ServoraCard(
                         child: Column(
@@ -327,6 +340,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       );
                     },
                   ),
+            ),
           ),
         ],
       ),

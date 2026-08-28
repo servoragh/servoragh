@@ -51,6 +51,15 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   String _activityFilter = 'ALL';
   String _activitySearch = '';
 
+  // CRM 360 Filters
+  String _crmStatusFilter = 'ALL';
+  String _crmTagFilter = 'ALL';
+
+  // Dynamic tags & notes store for CRM
+  final Map<String, List<String>> _customerTags = {};
+  final Map<String, List<Map<String, dynamic>>> _customerNotes = {};
+  final Map<String, String> _customerStatuses = {};
+
   static final Dio _dio = Dio(
     BaseOptions(
       baseUrl: ServoraConstants.baseUrl,
@@ -255,7 +264,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                       child: ListView(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         children: [
-                          // OVERVIEW SECTION
                           _buildNavSectionHeader('OVERVIEW'),
                           _buildNavItem(
                             icon: Icons.rocket_launch_rounded,
@@ -271,7 +279,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                           ),
                           const Gap(12),
 
-                          // USER & TRUST MANAGEMENT
                           _buildNavSectionHeader('USER & TRUST MANAGEMENT'),
                           _buildNavItem(
                             icon: Icons.people_outline_rounded,
@@ -303,7 +310,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                           ),
                           const Gap(12),
 
-                          // MARKETPLACE & SERVICES
                           _buildNavSectionHeader('MARKETPLACE & SERVICES'),
                           _buildNavItem(
                             icon: Icons.attach_money_rounded,
@@ -345,7 +351,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                           ),
                           const Gap(12),
 
-                          // ECOSYSTEM & COMMUNITY
                           _buildNavSectionHeader('ECOSYSTEM & COMMUNITY'),
                           _buildNavItem(
                             icon: Icons.groups_outlined,
@@ -362,7 +367,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                           ),
                           const Gap(12),
 
-                          // SYSTEM & INFRASTRUCTURE
                           _buildNavSectionHeader('SYSTEM & INFRASTRUCTURE'),
                           _buildNavItem(
                             icon: Icons.settings_outlined,
@@ -506,7 +510,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // =========================================================
-  // CLEAN FULL-WIDTH TOPBAR (Matching Web Layout, 0 Island Margin)
+  // CLEAN FULL-WIDTH TOPBAR
   // =========================================================
   Widget _buildWebParityHeader(bool isDark) {
     return Container(
@@ -703,59 +707,64 @@ class _AdminPortalViewState extends State<AdminPortalView> {
         // Full-Width Seamless Web Topbar
         _buildWebParityHeader(isDark),
 
-        // Workspace Scrollable Body
+        // Workspace Scrollable Body with Pull-To-Refresh
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_errorMessage != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.amber.withOpacity(0.4)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.cloud_off_rounded, size: 18, color: Colors.amber),
-                        const Gap(10),
-                        Expanded(
-                          child: Text(
-                            _errorMessage!,
-                            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.amber),
+          child: RefreshIndicator(
+            color: ServoraColors.emerald600,
+            onRefresh: _fetchLiveAdminData,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.cloud_off_rounded, size: 18, color: Colors.amber),
+                          const Gap(10),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.amber),
+                            ),
                           ),
-                        ),
-                        TextButton(
-                          onPressed: _fetchLiveAdminData,
-                          child: const Text('Retry', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
-                        ),
-                      ],
+                          TextButton(
+                            onPressed: _fetchLiveAdminData,
+                            child: const Text('Retry', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const Gap(12),
-                ],
+                    const Gap(12),
+                  ],
 
-                // Dynamic Workspace Views
-                if (_activeView == 'overview') _buildOverviewView(),
-                if (_activeView == 'activity') _buildActivityView(),
-                if (_activeView == 'crm') _buildCrmView(),
-                if (_activeView == 'businesses') _buildBusinessesView(),
-                if (_activeView == 'verification') _buildVerificationView(),
-                if (_activeView == 'security') _buildSecurityView(),
-                if (_activeView == 'escrow') _buildEscrowView(),
-                if (_activeView == 'delivery') _buildDeliveryView(),
-                if (_activeView == 'products') _buildProductsView(),
-                if (_activeView == 'requests') _buildRequestsView(),
-                if (_activeView == 'rentals') _buildRentalsView(),
-                if (_activeView == 'disputes') _buildDisputesView(),
-                if (_activeView == 'community') _buildCommunityView(),
-                if (_activeView == 'tickers') _buildTickersView(),
-                if (_activeView == 'settings') _buildSettingsView(),
-                const Gap(24),
-              ],
+                  // Dynamic Workspace Views
+                  if (_activeView == 'overview') _buildOverviewView(),
+                  if (_activeView == 'activity') _buildActivityView(),
+                  if (_activeView == 'crm') _buildCrmView(),
+                  if (_activeView == 'businesses') _buildBusinessesView(),
+                  if (_activeView == 'verification') _buildVerificationView(),
+                  if (_activeView == 'security') _buildSecurityView(),
+                  if (_activeView == 'escrow') _buildEscrowView(),
+                  if (_activeView == 'delivery') _buildDeliveryView(),
+                  if (_activeView == 'products') _buildProductsView(),
+                  if (_activeView == 'requests') _buildRequestsView(),
+                  if (_activeView == 'rentals') _buildRentalsView(),
+                  if (_activeView == 'disputes') _buildDisputesView(),
+                  if (_activeView == 'community') _buildCommunityView(),
+                  if (_activeView == 'tickers') _buildTickersView(),
+                  if (_activeView == 'settings') _buildSettingsView(),
+                  const Gap(24),
+                ],
+              ),
             ),
           ),
         ),
@@ -764,7 +773,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // =========================================================
-  // 1. DASHBOARD OVERVIEW VIEW (Matching Web layout + Launch widget)
+  // 1. DASHBOARD OVERVIEW VIEW
   // =========================================================
   Widget _buildOverviewView() {
     final connections = _stats['northStarWeeklyConnections'] ?? 83;
@@ -1265,7 +1274,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Tag, Date & Exact Time
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1299,8 +1307,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                   ),
                 ],
               ),
-
-              // Date and Time Chips
               Row(
                 children: [
                   if (relativeStr.isNotEmpty) ...[
@@ -1355,8 +1361,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
             ],
           ),
           const Gap(10),
-
-          // Main Action Title
           Text(
             theme['title'] as String,
             style: const TextStyle(
@@ -1366,8 +1370,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
             ),
           ),
           const Gap(4),
-
-          // Details text
           Text(
             details,
             style: TextStyle(
@@ -1377,8 +1379,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
             ),
           ),
           const Gap(10),
-
-          // Footer info: Actor & Immutable status
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1417,7 +1417,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // =========================================================
-  // 2. LIVE ACTIVITY FEED VIEW (Ultra-Modern Redesign)
+  // 2. LIVE ACTIVITY FEED VIEW
   // =========================================================
   Widget _buildActivityView() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1440,7 +1440,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Live Activity Header & Sync Badge
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -1488,7 +1487,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
         ),
         const Gap(12),
 
-        // Search Bar
         TextField(
           decoration: InputDecoration(
             hintText: 'Search audit logs by event, artisan name, ID...',
@@ -1500,7 +1498,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
         ),
         const Gap(10),
 
-        // Category Filter Chips
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -1519,7 +1516,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
         ),
         const Gap(14),
 
-        // Activity Stream List
         if (filteredLogs.isEmpty)
           Center(
             child: Padding(
@@ -1566,123 +1562,1054 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // =========================================================
-  // 3. CUSTOMER CRM 360° WORKSPACE
+  // 3. CUSTOMER CRM 360° WORKSPACE (Pixel-Perfect Web Parity)
   // =========================================================
+  Widget _buildCrmHeroCard(bool isDark) {
+    final totalAccounts = _users.length;
+    final activeAccounts = _users.where((u) => _customerStatuses[u['id']] != 'SUSPENDED').length;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF121826) : const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF10B981).withOpacity(0.25),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF059669),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.people_alt_rounded, color: Colors.white, size: 20),
+                  ),
+                  const Gap(10),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            '360° Customer Management & CRM',
+                            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Colors.white),
+                          ),
+                          Gap(4),
+                          Text('👥', style: TextStyle(fontSize: 13)),
+                        ],
+                      ),
+                      Text(
+                        'Enterprise Operational Control Center',
+                        style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: _fetchLiveAdminData,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.refresh_rounded, size: 12, color: Colors.white70),
+                      Gap(4),
+                      Text('Sync Records', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(10),
+          const Text(
+            'Complete customer lifecycle management, real-time risk/fraud index, omni-channel interaction streams, financial ledgers & admin controls.',
+            style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8), height: 1.3),
+          ),
+          const Gap(14),
+
+          // 4 Grid Stats Metrics
+          Row(
+            children: [
+              Expanded(
+                child: _buildCrmHeroStat(
+                  label: 'TOTAL MANAGED ACCOUNTS',
+                  value: '$totalAccounts',
+                  sub: '$activeAccounts Active on Platform',
+                  valColor: Colors.white,
+                ),
+              ),
+              const Gap(8),
+              Expanded(
+                child: _buildCrmHeroStat(
+                  label: 'TOTAL CUSTOMER LTV VOLUME',
+                  value: 'GH₵ 19,780.00',
+                  sub: 'Cumulative Lifetime Trade',
+                  valColor: const Color(0xFF34D399),
+                ),
+              ),
+            ],
+          ),
+          const Gap(8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildCrmHeroStat(
+                  label: 'HIGH / CRITICAL RISK FLAGS',
+                  value: '1',
+                  sub: 'Fraud & Dispute Markers',
+                  valColor: const Color(0xFFF87171),
+                ),
+              ),
+              const Gap(8),
+              Expanded(
+                child: _buildCrmHeroStat(
+                  label: 'RESTRICTED & SUSPENDED',
+                  value: '1',
+                  sub: 'Requires Ops Review',
+                  valColor: const Color(0xFFFBBF24),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCrmHeroStat({
+    required String label,
+    required String value,
+    required String sub,
+    required Color valColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.28),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 0.3),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const Gap(4),
+          Text(
+            value,
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: valColor),
+          ),
+          const Gap(2),
+          Text(
+            sub,
+            style: const TextStyle(fontSize: 8.5, color: Color(0xFF64748B)),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCrmView() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final filtered = _users.where((u) {
-      final matchesSearch = (u['name']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-          (u['phone']?.toString().contains(_searchQuery) ?? false) ||
-          (u['email']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
-      if (_userRoleFilter == 'ALL') return matchesSearch;
-      return matchesSearch && (u['role'] == _userRoleFilter);
+      final search = _searchQuery.toLowerCase();
+      final name = (u['name']?.toString() ?? '').toLowerCase();
+      final phone = (u['phone']?.toString() ?? '').toLowerCase();
+      final email = (u['email']?.toString() ?? '').toLowerCase();
+      final area = (u['serviceArea']?.toString() ?? 'tamale').toLowerCase();
+
+      final matchesSearch = name.contains(search) || phone.contains(search) || email.contains(search) || area.contains(search);
+      if (!matchesSearch) return false;
+
+      final role = u['role']?.toString().toUpperCase() ?? 'CUSTOMER';
+      if (_userRoleFilter != 'ALL' && role != _userRoleFilter) return false;
+
+      final status = _customerStatuses[u['id']] ?? 'ACTIVE';
+      if (_crmStatusFilter != 'ALL' && status != _crmStatusFilter) return false;
+
+      if (_crmTagFilter != 'ALL') {
+        final tags = _customerTags[u['id']] ?? [];
+        if (!tags.contains(_crmTagFilter)) return false;
+      }
+
+      return true;
     }).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          decoration: InputDecoration(
-            hintText: 'Search 360° CRM by name, phone, email...',
-            prefixIcon: const Icon(Icons.search_rounded, size: 18),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          ),
-          onChanged: (val) => setState(() => _searchQuery = val),
+        // 1. Charcoal Hero Header Card
+        _buildCrmHeroCard(isDark),
+        const Gap(14),
+
+        // 2. Search Bar with Filter Icon
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search by name, phone (+233...), email, or area...',
+                  hintStyle: const TextStyle(fontSize: 11.5),
+                  prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ),
+                onChanged: (val) => setState(() => _searchQuery = val),
+              ),
+            ),
+            const Gap(8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF059669),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.filter_list_rounded, color: Colors.white, size: 20),
+            ),
+          ],
         ),
         const Gap(10),
+
+        // 3. Dropdown / Choice Filters
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: ['ALL', 'CUSTOMER', 'PROVIDER', 'ADMIN'].map((role) {
-              final isSel = _userRoleFilter == role;
-              return Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: ChoiceChip(
-                  label: Text(role, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isSel ? Colors.white : null)),
-                  selected: isSel,
-                  selectedColor: ServoraColors.emerald600,
-                  onSelected: (_) => setState(() => _userRoleFilter = role),
-                ),
-              );
-            }).toList(),
+            children: [
+              _buildCrmChip('ALL', 'ALL', _userRoleFilter, (v) => setState(() => _userRoleFilter = v)),
+              const Gap(6),
+              _buildCrmChip('CUSTOMER', 'CUSTOMER', _userRoleFilter, (v) => setState(() => _userRoleFilter = v)),
+              const Gap(6),
+              _buildCrmChip('PROVIDER', 'PROVIDER', _userRoleFilter, (v) => setState(() => _userRoleFilter = v)),
+              const Gap(6),
+              _buildCrmChip('ADMIN', 'ADMIN', _userRoleFilter, (v) => setState(() => _userRoleFilter = v)),
+              const Gap(10),
+              _buildCrmChip('ACTIVE ONLY', 'ACTIVE', _crmStatusFilter, (v) => setState(() => _crmStatusFilter = _crmStatusFilter == v ? 'ALL' : v)),
+              const Gap(6),
+              _buildCrmChip('SUSPENDED', 'SUSPENDED', _crmStatusFilter, (v) => setState(() => _crmStatusFilter = _crmStatusFilter == v ? 'ALL' : v)),
+            ],
           ),
         ),
-        const Gap(12),
-
-        Text('CRM Members Database (${filtered.length}):', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
         const Gap(8),
 
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: filtered.length,
-          separatorBuilder: (_, __) => const Gap(8),
-          itemBuilder: (context, idx) {
-            final u = filtered[idx];
-            final role = u['role']?.toString() ?? 'CUSTOMER';
+        // 4. Dynamic Cohort Tag Filters (#All Tags, #VIP, #Sakasaka, #Nyohini, #Dispute Risk, #High Spender)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildTagChip('All Tags', 'ALL'),
+              const Gap(6),
+              _buildTagChip('#VIP', 'VIP'),
+              const Gap(6),
+              _buildTagChip('#Sakasaka', 'Sakasaka'),
+              const Gap(6),
+              _buildTagChip('#Nyohini', 'Nyohini'),
+              const Gap(6),
+              _buildTagChip('#Dispute Risk', 'Dispute Risk'),
+              const Gap(6),
+              _buildTagChip('#High Spender', 'High Spender'),
+            ],
+          ),
+        ),
+        const Gap(14),
 
-            return ServoraCard(
-              padding: const EdgeInsets.all(12),
-              child: Row(
+        // 5. CRM Member Cards List
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('CUSTOMER IDENTITY & 360° DIRECTORY (${filtered.length})', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Colors.grey, letterSpacing: 0.5)),
+            Text('${_users.length} Total', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+          ],
+        ),
+        const Gap(10),
+
+        if (filtered.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
-                    child: Text(
-                      u['name'] != null && u['name'].toString().isNotEmpty ? u['name'][0].toUpperCase() : 'U',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
-                    ),
+                  Icon(Icons.person_search_rounded, size: 40, color: Colors.grey.withOpacity(0.5)),
+                  const Gap(10),
+                  const Text('No members matching filter criteria.', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+                ],
+              ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filtered.length,
+            separatorBuilder: (_, __) => const Gap(10),
+            itemBuilder: (context, idx) => _buildCrmMemberCard(filtered[idx], isDark),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCrmChip(String label, String value, String current, Function(String) onSelect) {
+    final isSel = current == value;
+    return ChoiceChip(
+      label: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isSel ? Colors.white : null)),
+      selected: isSel,
+      selectedColor: ServoraColors.emerald600,
+      onSelected: (_) => onSelect(value),
+    );
+  }
+
+  Widget _buildTagChip(String label, String tag) {
+    final isSel = _crmTagFilter == tag;
+    return GestureDetector(
+      onTap: () => setState(() => _crmTagFilter = tag),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSel ? const Color(0xFF059669) : Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: isSel ? const Color(0xFF059669) : Colors.grey.withOpacity(0.2)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: isSel ? Colors.white : Colors.grey[700],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCrmMemberCard(dynamic user, bool isDark) {
+    final id = user['id']?.toString() ?? 'usr';
+    final name = user['name']?.toString() ?? 'Member';
+    final phone = user['phone']?.toString() ?? 'No Phone';
+    final email = user['email']?.toString() ?? 'No Email';
+    final role = user['role']?.toString().toUpperCase() ?? 'CUSTOMER';
+    final status = _customerStatuses[id] ?? 'ACTIVE';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.025),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row 1: Avatar, Name, Dual Badge, Status Pill
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF059669),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
                   ),
-                  const Gap(12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              ),
+              const Gap(10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                u['name'] ?? 'Member',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const Gap(6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                              decoration: BoxDecoration(
-                                color: role == 'ADMIN'
-                                    ? Colors.red.withOpacity(0.15)
-                                    : (role == 'PROVIDER' ? Colors.amber.withOpacity(0.2) : Colors.blue.withOpacity(0.15)),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                role,
-                                style: TextStyle(
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w900,
-                                  color: role == 'ADMIN' ? Colors.red : (role == 'PROVIDER' ? Colors.amber[800] : Colors.blue[700]),
-                                ),
-                              ),
-                            ),
-                          ],
+                        Flexible(
+                          child: Text(
+                            name,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const Gap(2),
-                        Text('${u['phone'] ?? 'No Phone'} • ${u['email'] ?? 'No Email'}', style: const TextStyle(fontSize: 10.5, color: Colors.grey)),
+                        const Gap(6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: role == 'ADMIN'
+                                ? Colors.red.withOpacity(0.15)
+                                : (role == 'PROVIDER' ? const Color(0xFFFEF3C7) : const Color(0xFFEFF6FF)),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            role == 'PROVIDER' ? 'DUAL' : (role == 'ADMIN' ? 'ADMIN' : 'BUYER'),
+                            style: TextStyle(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w900,
+                              color: role == 'ADMIN' ? Colors.red : (role == 'PROVIDER' ? const Color(0xFFD97706) : const Color(0xFF2563EB)),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
+                    const Gap(2),
+                    Text(
+                      '$phone • $email',
+                      style: TextStyle(fontSize: 10.5, color: isDark ? Colors.white60 : const Color(0xFF64748B)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              // Status Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: status == 'ACTIVE' ? const Color(0xFFECFDF5) : const Color(0xFFFEE2E2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    color: status == 'ACTIVE' ? const Color(0xFF047857) : Colors.red[800],
                   ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(12),
+
+          // Row 2: Verification Tier & Location Pill + Risk & Fraud Index Pill
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.verified_user_rounded, size: 11, color: Color(0xFF2563EB)),
+                    Gap(4),
+                    Text('Tier 1 Phone • Sakasaka, Tamale', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8))),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.shield_rounded, size: 11, color: Color(0xFF059669)),
+                    Gap(4),
+                    Text('LOW (5/100) RISK', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Color(0xFF065F46))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Gap(10),
+
+          // Row 3: Lifetime Value & Action Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('GH₵ 0.00', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900)),
+                  Text('0 Orders • AOV GH₵ 0.00', style: TextStyle(fontSize: 9.5, color: Colors.grey)),
+                ],
+              ),
+              Row(
+                children: [
+                  // 360 Profile Drawer Button
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.person_search_rounded, size: 13),
+                    label: const Text('360° Profile >', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+                    onPressed: () => _openCustomer360Drawer(user),
+                  ),
+                  const Gap(6),
+                  // Manage Status Modal Button
                   IconButton(
                     icon: const Icon(Icons.manage_accounts_rounded, size: 20, color: ServoraColors.emerald600),
-                    tooltip: 'Toggle User Role',
-                    onPressed: () => _handleAdminAction('TOGGLE_USER_ROLE', targetId: u['id']),
+                    tooltip: 'Update Status / Role',
+                    onPressed: () => _openUpdateAccountStatusModal(user),
                   ),
                 ],
               ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================
+  // 360° CUSTOMER PROFILE INSPECTOR DRAWER (Screenshot 3)
+  // =========================================================
+  void _openCustomer360Drawer(dynamic user) {
+    final id = user['id']?.toString() ?? 'usr';
+    final name = user['name']?.toString() ?? 'Member';
+    final phone = user['phone']?.toString() ?? 'No Phone';
+    final email = user['email']?.toString() ?? 'No Email';
+    final joined = _formatLogDate(user['createdAt']?.toString());
+    final status = _customerStatuses[id] ?? 'ACTIVE';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDrawerState) {
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
+            final tags = _customerTags[id] ?? ['Provider', 'Artisan', 'Tamale'];
+            final notes = _customerNotes[id] ?? [];
+
+            return Container(
+              height: MediaQuery.of(ctx).size.height * 0.90,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: DefaultTabController(
+                length: 4,
+                child: Column(
+                  children: [
+                    // Top Drawer Header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF059669),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                              ),
+                            ),
+                          ),
+                          const Gap(10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        name,
+                                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const Gap(6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFECFDF5),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        status,
+                                        style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Color(0xFF047857)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Gap(2),
+                                Text(
+                                  'ID: $id • Joined $joined',
+                                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Impersonate Button
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.withOpacity(0.15),
+                              foregroundColor: isDark ? Colors.white : Colors.black87,
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              elevation: 0,
+                            ),
+                            icon: const Icon(Icons.visibility_rounded, size: 12),
+                            label: const Text('Impersonate', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Switched session context to $name (Shadow Mode)')),
+                              );
+                            },
+                          ),
+                          const Gap(6),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 20),
+                            onPressed: () => Navigator.of(ctx).pop(),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // 4 Tabs Bar
+                    const TabBar(
+                      isScrollable: true,
+                      labelColor: Color(0xFF059669),
+                      unselectedLabelColor: Colors.grey,
+                      indicatorColor: Color(0xFF059669),
+                      tabs: [
+                        Tab(icon: Icon(Icons.shield_outlined, size: 16), text: 'Identity & Profile'),
+                        Tab(icon: Icon(Icons.account_balance_wallet_outlined, size: 16), text: 'Financial Ledger & Wallet'),
+                        Tab(icon: Icon(Icons.chat_bubble_outline_rounded, size: 16), text: 'Interaction Stream'),
+                        Tab(icon: Icon(Icons.edit_note_rounded, size: 16), text: 'Admin Notes & Audit'),
+                      ],
+                    ),
+
+                    // Tab View Contents
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          // Tab 1: Identity & Profile
+                          ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              // Trust & Risk Index
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFECFDF5),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('AUTOMATED TRUST & RISK INDEX: LOW (5/100)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF065F46))),
+                                        Gap(2),
+                                        Text('Calculated from disputes, device switches, and verification signals.', style: TextStyle(fontSize: 9, color: Color(0xFF047857))),
+                                      ],
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF18181B),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                      onPressed: () => _openUpdateAccountStatusModal(user),
+                                      child: const Text('Security Override', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Gap(14),
+
+                              // Contact Points & Tier Status Cards
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: _buildDrawerSectionCard(
+                                      title: 'CONTACT POINTS',
+                                      content: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('📱 $phone', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                          const Gap(3),
+                                          Text('✉️ $email', style: const TextStyle(fontSize: 10.5, color: Colors.grey)),
+                                          const Gap(6),
+                                          GestureDetector(
+                                            onTap: () => WhatsAppHelper.openWhatsApp(phone: phone, message: "Hello $name, this is Servora Admin."),
+                                            child: const Row(
+                                              children: [
+                                                Icon(Icons.chat_rounded, size: 12, color: Color(0xFF25D366)),
+                                                Gap(4),
+                                                Text('WhatsApp Active ↗', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF25D366))),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const Gap(10),
+                                  Expanded(
+                                    child: _buildDrawerSectionCard(
+                                      title: 'VERIFICATION TIER STATUS',
+                                      content: const Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('🛡️ TIER_1_BASIC', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF059669))),
+                                          Gap(3),
+                                          Text('Ghana Card / National ID verified & matched against central database.', style: TextStyle(fontSize: 9.5, color: Colors.grey)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Gap(14),
+
+                              // GPS Address
+                              _buildDrawerSectionCard(
+                                title: 'SAVED SERVICE & DELIVERY ADDRESSES (GPS PINNED)',
+                                content: const Row(
+                                  children: [
+                                    Icon(Icons.location_on_rounded, size: 14, color: Color(0xFF059669)),
+                                    Gap(6),
+                                    Text('Primary Address (Sakasaka, Tamale Central)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
+                              const Gap(14),
+
+                              // Connected Devices
+                              _buildDrawerSectionCard(
+                                title: 'CONNECTED DEVICES & FINGERPRINTS',
+                                content: const Row(
+                                  children: [
+                                    Icon(Icons.devices_rounded, size: 14, color: Colors.grey),
+                                    Gap(6),
+                                    Text('📱 dev-web-browser / mobile-app', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                  ],
+                                ),
+                              ),
+                              const Gap(14),
+
+                              // Custom Customer Tags
+                              _buildDrawerSectionCard(
+                                title: 'CUSTOM CUSTOMER TAGS & DYNAMIC COHORTS',
+                                content: Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: [
+                                    ...tags.map((t) => Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFECFDF5),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: const Color(0xFFA7F3D0)),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text('#$t', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF065F46))),
+                                              const Gap(4),
+                                              GestureDetector(
+                                                onTap: () {
+                                                  setDrawerState(() {
+                                                    tags.remove(t);
+                                                    _customerTags[id] = tags;
+                                                  });
+                                                },
+                                                child: const Icon(Icons.close, size: 10, color: Color(0xFF065F46)),
+                                              ),
+                                            ],
+                                          ),
+                                        )),
+                                    GestureDetector(
+                                      onTap: () {
+                                        setDrawerState(() {
+                                          tags.add('Verified');
+                                          _customerTags[id] = tags;
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Text('+ Add tag', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Tab 2: Financial Ledger
+                          ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              _buildSecurityStatRow('Lifetime Spend / GMV', 'GH₵ 0.00', const Color(0xFF059669)),
+                              const Gap(10),
+                              _buildSecurityStatRow('MoMo Escrow Holds', 'GH₵ 0.00', Colors.grey),
+                              const Gap(14),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF059669),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.add_card_rounded, size: 14),
+                                label: const Text('+ Issue Credit Adjustment / Escrow Refund'),
+                                onPressed: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Financial Adjustment Authorized for User ✓')),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+
+                          // Tab 3: Interaction Stream
+                          ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: const [
+                              Text('No past dispute or message escalations logged for this account.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            ],
+                          ),
+
+                          // Tab 4: Admin Notes
+                          ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              ...notes.map((n) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(n['text'] ?? '', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                          const Gap(2),
+                                          Text('By Master Admin • ${n['date']}', style: const TextStyle(fontSize: 9, color: Colors.grey)),
+                                        ],
+                                      ),
+                                    ),
+                                  )),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF059669),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.add_comment_rounded, size: 14),
+                                label: const Text('+ Add Internal Supervisor Note'),
+                                onPressed: () {
+                                  setDrawerState(() {
+                                    notes.add({'text': 'Verified via Ghana Card inspection in Tamale.', 'date': 'Just now'});
+                                    _customerNotes[id] = notes;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             );
           },
-        ),
-      ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDrawerSectionCard({required String title, required Widget content}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.black26 : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isDark ? Colors.white12 : Colors.grey.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Colors.grey, letterSpacing: 0.5)),
+          const Gap(8),
+          content,
+        ],
+      ),
+    );
+  }
+
+  // =========================================================
+  // UPDATE ACCOUNT STATUS MODAL (Screenshot 4)
+  // =========================================================
+  void _openUpdateAccountStatusModal(dynamic user) {
+    final id = user['id']?.toString() ?? 'usr';
+    final name = user['name']?.toString() ?? 'Member';
+    String selectedState = _customerStatuses[id] ?? 'ACTIVE (Normal Operations)';
+    final reasonController = TextEditingController(text: 'Verified Ghana card docs & phone check.');
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text('Update Status: $name', style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Target Status State *', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  const Gap(6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedState,
+                        isExpanded: true,
+                        items: [
+                          'ACTIVE (Normal Operations)',
+                          'SUSPENDED (Fraud Review)',
+                          'FLAGGED (Dispute Hold)',
+                          'RESTRICTED (Security Quarantine)',
+                        ].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                        onChanged: (val) {
+                          if (val != null) setDialogState(() => selectedState = val);
+                        },
+                      ),
+                    ),
+                  ),
+                  const Gap(14),
+
+                  const Text('Mandatory Admin Operational Reason *', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  const Gap(6),
+                  TextField(
+                    controller: reasonController,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Fraud dispute review / Verified Ghana card docs',
+                      hintStyle: const TextStyle(fontSize: 11),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF059669),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () {
+                    final cleanStatus = selectedState.startsWith('ACTIVE') ? 'ACTIVE' : (selectedState.startsWith('SUSPENDED') ? 'SUSPENDED' : 'FLAGGED');
+                    setState(() {
+                      _customerStatuses[id] = cleanStatus;
+                    });
+                    _handleAdminAction('UPDATE_CUSTOMER_STATUS', targetId: id, payload: {
+                      'status': cleanStatus,
+                      'reason': reasonController.text,
+                    });
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text('Confirm Action', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1994,7 +2921,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // =========================================================
-  // 9. PRODUCT MODERATION HUB (With Status Sub-Tabs)
+  // 9. PRODUCT MODERATION HUB
   // =========================================================
   Widget _buildProductsView() {
     final filtered = _products.where((p) {
@@ -2239,7 +3166,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Sub Tabs
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(

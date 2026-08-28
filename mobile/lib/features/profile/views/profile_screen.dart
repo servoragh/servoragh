@@ -103,22 +103,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (!isLoggedIn)
-                      _buildGuestView(context, isDark)
-                    else if (isProvider)
-                      _buildProviderPortalView(context, user, isDark)
-                    else
-                      _buildCustomerPortalView(context, user, isDark),
-                    const Gap(30),
-                  ],
+          body: RefreshIndicator(
+            color: ServoraColors.emerald600,
+            onRefresh: () async {
+              await authNotifier.checkSession();
+              await Future.delayed(const Duration(milliseconds: 400));
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (!isLoggedIn)
+                        _buildGuestView(context, isDark)
+                      else if (isProvider)
+                        _buildProviderPortalView(context, user, isDark)
+                      else
+                        _buildCustomerPortalView(context, user, isDark),
+                      const Gap(30),
+                    ],
+                  ),
                 ),
               ),
             ),
