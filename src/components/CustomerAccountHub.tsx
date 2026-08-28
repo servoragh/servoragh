@@ -124,14 +124,33 @@ export default function CustomerAccountHub() {
       setLoading(true);
       const res = await fetch("/api/account/profile");
       if (res.status === 401) {
-        router.push("/login");
-        return;
+        // Double check /api/auth/me
+        const authMeRes = await fetch("/api/auth/me");
+        const authMeData = await authMeRes.json();
+        if (!authMeData.user) {
+          router.push("/login");
+          return;
+        }
       }
 
       const data = await res.json();
-      if (data.user) {
-        setUser(data.user);
-        setProfile(data.profile);
+      let currentUser = data.user;
+      if (!currentUser) {
+        const authMeRes = await fetch("/api/auth/me");
+        const authMeData = await authMeRes.json();
+        currentUser = authMeData.user;
+      }
+
+      if (currentUser) {
+        setUser(currentUser);
+        setProfile(data.profile || {
+          defaultZone: "Tamale Central",
+          defaultCurrency: "GHS",
+          preferredPayment: "MOMO_ESCROW",
+          profileVisibility: "RESTRICTED",
+          verificationTier: "TIER_1_BASIC",
+          savedAddresses: [],
+        });
         if (data.metrics) setMetrics(data.metrics);
         if (data.serviceRequests) setServiceRequests(data.serviceRequests);
         if (data.escrowDeals) setEscrowDeals(data.escrowDeals);
@@ -142,8 +161,8 @@ export default function CustomerAccountHub() {
         if (data.activityLogs) setActivityLogs(data.activityLogs);
 
         // Populate Form States
-        setName(data.user.name || "");
-        setAvatarUrl(data.user.avatarUrl || "");
+        setName(currentUser.name || "");
+        setAvatarUrl(currentUser.avatarUrl || "");
         if (data.profile) {
           setDefaultZone(data.profile.defaultZone || "Tamale Central");
           setDefaultCurrency(data.profile.defaultCurrency || "GHS");

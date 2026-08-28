@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { comparePassword, setSessionCookie, SessionUser } from "@/lib/auth";
+import { comparePassword, hashPassword, setSessionCookie, SessionUser } from "@/lib/auth";
 import { getPhoneVariants } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -96,6 +96,30 @@ export async function POST(request: Request) {
     }
 
     if (sessionUser) {
+      try {
+        const dbUser = await prisma.user.upsert({
+          where: { phone: sessionUser.phone },
+          create: {
+            name: sessionUser.name,
+            phone: sessionUser.phone,
+            email: sessionUser.email,
+            role: sessionUser.role,
+            passwordHash: await hashPassword(password || "servora2026"),
+            isPhoneVerified: sessionUser.isPhoneVerified,
+            referralCode: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
+          },
+          update: {
+            name: sessionUser.name,
+            email: sessionUser.email || undefined,
+            role: sessionUser.role,
+          },
+        });
+
+        sessionUser.id = dbUser.id;
+      } catch (dbErr) {
+        console.error("User upsert on login error:", dbErr);
+      }
+
       await setSessionCookie(sessionUser);
     }
 

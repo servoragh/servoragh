@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +12,36 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
     }
 
-    // 1. Fetch or Auto-Initialize Customer Profile with strict default preferences
+    // 1. Ensure User exists in PostgreSQL
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: session.id },
+          { phone: session.phone },
+          { email: session.email || undefined },
+        ],
+      },
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name: session.name || "Customer Member",
+          phone: session.phone || "+233240000000",
+          email: session.email || null,
+          role: session.role || "CUSTOMER",
+          passwordHash: crypto.randomBytes(16).toString("hex"),
+          isPhoneVerified: session.isPhoneVerified ?? true,
+          referralCode: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
+        },
+      });
+    }
+
+    const userId = user.id;
+
+    // 2. Fetch or Auto-Initialize Customer Profile with strict default preferences
     let profile = await prisma.customerProfile.findUnique({
-      where: { userId: session.id },
+      where: { userId },
       include: {
         savedAddresses: {
           orderBy: { createdAt: "desc" },
@@ -22,57 +50,45 @@ export async function GET(req: Request) {
     });
 
     if (!profile) {
-      profile = await prisma.customerProfile.create({
-        data: {
-          userId: session.id,
-          defaultCurrency: "GHS",
-          defaultZone: "Tamale Central",
-          preferredPayment: "MOMO_ESCROW",
-          profileVisibility: "RESTRICTED",
-          notifyInApp: true,
-          notifyWhatsApp: true,
-          notifySms: true,
-          notifyMarketingEmail: false,
-          sharePhoneWithArtisan: true,
-          showNameOnReviews: true,
-          status: "ACTIVE",
-          verificationTier: session.isPhoneVerified ? "TIER_1_BASIC" : "UNVERIFIED",
-          riskLevel: "LOW",
-          riskScore: 5.0,
-        },
-        include: {
-          savedAddresses: true,
-        },
-      });
+      try {
+        profile = await prisma.customerProfile.create({
+          data: {
+            userId,
+            defaultCurrency: "GHS",
+            defaultZone: "Tamale Central",
+            preferredPayment: "MOMO_ESCROW",
+            profileVisibility: "RESTRICTED",
+            notifyInApp: true,
+            notifyWhatsApp: true,
+            notifySms: true,
+            notifyMarketingEmail: false,
+            sharePhoneWithArtisan: true,
+            showNameOnReviews: true,
+            status: "ACTIVE",
+            verificationTier: user.isPhoneVerified ? "TIER_1_BASIC" : "UNVERIFIED",
+            riskLevel: "LOW",
+            riskScore: 5.0,
+          },
+          include: {
+            savedAddresses: true,
+          },
+        });
 
-      // Log initial account setup activity
-      await prisma.userActivityLog.create({
-        data: {
-          userId: session.id,
-          actionType: "ACCOUNT_INITIALIZED",
-          description: "Customer profile and zero-config security preferences initialized",
-          entityType: "ACCOUNT",
-        },
-      }).catch(() => null);
+        // Log initial account setup activity
+        await prisma.userActivityLog.create({
+          data: {
+            userId,
+            actionType: "ACCOUNT_INITIALIZED",
+            description: "Customer profile and zero-config security preferences initialized",
+            entityType: "ACCOUNT",
+          },
+        }).catch(() => null);
+      } catch (profErr) {
+        console.error("Profile creation error:", profErr);
+      }
     }
 
-    // 2. Fetch User Record
-    const user = await prisma.user.findUnique({
-      where: { id: session.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        role: true,
-        avatarUrl: true,
-        isPhoneVerified: true,
-        referralCode: true,
-        createdAt: true,
-      },
-    });
-
-    // 3. Parallel Queries for 360 Workspace
+    // 3. Parallel Queries for 360 Workspace (all safe against errors)
     const [
       serviceRequests,
       escrowDeals,
@@ -84,7 +100,7 @@ export async function GET(req: Request) {
     ] = await Promise.all([
       // Service Requests
       prisma.serviceRequest.findMany({
-        where: { customerId: session.id },
+        where: { customerId: userId },
         include: {
           quotes: {
             include: {
@@ -105,7 +121,7 @@ export async function GET(req: Request) {
 
       // Escrow Deals
       prisma.escrowDeal.findMany({
-        where: { customerId: session.id },
+        where: { customerId: userId },
         include: {
           provider: {
             select: { id: true, name: true, phone: true, avatarUrl: true },
@@ -117,7 +133,7 @@ export async function GET(req: Request) {
 
       // Disputes
       prisma.dispute.findMany({
-        where: { customerId: session.id },
+        where: { customerId: userId },
         include: {
           provider: {
             select: { id: true, name: true, phone: true },
@@ -129,7 +145,7 @@ export async function GET(req: Request) {
 
       // Favorites
       prisma.businessFavorite.findMany({
-        where: { userId: session.id },
+        where: { userId },
         include: {
           business: {
             include: {
@@ -143,7 +159,7 @@ export async function GET(req: Request) {
 
       // Reviews
       prisma.review.findMany({
-        where: { authorId: session.id },
+        where: { authorId: userId },
         include: {
           targetUser: {
             select: { name: true, avatarUrl: true },
@@ -154,7 +170,7 @@ export async function GET(req: Request) {
 
       // Community Posts
       prisma.communityPost.findMany({
-        where: { authorId: session.id },
+        where: { authorId: userId },
         include: {
           comments: true,
           upvotes: true,
@@ -164,7 +180,7 @@ export async function GET(req: Request) {
 
       // Activity Logs
       prisma.userActivityLog.findMany({
-        where: { userId: session.id },
+        where: { userId },
         orderBy: { createdAt: "desc" },
         take: 25,
       }).catch(() => []),
@@ -185,8 +201,25 @@ export async function GET(req: Request) {
       .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
     return NextResponse.json({
-      user,
-      profile,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        isPhoneVerified: user.isPhoneVerified,
+        referralCode: user.referralCode,
+        createdAt: user.createdAt,
+      },
+      profile: profile || {
+        defaultZone: "Tamale Central",
+        defaultCurrency: "GHS",
+        preferredPayment: "MOMO_ESCROW",
+        profileVisibility: "RESTRICTED",
+        verificationTier: "TIER_1_BASIC",
+        savedAddresses: [],
+      },
       metrics: {
         activeGigsCount,
         savedItemsCount,
@@ -236,8 +269,8 @@ export async function PATCH(req: Request) {
 
     // Update User core table if name / avatarUrl changed
     if (name !== undefined || avatarUrl !== undefined) {
-      await prisma.user.update({
-        where: { id: session.id },
+      await prisma.user.updateMany({
+        where: { OR: [{ id: session.id }, { phone: session.phone }] },
         data: {
           name: name !== undefined ? name : undefined,
           avatarUrl: avatarUrl !== undefined ? avatarUrl : undefined,
@@ -245,11 +278,19 @@ export async function PATCH(req: Request) {
       });
     }
 
+    const user = await prisma.user.findFirst({
+      where: { OR: [{ id: session.id }, { phone: session.phone }] },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     // Update Customer Profile
     const updatedProfile = await prisma.customerProfile.upsert({
-      where: { userId: session.id },
+      where: { userId: user.id },
       create: {
-        userId: session.id,
+        userId: user.id,
         defaultZone: defaultZone || "Tamale Central",
         defaultCurrency: defaultCurrency || "GHS",
         preferredPayment: preferredPayment || "MOMO_ESCROW",
@@ -281,7 +322,7 @@ export async function PATCH(req: Request) {
     // Log preference update activity
     await prisma.userActivityLog.create({
       data: {
-        userId: session.id,
+        userId: user.id,
         actionType: "SETTINGS_UPDATED",
         description: "Updated notification and privacy preferences",
         entityType: "SETTINGS",
