@@ -22,18 +22,19 @@ class ServoraProviderCard extends StatelessWidget {
 
     final String name = provider['businessName'] ?? provider['name'] ?? 'Artisan Merchant';
     final String ownerName = provider['ownerName'] ?? provider['user']?['name'] ?? 'Verified Owner';
-    final int yearsExp = int.tryParse((provider['yearsExperience'] ?? provider['yearsExp'] ?? 5).toString()) ?? 5;
+    final int yearsExp = int.tryParse((provider['yearsExperience'] ?? provider['yearsExp'] ?? 1).toString()) ?? 1;
     final String bio = provider['bio'] ?? provider['description'] ?? 'Certified local business and service specialist in Northern Ghana.';
     final String location = provider['serviceArea'] ?? provider['location'] ?? 'Tamale';
-    final double rating = double.tryParse((provider['ratingAverage'] ?? provider['rating'] ?? 4.9).toString()) ?? 4.9;
-    final int reviews = int.tryParse((provider['reviewCount'] ?? provider['reviews'] ?? 28).toString()) ?? 28;
-    final int jobs = int.tryParse((provider['completedJobsCount'] ?? provider['jobsDone'] ?? 42).toString()) ?? 42;
+    final double rating = double.tryParse((provider['ratingAverage'] ?? provider['rating'] ?? 5.0).toString()) ?? 5.0;
+    final int reviews = int.tryParse((provider['reviewCount'] ?? provider['reviewsCount'] ?? provider['reviews'] ?? 0).toString()) ?? 0;
+    final int jobs = int.tryParse((provider['completedJobsCount'] ?? provider['jobsDone'] ?? 0).toString()) ?? 0;
     final double? startingPrice = (provider['pricingFixedStart'] != null)
         ? double.tryParse(provider['pricingFixedStart'].toString())
-        : null;
+        : (provider['startingPrice'] != null ? double.tryParse(provider['startingPrice'].toString()) : null);
     final String phone = provider['phone'] ?? provider['user']?['phone'] ?? '+233240000000';
     final String slug = provider['slug'] ?? 'biz';
     final int trustScore = int.tryParse((provider['trustScore'] ?? 100).toString()) ?? 100;
+    final String? avatarUrl = provider['logoUrl'] ?? provider['avatarUrl'] ?? provider['user']?['avatarUrl'] ?? provider['image'];
 
     final List<String> badges = (provider['badges'] is List)
         ? (provider['badges'] as List).map((b) => b.toString()).toList()
@@ -68,8 +69,8 @@ class ServoraProviderCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 46,
+                  height: 46,
                   decoration: BoxDecoration(
                     color: ServoraColors.emerald600.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(14),
@@ -78,15 +79,33 @@ class ServoraProviderCard extends StatelessWidget {
                       width: 1,
                     ),
                   ),
-                  child: Center(
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: ServoraColors.emerald600,
-                      ),
-                    ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(13),
+                    child: (avatarUrl != null && avatarUrl.isNotEmpty)
+                        ? Image.network(
+                            avatarUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : 'S',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  color: ServoraColors.emerald600,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : 'S',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: ServoraColors.emerald600,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
                 const Gap(10),

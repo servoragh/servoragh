@@ -18,6 +18,7 @@ export interface ProviderCardProps {
     yearsExperience: number;
     pricingHourly?: number | null;
     pricingFixedStart?: number | null;
+    logoUrl?: string | null;
     verificationStatus: string;
     ratingAverage: number;
     reviewCount: number;
@@ -51,16 +52,28 @@ export function ProviderCard({ provider, onRequestQuote }: ProviderCardProps) {
     yearsExperience: provider.yearsExperience,
   });
 
+  const avatarSrc = (provider as any).logoUrl || provider.user?.avatarUrl;
   const whatsappMessage = `Hello ${provider.businessName}, I found your business on Servora Tamale and I would like to inquire about your local product/service availability.`;
 
   return (
     <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-xs hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700 transition flex flex-col justify-between">
       <div>
-        {/* Header: Name, Verified Indicator & Trust Score */}
+        {/* Header: Avatar, Name, Verified Indicator & Trust Score */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-extrabold text-lg flex items-center justify-center border border-emerald-300 dark:border-emerald-800 shadow-xs">
-              {provider.businessName.charAt(0)}
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-extrabold text-lg flex items-center justify-center border border-emerald-300 dark:border-emerald-800 shadow-xs overflow-hidden shrink-0">
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt={provider.businessName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                provider.businessName.charAt(0)
+              )}
             </div>
             <div>
               <Link

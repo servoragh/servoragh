@@ -59,6 +59,12 @@ export async function GET(request: Request) {
             phone: true,
             avatarUrl: true,
             isPhoneVerified: true,
+            businessProfile: {
+              select: {
+                logoUrl: true,
+                bannerUrl: true,
+              },
+            },
           },
         },
         services: {
@@ -79,7 +85,21 @@ export async function GET(request: Request) {
       ],
     });
 
-    return NextResponse.json({ providers });
+    const formattedProviders = providers.map((p) => {
+      const avatar = p.user?.businessProfile?.logoUrl || p.user?.avatarUrl || null;
+      return {
+        ...p,
+        logoUrl: avatar,
+        user: {
+          name: p.user?.name || "Verified Owner",
+          phone: p.user?.phone || "+233240000000",
+          avatarUrl: avatar,
+          isPhoneVerified: p.user?.isPhoneVerified ?? true,
+        },
+      };
+    });
+
+    return NextResponse.json({ providers: formattedProviders });
   } catch (error: any) {
     console.error("Fetch Providers Error:", error);
     return NextResponse.json({ error: "Failed to search service providers." }, { status: 500 });

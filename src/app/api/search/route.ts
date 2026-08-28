@@ -181,6 +181,12 @@ export async function GET(request: Request) {
                 phone: true,
                 avatarUrl: true,
                 isPhoneVerified: true,
+                businessProfile: {
+                  select: {
+                    logoUrl: true,
+                    bannerUrl: true,
+                  },
+                },
               },
             },
             services: { include: { service: true } },
@@ -188,62 +194,34 @@ export async function GET(request: Request) {
           },
         });
 
-        const businessProfiles = await prisma.businessProfile.findMany({
-          include: {
-            user: { select: { name: true, phone: true, avatarUrl: true } },
-            products: { take: 3 },
-            services: { take: 3 },
-            rentals: { take: 3 },
-          },
+        const formattedLegacyProviders = legacyProviders.map((lp: any) => {
+          const avatar = lp.user?.businessProfile?.logoUrl || lp.user?.avatarUrl || null;
+          return {
+            id: lp.id,
+            businessName: lp.businessName,
+            slug: lp.slug,
+            bio: lp.bio || "Certified local business and service specialist in Northern Ghana.",
+            serviceArea: lp.serviceArea || "Tamale",
+            yearsExperience: lp.yearsExperience || 1,
+            ratingAverage: lp.ratingAverage || 5.0,
+            reviewCount: lp.reviewCount || 0,
+            completedJobsCount: lp.completedJobsCount || 0,
+            pricingFixedStart: lp.pricingFixedStart ? Number(lp.pricingFixedStart) : null,
+            pricingHourly: lp.pricingHourly ? Number(lp.pricingHourly) : null,
+            verificationStatus: lp.verificationStatus || "VERIFIED",
+            badges: lp.badges || JSON.stringify(["ID_VERIFIED", "TOP_RATED", "PHONE_VERIFIED", "BUSINESS_VERIFIED"]),
+            logoUrl: avatar,
+            user: {
+              name: lp.user?.name || "Verified Owner",
+              phone: lp.user?.phone || "+233240000000",
+              avatarUrl: avatar,
+              isPhoneVerified: lp.user?.isPhoneVerified ?? true,
+            },
+            services: lp.services,
+          };
         });
 
-        const formattedBusinessProfiles = businessProfiles.map((bp: any) => ({
-          id: bp.id,
-          businessName: bp.businessName,
-          slug: bp.slug,
-          bio: bp.description || "Certified local business and service specialist in Northern Ghana.",
-          serviceArea: bp.zone || bp.addressDetails || "Tamale",
-          yearsExperience: 5,
-          ratingAverage: bp.ratingAverage || 5.0,
-          reviewCount: bp.reviewsCount || 12,
-          completedJobsCount: 24,
-          pricingFixedStart: null,
-          pricingHourly: null,
-          verificationStatus: bp.verificationStatus || "VERIFIED",
-          badges: JSON.stringify(["ID_VERIFIED", "TOP_RATED", "PHONE_VERIFIED", "BUSINESS_VERIFIED"]),
-          user: {
-            name: bp.user?.name || "Verified Owner",
-            phone: bp.phone || bp.whatsappNumber || bp.user?.phone || "+233240000000",
-            avatarUrl: bp.logoUrl || bp.user?.avatarUrl || null,
-            isPhoneVerified: true,
-          },
-          services: bp.services.map((s: any) => ({ service: { name: s.serviceName } })),
-        }));
-
-        const formattedLegacyProviders = legacyProviders.map((lp: any) => ({
-          id: lp.id,
-          businessName: lp.businessName,
-          slug: lp.slug,
-          bio: lp.bio || "Certified local business and service specialist in Northern Ghana.",
-          serviceArea: lp.serviceArea || "Tamale",
-          yearsExperience: lp.yearsExperience || 5,
-          ratingAverage: lp.ratingAverage || 4.9,
-          reviewCount: lp.reviewCount || 28,
-          completedJobsCount: lp.completedJobsCount || 42,
-          pricingFixedStart: lp.pricingFixedStart ? Number(lp.pricingFixedStart) : null,
-          pricingHourly: lp.pricingHourly ? Number(lp.pricingHourly) : null,
-          verificationStatus: lp.verificationStatus || "VERIFIED",
-          badges: lp.badges || JSON.stringify(["ID_VERIFIED", "TOP_RATED", "PHONE_VERIFIED", "BUSINESS_VERIFIED"]),
-          user: {
-            name: lp.user?.name || "Verified Owner",
-            phone: lp.user?.phone || "+233240000000",
-            avatarUrl: lp.user?.avatarUrl || null,
-            isPhoneVerified: lp.user?.isPhoneVerified ?? true,
-          },
-          services: lp.services,
-        }));
-
-        dbProviders = [...formattedBusinessProfiles, ...formattedLegacyProviders];
+        dbProviders = formattedLegacyProviders;
       }
 
       // -------------------------------------------------------------

@@ -34,6 +34,15 @@ class MarketplaceApiService {
   /// Fetch live verified artisans & businesses from database
   static Future<List<dynamic>> fetchBusinesses() async {
     try {
+      final response = await _dio.get('/providers');
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data is Map && response.data['providers'] != null) {
+          return response.data['providers'] as List<dynamic>;
+        }
+      }
+    } catch (_) {}
+
+    try {
       final response = await _dio.get('/search', queryParameters: {'scope': 'providers'});
       if (response.statusCode == 200 && response.data != null) {
         if (response.data is Map &&
@@ -42,10 +51,9 @@ class MarketplaceApiService {
           return response.data['results']['providers'] as List<dynamic>;
         }
       }
-      return [];
-    } catch (_) {
-      return [];
-    }
+    } catch (_) {}
+
+    return [];
   }
 
   /// Fetch live community trade board notices from database
