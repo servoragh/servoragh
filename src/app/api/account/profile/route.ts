@@ -40,17 +40,18 @@ export async function GET(req: Request) {
     const userId = user.id;
 
     // 2. Fetch or Auto-Initialize Customer Profile with strict default preferences
-    let profile = await prisma.customerProfile.findUnique({
-      where: { userId },
-      include: {
-        savedAddresses: {
-          orderBy: { createdAt: "desc" },
+    let profile: any = null;
+    try {
+      profile = await prisma.customerProfile.findUnique({
+        where: { userId },
+        include: {
+          savedAddresses: {
+            orderBy: { createdAt: "desc" },
+          },
         },
-      },
-    });
+      });
 
-    if (!profile) {
-      try {
+      if (!profile) {
         profile = await prisma.customerProfile.create({
           data: {
             userId,
@@ -83,33 +84,28 @@ export async function GET(req: Request) {
             entityType: "ACCOUNT",
           },
         }).catch(() => null);
-      } catch (profErr) {
-        console.error("Profile creation error:", profErr);
       }
+    } catch (profErr) {
+      console.warn("Profile fetch/create fallback:", profErr);
     }
 
-    // 3. Parallel Queries for 360 Workspace (all safe against errors)
-    const [
-      serviceRequests,
-      escrowDeals,
-      disputes,
-      favorites,
-      reviews,
-      communityPosts,
-      activityLogs,
-    ] = await Promise.all([
-      // Service Requests
-      prisma.serviceRequest.findMany({
+    // 3. Queries for 360 Workspace (each individually protected)
+    let serviceRequests: any[] = [];
+    let escrowDeals: any[] = [];
+    let disputes: any[] = [];
+    let favorites: any[] = [];
+    let reviews: any[] = [];
+    let communityPosts: any[] = [];
+    let activityLogs: any[] = [];
+
+    try {
+      serviceRequests = await prisma.serviceRequest.findMany({
         where: { customerId: userId },
         include: {
           quotes: {
             include: {
               provider: {
-                include: {
-                  user: {
-                    select: { name: true, phone: true, avatarUrl: true },
-                  },
-                },
+                select: { id: true, name: true, phone: true, avatarUrl: true },
               },
             },
           },
@@ -117,10 +113,13 @@ export async function GET(req: Request) {
         },
         orderBy: { createdAt: "desc" },
         take: 30,
-      }).catch(() => []),
+      });
+    } catch (e) {
+      console.warn("ServiceRequests query error:", e);
+    }
 
-      // Escrow Deals
-      prisma.escrowDeal.findMany({
+    try {
+      escrowDeals = await prisma.escrowDeal.findMany({
         where: { customerId: userId },
         include: {
           provider: {
@@ -129,10 +128,13 @@ export async function GET(req: Request) {
           disputes: true,
         },
         orderBy: { createdAt: "desc" },
-      }).catch(() => []),
+      });
+    } catch (e) {
+      console.warn("EscrowDeals query error:", e);
+    }
 
-      // Disputes
-      prisma.dispute.findMany({
+    try {
+      disputes = await prisma.dispute.findMany({
         where: { customerId: userId },
         include: {
           provider: {
@@ -141,10 +143,13 @@ export async function GET(req: Request) {
           escrowDeal: true,
         },
         orderBy: { createdAt: "desc" },
-      }).catch(() => []),
+      });
+    } catch (e) {
+      console.warn("Disputes query error:", e);
+    }
 
-      // Favorites
-      prisma.businessFavorite.findMany({
+    try {
+      favorites = await prisma.businessFavorite.findMany({
         where: { userId },
         include: {
           business: {
@@ -155,36 +160,47 @@ export async function GET(req: Request) {
           },
         },
         orderBy: { createdAt: "desc" },
-      }).catch(() => []),
+      });
+    } catch (e) {
+      console.warn("Favorites query error:", e);
+    }
 
-      // Reviews
-      prisma.review.findMany({
+    try {
+      reviews = await prisma.review.findMany({
         where: { authorId: userId },
         include: {
-          targetUser: {
+          target: {
             select: { name: true, avatarUrl: true },
           },
         },
         orderBy: { createdAt: "desc" },
-      }).catch(() => []),
+      });
+    } catch (e) {
+      console.warn("Reviews query error:", e);
+    }
 
-      // Community Posts
-      prisma.communityPost.findMany({
+    try {
+      communityPosts = await prisma.communityPost.findMany({
         where: { authorId: userId },
         include: {
           comments: true,
           upvotes: true,
         },
         orderBy: { createdAt: "desc" },
-      }).catch(() => []),
+      });
+    } catch (e) {
+      console.warn("CommunityPosts query error:", e);
+    }
 
-      // Activity Logs
-      prisma.userActivityLog.findMany({
+    try {
+      activityLogs = await prisma.userActivityLog.findMany({
         where: { userId },
         orderBy: { createdAt: "desc" },
         take: 25,
-      }).catch(() => []),
-    ]);
+      });
+    } catch (e) {
+      console.warn("ActivityLogs query error:", e);
+    }
 
     // 4. Calculate Live KPI Metrics Strip
     const activeGigsCount = serviceRequests.filter(
