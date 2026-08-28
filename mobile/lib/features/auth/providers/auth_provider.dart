@@ -177,6 +177,130 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
+  Future<bool> registerCustomer({
+    required String name,
+    required String phone,
+    String? email,
+    required String password,
+  }) async {
+    _state = _state.copyWith(isLoading: true, error: null);
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post(ApiEndpoints.authRegister, data: {
+        'name': name.trim(),
+        'phone': phone.trim(),
+        'email': (email != null && email.trim().isNotEmpty) ? email.trim() : null,
+        'password': password,
+        'role': 'CUSTOMER',
+      });
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final token = res.data['token'] ?? 'session_customer_token';
+        final userData = res.data['user'] ?? {
+          'id': 'cust_${DateTime.now().millisecondsSinceEpoch}',
+          'name': name,
+          'phone': phone,
+          'email': email,
+          'role': 'CUSTOMER',
+          'isPhoneVerified': true,
+        };
+        final user = UserModel.fromJson(userData);
+        await storage.saveToken(token.toString());
+
+        _state = AuthState(
+          user: user,
+          isAuthenticated: true,
+          isLoading: false,
+        );
+        notifyListeners();
+        return true;
+      }
+
+      final msg = res.data['error'] ?? 'Registration failed.';
+      _state = _state.copyWith(isLoading: false, error: msg.toString());
+      notifyListeners();
+      return false;
+    } catch (e) {
+      String errorMessage = 'Registration failed. Please check your details.';
+      if (e is DioException && e.response != null) {
+        final data = e.response?.data;
+        if (data is Map && data['error'] != null) {
+          errorMessage = data['error'].toString();
+        }
+      }
+      _state = _state.copyWith(isLoading: false, error: errorMessage);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> registerProvider({
+    required String name,
+    required String phone,
+    String? email,
+    required String password,
+    required String businessName,
+    required String bio,
+    String? serviceArea,
+    String? pricingHourly,
+  }) async {
+    _state = _state.copyWith(isLoading: true, error: null);
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post(ApiEndpoints.authRegister, data: {
+        'name': name.trim(),
+        'phone': phone.trim(),
+        'email': (email != null && email.trim().isNotEmpty) ? email.trim() : null,
+        'password': password,
+        'role': 'PROVIDER',
+        'businessName': businessName.trim(),
+        'bio': bio.trim(),
+        'serviceArea': serviceArea?.trim(),
+        'pricingHourly': pricingHourly?.trim(),
+      });
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final token = res.data['token'] ?? 'session_provider_token';
+        final userData = res.data['user'] ?? {
+          'id': 'prov_${DateTime.now().millisecondsSinceEpoch}',
+          'name': name,
+          'phone': phone,
+          'email': email,
+          'role': 'PROVIDER',
+          'isPhoneVerified': true,
+        };
+        final user = UserModel.fromJson(userData);
+        await storage.saveToken(token.toString());
+
+        _state = AuthState(
+          user: user,
+          isAuthenticated: true,
+          isLoading: false,
+        );
+        notifyListeners();
+        return true;
+      }
+
+      final msg = res.data['error'] ?? 'Business registration failed.';
+      _state = _state.copyWith(isLoading: false, error: msg.toString());
+      notifyListeners();
+      return false;
+    } catch (e) {
+      String errorMessage = 'Registration failed. Please check your details.';
+      if (e is DioException && e.response != null) {
+        final data = e.response?.data;
+        if (data is Map && data['error'] != null) {
+          errorMessage = data['error'].toString();
+        }
+      }
+      _state = _state.copyWith(isLoading: false, error: errorMessage);
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> switchRole(String newRole) async {
     if (_state.user != null) {
       await storage.setActiveRole(newRole);
@@ -189,7 +313,7 @@ class AuthNotifier extends ChangeNotifier {
 
   Future<void> logout() async {
     await storage.clearToken();
-    _state = AuthState(isAuthenticated: false);
+    _state = AuthState(isAuthenticated: false, user: null, isLoading: false);
     notifyListeners();
   }
 }

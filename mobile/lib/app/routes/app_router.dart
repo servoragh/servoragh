@@ -106,12 +106,28 @@ final appRouter = GoRouter(
       builder: (BuildContext context, GoRouterState state) => const ActivityScreen(),
     ),
     GoRoute(
+      path: '/portal',
+      builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+    ),
+    GoRoute(
+      path: '/dashboard',
+      builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+    ),
+    GoRoute(
       path: '/auth/login',
       builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
     ),
     GoRoute(
-      path: '/register',
+      path: '/login',
       builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/register',
+      builder: (BuildContext context, GoRouterState state) => const LoginScreen(initialRegisterMode: true),
+    ),
+    GoRoute(
+      path: '/provider/register',
+      builder: (BuildContext context, GoRouterState state) => const LoginScreen(initialRegisterMode: true, initialRole: 'PROVIDER'),
     ),
   ],
 );
