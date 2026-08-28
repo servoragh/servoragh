@@ -11,6 +11,10 @@ function parseCoordinate(val: any): number | null {
   return isNaN(num) ? null : num;
 }
 
+function isValidUuid(s?: string | null): boolean {
+  return !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
 export async function POST(req: Request) {
   try {
     const session = await getSession(req);
@@ -32,7 +36,6 @@ export async function POST(req: Request) {
       cleanPhone.startsWith("0") ? "+233" + cleanPhone.slice(1) : null,
     ].filter(Boolean);
 
-    const isValidUuid = (s?: string | null) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
     const orConditions: any[] = [];
     if (isValidUuid(session.id)) orConditions.push({ id: session.id });
     phoneVariants.forEach((p) => orConditions.push({ phone: p }));

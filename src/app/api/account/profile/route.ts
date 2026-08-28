@@ -5,6 +5,10 @@ import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
+function isValidUuid(s?: string | null): boolean {
+  return !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
 export async function GET(req: Request) {
   try {
     const session = await getSession(req);
@@ -12,7 +16,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
     }
 
-    const isValidUuid = (s?: string | null) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
     const orConditions: any[] = [];
     if (isValidUuid(session.id)) orConditions.push({ id: session.id });
     if (session.phone) {
@@ -101,8 +104,6 @@ export async function GET(req: Request) {
     let reviews: any[] = [];
     let communityPosts: any[] = [];
     let activityLogs: any[] = [];
-
-    const isValidUuid = (s?: string | null) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
     const cleanUserPhone = (user.phone || "").trim();
     const phoneVariants = [
