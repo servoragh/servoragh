@@ -93,12 +93,26 @@ class AuthNotifier extends ChangeNotifier {
         role: 'ADMIN',
         isPhoneVerified: true,
       );
+    } else if (cleanInput == 'savannah@gmail.com' || cleanInput == '+233245678901' || cleanInput == '0245678901') {
+      demoUser = UserModel(
+        id: 'savannah-id',
+        name: 'Rashid Yakubu',
+        businessName: 'Savannah Fresh Farm Produce & Agro-Goods',
+        slug: 'savannah-fresh-farms',
+        serviceArea: 'Aboabo',
+        logoUrl: 'https://images.unsplash.com/photo-1515471209610-dae1c92d8777?w=600&q=80',
+        phone: '+233245678901',
+        email: 'savannah@gmail.com',
+        role: 'PROVIDER',
+        isPhoneVerified: true,
+      );
     } else if (cleanInput == 'kwame.electric@gmail.com' || cleanInput == '+233244889900' || cleanInput == '0244889900') {
       demoUser = UserModel(
         id: 'provider-id',
         name: 'Kwame Mensah',
         businessName: 'Kwame Electrical & Solar Solutions',
         slug: 'kwame-electrical-tamale',
+        serviceArea: 'Sakasaka, Tamale',
         phone: '+233244889900',
         email: 'kwame.electric@gmail.com',
         role: 'PROVIDER',

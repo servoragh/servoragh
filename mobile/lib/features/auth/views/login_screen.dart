@@ -394,6 +394,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: () => _fillDemoCredentials('admin@servora.gh', 'admin12345', 'ADMIN'),
                           ),
                           ActionChip(
+                            avatar: const Text('🌾', style: TextStyle(fontSize: 12)),
+                            label: const Text('Savannah Fresh Farms', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            backgroundColor: const Color(0xFFECFDF5),
+                            side: const BorderSide(color: ServoraColors.emerald600),
+                            onPressed: () => _fillDemoCredentials('savannah@gmail.com', 'password123', 'PROVIDER'),
+                          ),
+                          ActionChip(
                             avatar: const Text('⚡', style: TextStyle(fontSize: 12)),
                             label: const Text('Kwame Electrical', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                             backgroundColor: const Color(0xFFFEF3C7),
@@ -403,8 +410,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ActionChip(
                             avatar: const Text('🛒', style: TextStyle(fontSize: 12)),
                             label: const Text('Amina Customer', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            backgroundColor: const Color(0xFFECFDF5),
-                            side: const BorderSide(color: ServoraColors.emerald600),
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            side: BorderSide(color: Colors.grey.withOpacity(0.4)),
                             onPressed: () => _fillDemoCredentials('amina@gmail.com', 'password123', 'CUSTOMER'),
                           ),
                         ],

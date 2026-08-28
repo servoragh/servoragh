@@ -8,6 +8,7 @@ import '../../../shared/widgets/status_badge.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../main.dart';
+import '../../business_portal/views/business_portal_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -406,165 +407,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 3. BUSINESS / MERCHANT PORTAL VIEW
   // ==========================================
   Widget _buildProviderPortalView(BuildContext context, user, bool isDark) {
-    final String name = user?.name ?? 'Kwame Mensah';
-    final String businessName = user?.businessName ?? 'Kwame Electrical & Solar Solutions';
-    final String phone = user?.phone ?? '+233 24 488 9900';
-    final String slug = user?.slug ?? 'kwame-electrical-tamale';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Merchant Header Card
-        ServoraCard(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.storefront_rounded, color: Color(0xFFD97706), size: 28),
-                    ),
-                  ),
-                  const Gap(14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                businessName,
-                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const Gap(6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFEF3C7),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'MERCHANT',
-                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFFD97706)),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Gap(2),
-                        Text('Owner: $name • $phone', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                        const Gap(4),
-                        Row(
-                          children: [
-                            StatusBadge.verifiedGhanaCard(),
-                            const Gap(6),
-                            Text('★ 5.0 (36 Reviews)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.amber[800])),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Gap(14),
-              // Live Storefront Link Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ServoraColors.emerald600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 15),
-                  label: const Text('View My Public Digital Storefront 🌐', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  onPressed: () => context.push('/biz/$slug'),
-                ),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(duration: 200.ms),
-        const Gap(14),
-
-        // Merchant Metrics Row
-        Row(
-          children: [
-            _buildMetricCard(context, count: '85 Done', label: 'Completed Jobs', icon: Icons.task_alt_rounded),
-            const Gap(8),
-            _buildMetricCard(context, count: '6 Items', label: 'Catalog Listed', icon: Icons.inventory_2_rounded),
-            const Gap(8),
-            _buildMetricCard(context, count: 'GH₵ 3.4k', label: 'Escrow Payouts', icon: Icons.account_balance_wallet_rounded),
-          ],
+        BusinessPortalView(
+          onSwitchToCustomer: () => setState(() => _isMerchantMode = false),
         ),
-        const Gap(14),
+        const Gap(20),
 
         // Mode Switcher Banner
         _buildModeSwitcher(
           isMerchant: true,
           onToggle: () => setState(() => _isMerchantMode = false),
-        ),
-        const Gap(14),
-
-        // Merchant Management Actions
-        const Text('Merchant Management Tools:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.inventory_rounded,
-          title: 'Manage Store Catalog & Stock',
-          subtitle: 'Add/edit products, service rates, and rental machinery',
-          onTap: () => context.push('/biz/$slug'),
-        ),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.phone_in_talk_rounded,
-          title: 'WhatsApp Lead Dispatch Settings',
-          subtitle: 'Configure automated phone number for direct customer orders',
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('WhatsApp dispatch configured for $phone')),
-            );
-          },
-        ),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.account_balance_wallet_outlined,
-          title: 'Merchant Escrow Payouts & Earnings',
-          subtitle: 'Track fulfilled orders and release Mobile Money funds',
-          onTap: () => context.push('/escrow'),
-        ),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.verified_user_outlined,
-          title: 'Ghana Card & Trust Verification',
-          subtitle: 'Tier-1 Verified Merchant with Northern Trust Badge',
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Your business is 100% verified with Ghana Card & GPS address.')),
-            );
-          },
-        ),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.support_agent_rounded,
-          title: 'Merchant Priority Support',
-          subtitle: 'Direct support line for business sellers',
-          onTap: () => WhatsAppHelper.openWhatsApp(
-            phone: '+233240000000',
-            message: 'Hello Servora, I need Merchant assistance for $businessName.',
-          ),
         ),
         const Gap(16),
 
