@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../../../core/constants/constants.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_card.dart';
+import '../../../core/utils/whatsapp_helper.dart';
 
 class AdminPortalView extends StatefulWidget {
   final VoidCallback? onSwitchToCustomer;
@@ -17,7 +18,7 @@ class AdminPortalView extends StatefulWidget {
 }
 
 class _AdminPortalViewState extends State<AdminPortalView> {
-  String _activeView = 'overview'; // 'overview' | 'activity' | 'crm' | 'businesses' | 'verification' | 'security' | 'escrow' | 'delivery' | 'products' | 'requests' | 'rentals' | 'disputes' | 'community' | 'tickers' | 'settings'
+  String _activeView = 'overview';
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -32,9 +33,22 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   List<dynamic> _featureFlags = [];
   List<dynamic> _tickers = [];
 
+  // Launch Mode Checklist Tasks (Zero-Capital Founder Growth Tracker)
+  final List<Map<String, dynamic>> _launchTasks = [
+    {"id": 1, "text": "Recruit 5 new artisans across Sakasaka / Bolga / Wa Markets", "done": true},
+    {"id": 2, "text": "Verify 3 pending provider identity requests", "done": true},
+    {"id": 3, "text": "Create 2 programmatic SEO pages for Northern Ghana", "done": false},
+    {"id": 4, "text": "Share 3 featured provider links on Northern Ghana WhatsApp groups", "done": false},
+    {"id": 5, "text": "Follow up with customer on first 10 job request quotes", "done": false},
+    {"id": 6, "text": "Record weekly North Star Metric (Connections)", "done": false},
+  ];
+
+  // Filters & Sub Tabs
   String _searchQuery = '';
   String _userRoleFilter = 'ALL';
-  String _settingsSubTab = 'general';
+  String _productStatusFilter = 'ALL';
+  String _settingsSubTab = 'general'; // 'general' | 'flags' | 'recycle' | 'taxonomy' | 'email' | 'health' | 'storage' | 'promos'
+  String _crmDrawerTab = 'identity'; // 'identity' | 'financial' | 'omnichannel' | 'notes'
 
   static final Dio _dio = Dio(
     BaseOptions(
@@ -107,9 +121,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     ];
   }
 
-  // ==========================================
-  // ADMIN ACTION HANDLER (Live Backend API)
-  // ==========================================
   Future<void> _handleAdminAction(String action, {String? targetId, dynamic payload}) async {
     try {
       final res = await _dio.post('/admin/manage', data: {
@@ -136,7 +147,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     } catch (_) {
       if (!mounted) return;
 
-      // Local optimistic update
+      // Local optimistic updates
       if (action == 'TOGGLE_PROMOTED_PROVIDER' && targetId != null) {
         setState(() {
           final idx = _providers.indexWhere((p) => p['id'] == targetId);
@@ -152,6 +163,14 @@ class _AdminPortalViewState extends State<AdminPortalView> {
             _providers[idx]['verificationStatus'] = cur ? 'UNVERIFIED' : 'VERIFIED';
           }
         });
+      } else if (action == 'TOGGLE_USER_ROLE' && targetId != null) {
+        setState(() {
+          final idx = _users.indexWhere((u) => u['id'] == targetId);
+          if (idx != -1) {
+            final curRole = _users[idx]['role'];
+            _users[idx]['role'] = curRole == 'CUSTOMER' ? 'PROVIDER' : (curRole == 'PROVIDER' ? 'ADMIN' : 'CUSTOMER');
+          }
+        });
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -164,7 +183,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // ==========================================
-  // SIDEBAR DRAWER (Matching Screenshot 1-to-1)
+  // SIDEBAR DRAWER (Exact Web Screenshot Layout)
   // ==========================================
   void _openAdminNavDrawer() {
     showModalBottomSheet(
@@ -180,10 +199,10 @@ class _AdminPortalViewState extends State<AdminPortalView> {
             color: isDark ? const Color(0xFF0F172A) : Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.88),
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.90),
           child: Column(
             children: [
-              // Header with Green Icon & Close Button
+              // Header with Green Circle Icon & Close Button
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                 child: Row(
@@ -280,7 +299,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                     ),
                     _buildNavItem(
                       icon: Icons.local_shipping_outlined,
-                      label: 'Delivery Fleet & Dispatchers',
+                      label: 'Delivery Fleet & Dispatch...',
                       badge: 'Fleet',
                       viewId: 'delivery',
                       ctx: ctx,
@@ -359,8 +378,8 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                     ),
                     Row(
                       children: [
-                        Text('Engine: ', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                        Text('Active (Live DB)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                        Text('PWA Engine: ', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        Text('Active', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
                       ],
                     ),
                   ],
@@ -626,7 +645,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // =========================================================
-  // 1. DASHBOARD OVERVIEW VIEW
+  // 1. DASHBOARD OVERVIEW VIEW (Matching Web layout + Launch widget)
   // =========================================================
   Widget _buildOverviewView() {
     final connections = _stats['northStarWeeklyConnections'] ?? 83;
@@ -636,6 +655,9 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     final totalProducts = _stats['totalProducts'] ?? 46;
     final activeRequests = _stats['totalRequests'] ?? 2;
     final storageMB = _storageStats['totalStorageUsedMB'] ?? 4.55;
+
+    final completedTasks = _launchTasks.where((t) => t['done'] == true).length;
+    final progressPercent = ((completedTasks / _launchTasks.length) * 100).round();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -656,7 +678,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
             const Gap(10),
             Expanded(
               child: _buildKpiCard(
-                title: 'Merchants & Artisans',
+                title: 'Registered Merchants',
                 value: '$totalMerchants',
                 subtitle: '$verifiedMerchants Verified • $pendingVerifications Pending',
                 icon: Icons.apartment_rounded,
@@ -670,9 +692,9 @@ class _AdminPortalViewState extends State<AdminPortalView> {
           children: [
             Expanded(
               child: _buildKpiCard(
-                title: 'Products & Requests',
+                title: 'Products & Service Calls',
                 value: '${totalProducts + activeRequests}',
-                subtitle: '$totalProducts Products • $activeRequests Service Calls',
+                subtitle: '$totalProducts Products • $activeRequests Active Calls',
                 icon: Icons.shopping_bag_outlined,
                 accentColor: const Color(0xFF2563EB),
               ),
@@ -680,7 +702,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
             const Gap(10),
             Expanded(
               child: _buildKpiCard(
-                title: 'Cloud Infrastructure',
+                title: 'Storage & Infrastructure',
                 value: '$storageMB MB',
                 subtitle: '100 GB Free Cap (Cloudflare R2)',
                 icon: Icons.cloud_done_rounded,
@@ -688,6 +710,118 @@ class _AdminPortalViewState extends State<AdminPortalView> {
               ),
             ),
           ],
+        ),
+        const Gap(16),
+
+        // Zero-Capital Launch Mode Widget (Web Parity)
+        ServoraCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.rocket_launch_rounded, color: Colors.black87, size: 20),
+                      ),
+                      const Gap(10),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Zero-Capital Launch Mode', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          Text("Founder's Operations & Growth Tracker", style: TextStyle(fontSize: 10.5, color: Colors.grey)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '$progressPercent%',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFFD97706)),
+                  ),
+                ],
+              ),
+              const Gap(10),
+
+              // Progress Bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: progressPercent / 100.0,
+                  minHeight: 6,
+                  backgroundColor: Colors.grey.withOpacity(0.2),
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFFF59E0B)),
+                ),
+              ),
+              const Gap(12),
+
+              // Checklist Items
+              ..._launchTasks.map((t) {
+                final isDone = t['done'] == true;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      t['done'] = !isDone;
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isDone ? const Color(0xFFECFDF5) : Colors.grey.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: isDone ? const Color(0xFFA7F3D0) : Colors.transparent),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isDone ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                            size: 18,
+                            color: isDone ? ServoraColors.emerald600 : Colors.grey,
+                          ),
+                          const Gap(8),
+                          Expanded(
+                            child: Text(
+                              t['text'] ?? '',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                decoration: isDone ? TextDecoration.lineThrough : null,
+                                color: isDone ? const Color(0xFF065F46) : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              const Gap(10),
+
+              // 4 Quick Founder Stats
+              Row(
+                children: [
+                  _buildMiniStatBadge('GHS 0', 'Daily Spend'),
+                  const Gap(6),
+                  _buildMiniStatBadge('WhatsApp', 'Channel'),
+                  const Gap(6),
+                  _buildMiniStatBadge('North Ghana', 'Region'),
+                  const Gap(6),
+                  _buildMiniStatBadge('PWA Active', 'App Engine'),
+                ],
+              ),
+            ],
+          ),
         ),
         const Gap(16),
 
@@ -706,31 +840,31 @@ class _AdminPortalViewState extends State<AdminPortalView> {
               ),
               const Gap(12),
               _buildActionQueueRow(
-                title: 'Pending Ghana Card ID Reviews',
-                subtitle: '$pendingVerifications Ghana Cards awaiting verification',
+                title: 'Pending ID Approvals',
+                subtitle: '$pendingVerifications Ghana Cards awaiting check',
                 buttonLabel: 'Review',
                 onTap: () => setState(() => _activeView = 'verification'),
               ),
               const Gap(8),
               _buildActionQueueRow(
                 title: 'Product Moderation Queue',
-                subtitle: '$totalProducts Merchant & guest catalog listings',
+                subtitle: '$totalProducts Guest & merchant items',
                 buttonLabel: 'Open Queue',
                 onTap: () => setState(() => _activeView = 'products'),
               ),
               const Gap(8),
               _buildActionQueueRow(
-                title: 'Customer Escrow & Disputes',
+                title: 'Unresolved Disputes',
                 subtitle: '0 Active disputes • System Healthy',
                 buttonLabel: 'Inspect',
-                onTap: () => setState(() => _activeView = 'escrow'),
+                onTap: () => setState(() => _activeView = 'disputes'),
               ),
             ],
           ),
         ),
         const Gap(16),
 
-        // Recent Audit Activity
+        // Recent Administrative Activity
         ServoraCard(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -753,11 +887,29 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                 ],
               ),
               const Gap(8),
-              ..._auditLogs.take(4).map((log) => _buildAuditLogRow(log)),
+              ..._auditLogs.take(5).map((log) => _buildAuditLogRow(log)),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMiniStatBadge(String title, String subtitle) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+            Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(fontSize: 8.5, color: Colors.grey)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -912,7 +1064,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Live Operational Activity Feed (Realtime Database Logs):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        const Text('Live Operational Activity Feed (Database Event Logs):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
         const Gap(10),
         if (_auditLogs.isEmpty)
           const Center(child: Padding(padding: EdgeInsets.all(30), child: Text('No audit logs recorded yet.')))
@@ -929,8 +1081,177 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // =========================================================
-  // 3. CUSTOMER CRM & MEMBERS 360°
+  // 3. CUSTOMER CRM 360° WORKSPACE WITH DETAILS DRAWER
   // =========================================================
+  void _openCustomer360Drawer(Map<String, dynamic> user) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final name = user['name'] ?? 'Customer Member';
+          final phone = user['phone'] ?? '+233 24 000 0000';
+          final email = user['email'] ?? 'No Email';
+          final role = user['role'] ?? 'CUSTOMER';
+
+          return Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.all(18),
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const Gap(14),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
+                        child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'C', style: const TextStyle(fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text('$phone • $email', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: ServoraColors.emerald600.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(role, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
+                      ),
+                    ],
+                  ),
+                  const Gap(16),
+
+                  // 360 Tabs
+                  Row(
+                    children: [
+                      _buildDrawerTabPill('Identity', 'identity', setModalState),
+                      const Gap(6),
+                      _buildDrawerTabPill('Financial & Escrow', 'financial', setModalState),
+                      const Gap(6),
+                      _buildDrawerTabPill('Omnichannel', 'omnichannel', setModalState),
+                    ],
+                  ),
+                  const Gap(14),
+
+                  if (_crmDrawerTab == 'identity') ...[
+                    _buildDrawerInfoRow('Account Status', 'ACTIVE / VERIFIED', Colors.green),
+                    _buildDrawerInfoRow('Risk Score', 'LOW RISK (0/100)', Colors.green),
+                    _buildDrawerInfoRow('Joined Region', 'Tamale Central, Northern Ghana', Colors.grey[700]!),
+                    const Gap(14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.block_rounded, size: 16),
+                        label: const Text('Ban / Restrict Customer Account', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Account for $name flagged.')),
+                          );
+                        },
+                      ),
+                    ),
+                  ] else if (_crmDrawerTab == 'financial') ...[
+                    _buildDrawerInfoRow('MoMo Escrow Volume', 'GH₵ 420.00 (3 Deals)', ServoraColors.emerald600),
+                    _buildDrawerInfoRow('Pending Refunds', 'GH₵ 0.00', Colors.grey),
+                    _buildDrawerInfoRow('Platform Fee Paid', 'GH₵ 21.00', Colors.grey[700]!),
+                  ] else ...[
+                    _buildDrawerInfoRow('WhatsApp Dispatch', 'Enabled & Automated', Colors.green),
+                    _buildDrawerInfoRow('SMS Alerts Gateway', 'Delivered (100%)', Colors.green),
+                    const Gap(10),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      icon: const Icon(Icons.chat_rounded, size: 16),
+                      label: const Text('Direct WhatsApp Chat', style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: () => WhatsAppHelper.openWhatsApp(phone: phone, message: "Hello $name, this is Servora Admin Support."),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDrawerTabPill(String label, String tabId, StateSetter setModalState) {
+    final isSel = _crmDrawerTab == tabId;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setModalState(() => _crmDrawerTab = tabId);
+          setState(() => _crmDrawerTab = tabId);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSel ? ServoraColors.emerald600 : Colors.grey.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: isSel ? Colors.white : Colors.grey[700],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerInfoRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 11.5, color: Colors.grey)),
+          Text(value, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: color)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCrmView() {
     final filtered = _users.where((u) {
       final matchesSearch = (u['name']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
@@ -943,10 +1264,9 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Search & Role Filters
         TextField(
           decoration: InputDecoration(
-            hintText: 'Search members by name, phone, email...',
+            hintText: 'Search 360° CRM by name, phone, email...',
             prefixIcon: const Icon(Icons.search_rounded, size: 18),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -973,7 +1293,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
         ),
         const Gap(12),
 
-        Text('Total Members (${filtered.length}):', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        Text('CRM Members Database (${filtered.length}):', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
         const Gap(8),
 
         ListView.separated(
@@ -1037,9 +1357,9 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.manage_accounts_rounded, size: 20, color: ServoraColors.emerald600),
-                    tooltip: 'Toggle Role',
-                    onPressed: () => _handleAdminAction('TOGGLE_USER_ROLE', targetId: u['id']),
+                    icon: const Icon(Icons.remove_red_eye_rounded, size: 20, color: ServoraColors.emerald600),
+                    tooltip: 'Inspect 360° Profile',
+                    onPressed: () => _openCustomer360Drawer(u),
                   ),
                 ],
               ),
@@ -1358,22 +1678,46 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // =========================================================
-  // 9. PRODUCT MODERATION
+  // 9. PRODUCT MODERATION HUB (With Status Sub-Tabs)
   // =========================================================
   Widget _buildProductsView() {
+    final filtered = _products.where((p) {
+      if (_productStatusFilter == 'ALL') return true;
+      return p['status'] == _productStatusFilter;
+    }).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Marketplace Products (${_products.length}):', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        Row(
+          children: ['ALL', 'ACTIVE', 'PENDING_APPROVAL'].map((s) {
+            final isSel = _productStatusFilter == s;
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: ChoiceChip(
+                label: Text(s, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isSel ? Colors.white : null)),
+                selected: isSel,
+                selectedColor: ServoraColors.emerald600,
+                onSelected: (_) => setState(() => _productStatusFilter = s),
+              ),
+            );
+          }).toList(),
+        ),
         const Gap(10),
+
+        Text('Product Moderation Queue (${filtered.length}):', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        const Gap(10),
+
         ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: _products.length,
+          itemCount: filtered.length,
           separatorBuilder: (_, __) => const Gap(8),
           itemBuilder: (context, idx) {
-            final p = _products[idx];
+            final p = filtered[idx];
             final price = p['price'] ?? 0;
+            final status = p['status'] ?? 'ACTIVE';
+
             return ServoraCard(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -1396,6 +1740,17 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                         const Gap(2),
                         Text('GH₵ $price • Store: ${p['provider']?['businessName'] ?? 'Merchant'}', style: const TextStyle(fontSize: 10.5, color: Colors.grey)),
                       ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: status == 'ACTIVE' ? const Color(0xFFD1FAE5) : const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: status == 'ACTIVE' ? const Color(0xFF047857) : const Color(0xFFB45309)),
                     ),
                   ),
                 ],
