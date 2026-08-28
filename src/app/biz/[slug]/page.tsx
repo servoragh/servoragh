@@ -40,7 +40,6 @@ import { formatGHS } from "@/lib/utils";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { ShareDrawerModal } from "@/components/ShareDrawerModal";
 import { QrCodeGeneratorModal } from "@/components/QrCodeGeneratorModal";
-import { DigitalPromoFlyerModal } from "@/components/DigitalPromoFlyerModal";
 
 export default function PublicDigitalStorefrontPage() {
   const params = useParams();
@@ -89,7 +88,6 @@ export default function PublicDigitalStorefrontPage() {
   // Growth Toolkit Modal States
   const [isShareDrawerOpen, setIsShareDrawerOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
-  const [isPromoFlyerOpen, setIsPromoFlyerOpen] = useState(false);
 
   // Custom Quote Modal State
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
@@ -116,7 +114,6 @@ export default function PublicDigitalStorefrontPage() {
           setIsQuoteModalOpen(false);
           setIsShareDrawerOpen(false);
           setIsQrModalOpen(false);
-          setIsPromoFlyerOpen(false);
         }
       }
       if (lightbox.isOpen && lightbox.images.length > 1) {
@@ -237,12 +234,14 @@ export default function PublicDigitalStorefrontPage() {
 
         {/* HERO STOREFRONT BANNER */}
         <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl overflow-hidden shadow-xl">
-          {/* Cover Banner */}
-          <div className="h-48 lg:h-64 w-full bg-gradient-to-r from-emerald-900 to-stone-900 relative">
-            {profile.bannerUrl && (
-              <img src={profile.bannerUrl} alt="Storefront Banner" className="w-full h-full object-cover opacity-80" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-transparent to-transparent opacity-80" />
+          {/* Cover Banner with Premium Default Fallback */}
+          <div className="h-48 lg:h-64 w-full bg-gradient-to-r from-emerald-950 via-stone-900 to-emerald-900 relative">
+            <img
+              src={profile.bannerUrl || "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&auto=format&fit=crop&q=80"}
+              alt="Storefront Banner"
+              className="w-full h-full object-cover opacity-85"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-stone-900/95 via-stone-900/30 to-transparent" />
           </div>
 
           {/* Profile Header Info */}
@@ -259,8 +258,9 @@ export default function PublicDigitalStorefrontPage() {
 
                 <div>
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-full text-xs font-extrabold flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Verified {profile.verificationStatus}
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-bold shadow-sm">
+                      <ShieldCheck className="w-3.5 h-3.5 fill-emerald-500 text-white" />
+                      <span>Verified Business</span>
                     </span>
                     <span className="px-2.5 py-0.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-full text-xs font-bold">
                       {profile.zone}
@@ -303,14 +303,6 @@ export default function PublicDigitalStorefrontPage() {
                   className="inline-flex items-center justify-center gap-1.5 px-3.5 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-extrabold rounded-2xl text-xs transition-all border border-stone-200 dark:border-stone-700"
                 >
                   <QrCode className="w-4 h-4 text-emerald-600" /> QR Code
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsPromoFlyerOpen(true)}
-                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-extrabold rounded-2xl text-xs transition-all border border-stone-200 dark:border-stone-700"
-                >
-                  <ImageIcon className="w-4 h-4 text-emerald-600" /> Promo Flyer
                 </button>
 
                 <button
@@ -1582,19 +1574,6 @@ export default function PublicDigitalStorefrontPage() {
         slug={profile.slug}
         zone={profile.zone}
         verificationStatus={profile.verificationStatus}
-      />
-
-      <DigitalPromoFlyerModal
-        isOpen={isPromoFlyerOpen}
-        onClose={() => setIsPromoFlyerOpen(false)}
-        businessName={profile.businessName}
-        slug={profile.slug}
-        category={profile.businessType}
-        zone={profile.zone}
-        verificationStatus={profile.verificationStatus}
-        ratingAverage={profile.ratingAverage}
-        reviewsCount={profile.reviewsCount}
-        topItems={profile.products?.map((p: any) => ({ title: p.title, price: p.price })) || []}
       />
     </div>
   );
