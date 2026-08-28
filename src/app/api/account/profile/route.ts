@@ -98,9 +98,22 @@ export async function GET(req: Request) {
     let communityPosts: any[] = [];
     let activityLogs: any[] = [];
 
+    const cleanUserPhone = (user.phone || "").trim();
+    const phoneVariants = [
+      cleanUserPhone,
+      cleanUserPhone.replace("+233", "0"),
+      cleanUserPhone.startsWith("0") ? "+233" + cleanUserPhone.slice(1) : null,
+    ].filter(Boolean);
+
     try {
       serviceRequests = await prisma.serviceRequest.findMany({
-        where: { customerId: userId },
+        where: {
+          OR: [
+            { customerId: userId },
+            { customerId: user.id },
+            ...phoneVariants.map((p) => ({ guestPhone: p })),
+          ],
+        },
         include: {
           quotes: {
             include: {
@@ -120,7 +133,12 @@ export async function GET(req: Request) {
 
     try {
       escrowDeals = await prisma.escrowDeal.findMany({
-        where: { customerId: userId },
+        where: {
+          OR: [
+            { customerId: userId },
+            { customerId: user.id },
+          ],
+        },
         include: {
           provider: {
             select: { id: true, name: true, phone: true, avatarUrl: true },
@@ -181,7 +199,13 @@ export async function GET(req: Request) {
 
     try {
       communityPosts = await prisma.communityPost.findMany({
-        where: { authorId: userId },
+        where: {
+          OR: [
+            { authorId: userId },
+            { authorId: user.id },
+            ...phoneVariants.map((p) => ({ guestPhone: p })),
+          ],
+        },
         include: {
           comments: true,
           upvotes: true,
