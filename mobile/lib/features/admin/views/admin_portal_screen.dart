@@ -82,7 +82,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     try {
       final token = await authNotifier.storage.getToken();
       final res = await _dio.get(
-        '/api/admin/stats',
+        '/admin/stats',
         options: Options(
           headers: token != null ? {'Authorization': 'Bearer $token'} : {},
         ),
@@ -106,7 +106,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Connected to offline cache mode (${e.toString()})';
+          _errorMessage = 'Could not sync live stats (${e.toString()})';
           _isLoading = false;
         });
       }
@@ -117,7 +117,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     try {
       final token = await authNotifier.storage.getToken();
       final res = await _dio.post(
-        '/api/admin/manage',
+        '/admin/manage',
         data: {
           'action': action,
           'targetId': targetId,
