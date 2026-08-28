@@ -46,6 +46,8 @@ class _HomeScreenState extends State<HomeScreen> {
       'price': 2400.0,
       'originalPrice': 3000.0,
       'seller': 'Kwame Electrical',
+      'sellerSlug': 'kwame-electrical-tamale',
+      'providerSlug': 'kwame-electrical-tamale',
       'location': 'Sakasaka, Tamale',
       'phone': '+233244889900',
       'image': 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80',
@@ -62,6 +64,8 @@ class _HomeScreenState extends State<HomeScreen> {
       'price': 850.0,
       'originalPrice': 1000.0,
       'seller': 'Northern Authentic Fugu',
+      'sellerSlug': 'northern-grace-fugu-tamale',
+      'providerSlug': 'northern-grace-fugu-tamale',
       'location': 'Nyohini, Tamale',
       'phone': '+233501234567',
       'image': 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80',
@@ -77,6 +81,8 @@ class _HomeScreenState extends State<HomeScreen> {
       'price': 1200.0,
       'originalPrice': 1500.0,
       'seller': 'Salifu Hardware',
+      'sellerSlug': 'fuseini-phone-repair-sakasaka',
+      'providerSlug': 'fuseini-phone-repair-sakasaka',
       'location': 'Choggu, Tamale',
       'phone': '+233201122334',
       'image': 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&q=80',
@@ -92,6 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
       'price': 4600.0,
       'originalPrice': 5200.0,
       'seller': 'Tamale Tech Hub',
+      'sellerSlug': 'savannah-fresh-farms',
+      'providerSlug': 'savannah-fresh-farms',
       'location': 'Central Market',
       'phone': '+233240000000',
       'image': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&q=80',
@@ -218,6 +226,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 originalPriceNum = double.tryParse(p['originalPrice'].toString());
               }
 
+              final providerSlug = provider['slug'] ?? p['providerSlug'] ?? p['sellerSlug'] ?? 'savannah-fresh-farms';
+
               return {
                 'id': p['id'] ?? 'prod',
                 'title': p['title'] ?? 'Marketplace Item',
@@ -226,6 +236,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 'originalPrice': originalPriceNum,
                 'description': p['description'] ?? 'No detailed description provided by seller.',
                 'seller': provider['businessName'] ?? 'Verified Enterprise',
+                'sellerSlug': providerSlug,
+                'providerSlug': providerSlug,
                 'location': provider['serviceArea'] ?? 'Tamale',
                 'phone': provider['user']?['phone'] ?? '+233240000000',
                 'image': mainImage,

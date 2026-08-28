@@ -117,19 +117,19 @@ class MarketplaceApiService {
     return false;
   }
 
-  /// Fetch public provider storefront data by slug (/api/public/provider/:slug)
+  /// Fetch public provider storefront data by slug (/api/biz/:slug)
   static Future<Map<String, dynamic>?> fetchPublicProviderBySlug(String slug) async {
-    try {
-      final response = await _dio.get('/public/provider/$slug');
-      if (response.statusCode == 200 && response.data != null && response.data is Map) {
-        return Map<String, dynamic>.from(response.data as Map);
-      }
-    } catch (_) {}
-
     try {
       final response = await _dio.get('/biz/$slug');
       if (response.statusCode == 200 && response.data != null && response.data['profile'] != null) {
         return Map<String, dynamic>.from(response.data['profile'] as Map);
+      }
+    } catch (_) {}
+
+    try {
+      final response = await _dio.get('/public/provider/$slug');
+      if (response.statusCode == 200 && response.data != null && response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
       }
     } catch (_) {}
 

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../core/services/marketplace_api_service.dart';
 import '../../../core/utils/whatsapp_helper.dart';
@@ -52,23 +55,25 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
       'businessName': name,
       'artisanName': 'Eng. Rashid Mohammed',
       'experienceYears': 1,
-      'category': 'Solar & Heavy Power Solutions',
-      'verificationTier': 'TIER_3_REGISTERED_ENTERPRISE',
+      'tagline': 'Verified Northern Ghana Enterprise',
+      'category': 'Verified Enterprise',
+      'verificationStatus': 'TIER_2_VERIFIED_ARTISAN',
+      'verificationTier': 'TIER_2_VERIFIED_ARTISAN',
       'isVerified': true,
       'logoUrl': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
       'bannerUrl': 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&auto=format&fit=crop&q=80',
+      'storefrontPhotoUrl': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&q=80',
+      'addressDetails': 'Tamale Central Market, Shed #12',
+      'landmark': 'Near Main Commercial Road',
+      'latitude': 9.4074,
+      'longitude': -0.8416,
       'trustScore': 100,
       'ratingAverage': 5.0,
-      'reviewsCount': 36,
-      'completedJobsCount': 85,
-      'hourlyRate': 'GH₵ 100.00/hr',
-      'startingPrice': 'GH₵ 250.00',
-      'responseSpeed': '< 15 minutes',
-      'coverageZones': ['Tamale, Bolgatanga, Wa, Yendi, All Northern Region'],
+      'reviewsCount': 24,
       'phone': '+233240000000',
       'whatsappNumber': '+233240000000',
-      'zone': 'Tamale, Bolgatanga, Wa, Yendi, All Northern Region',
-      'aboutText': "Northern Ghana's leading distributor of high-efficiency solar panels, lithium wall batteries, pure sine wave inverters, and heavy water pump generators.",
+      'zone': 'Tamale Central',
+      'description': "Northern Ghana's verified distributor and service provider offering high quality products, heavy tool rentals, and professional artisan services.",
       'catalogs': {
         'products': [
           {
@@ -76,9 +81,9 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
             'title': '300W Monocrystalline Heavy Duty Solar Panel Kit',
             'price': 1800.0,
             'originalPrice': 2000.0,
-            'category': 'Solar & Power',
+            'category': 'Solar & Tech',
             'discountPercent': 10,
-            'location': 'Lamashegu, Tamale',
+            'location': 'Sakasaka, Tamale',
             'images': ['https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80'],
           },
           {
@@ -136,13 +141,13 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
   }
 
   void _shareStorefront(String name, String slug) {
+    final url = 'https://servora.vercel.app/biz/$slug';
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        final url = 'https://servora.vercel.app/biz/$slug';
         return Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -153,8 +158,17 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
               const Text('Share Storefront', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const Gap(16),
               ListTile(
+                leading: const Icon(Icons.share_rounded, color: ServoraColors.emerald600),
+                title: const Text('Share via Apps...'),
+                subtitle: const Text('Send link to WhatsApp, Telegram, or Messages'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Share.share('Check out $name on Servora: $url');
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.copy_rounded, color: ServoraColors.emerald600),
-                title: const Text('Copy Link'),
+                title: const Text('Copy Direct Link'),
                 subtitle: Text(url, style: const TextStyle(fontSize: 11)),
                 onTap: () {
                   Clipboard.setData(ClipboardData(text: url));
@@ -172,7 +186,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
               ListTile(
                 leading: const Icon(Icons.qr_code_2_rounded, color: Colors.amber),
                 title: const Text('📱 Digital QR Business Card'),
-                subtitle: const Text('Show QR code for instant customer scanning'),
+                subtitle: const Text('Display QR code for instant scanning'),
                 onTap: () {
                   Navigator.pop(context);
                   _showQrDialog(name, url);
@@ -190,24 +204,30 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Center(child: Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+        title: Center(child: Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 180,
-              height: 180,
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: ServoraColors.emerald600, width: 2),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 4)),
+                ],
               ),
-              child: const Center(
-                child: Icon(Icons.qr_code_2_rounded, size: 140, color: Color(0xFF18181B)),
+              child: QrImageView(
+                data: url,
+                version: QrVersions.auto,
+                size: 190.0,
+                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF0F172A)),
+                dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF0F172A)),
               ),
             ),
-            const Gap(12),
-            const Text('Scan to open Storefront on Servora', style: TextStyle(fontSize: 11, color: Colors.grey)),
+            const Gap(14),
+            const Text('Scan to open verified Storefront on Servora.gh', style: TextStyle(fontSize: 11, color: Colors.grey), textAlign: TextAlign.center),
           ],
         ),
         actions: [
@@ -218,6 +238,214 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
         ],
       ),
     );
+  }
+
+  void _showPromoFlyerDialog(String name, String tagline, String phone, String zone, String? logoUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF059669)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Image.asset('assets/images/logo.png', height: 26, fit: BoxFit.contain),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(10)),
+                    child: const Text('⭐ VERIFIED MERCHANT', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black)),
+                  ),
+                ],
+              ),
+              const Gap(20),
+              if (logoUrl != null && logoUrl.isNotEmpty)
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: ClipOval(
+                    child: Image.network(logoUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.storefront_rounded, color: ServoraColors.emerald600, size: 32)),
+                  ),
+                ),
+              const Gap(10),
+              Text(
+                name,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+              if (tagline.isNotEmpty) ...[
+                const Gap(4),
+                Text(tagline, style: const TextStyle(fontSize: 11, color: Colors.white70), textAlign: TextAlign.center),
+              ],
+              const Gap(16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_rounded, size: 14, color: Colors.amber),
+                        const Gap(6),
+                        Expanded(child: Text(zone, style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                    const Gap(6),
+                    Row(
+                      children: [
+                        const Icon(Icons.phone_rounded, size: 14, color: Colors.amber),
+                        const Gap(6),
+                        Expanded(child: Text(phone, style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF064E3B),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close Flyer', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPriceEstimateDialog(String name, String phone) {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
+              const Gap(14),
+              Text('Request Price Estimate from $name', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              const Gap(14),
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Your Name',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ),
+              ),
+              const Gap(10),
+              TextField(
+                controller: phoneCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: 'Your Phone / WhatsApp Number',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ),
+              ),
+              const Gap(10),
+              TextField(
+                controller: notesCtrl,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: 'Service or Product Details Needed...',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.all(14),
+                ),
+              ),
+              const Gap(16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ServoraColors.emerald600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.send_rounded, size: 16),
+                  label: const Text('Send Quote via WhatsApp', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onPressed: () {
+                    final msg = "Hello $name, I want to request a price estimate from your Servora Storefront.\n"
+                        "Name: ${nameCtrl.text.trim()}\n"
+                        "Contact: ${phoneCtrl.text.trim()}\n"
+                        "Details: ${notesCtrl.text.trim()}";
+                    Navigator.pop(context);
+                    WhatsAppHelper.openWhatsApp(phone: phone, message: msg);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _openGoogleMaps(dynamic latRaw, dynamic lngRaw, String address) async {
+    final double? lat = latRaw != null ? double.tryParse(latRaw.toString()) : null;
+    final double? lng = lngRaw != null ? double.tryParse(lngRaw.toString()) : null;
+
+    final Uri url;
+    if (lat != null && lng != null) {
+      url = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+    } else {
+      url = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('$address Ghana')}');
+    }
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _makePhoneCall(String phone) async {
+    final uri = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
   }
 
   @override
@@ -233,14 +461,17 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
 
     final data = _storeData ?? {};
     final String name = data['businessName'] ?? 'Verified Merchant Profile';
-    final String artisanName = data['artisanName'] ?? data['user']?['name'] ?? name;
-    final int experienceYears = int.tryParse((data['experienceYears'] ?? 1).toString()) ?? 1;
+    final String tagline = data['tagline'] ?? '';
+    final String verificationStatus = data['verificationStatus'] ?? data['verificationTier'] ?? 'TIER_2_VERIFIED_ARTISAN';
     final String phone = data['phone'] ?? data['user']?['phone'] ?? '+233240000000';
     final String whatsapp = data['whatsappNumber'] ?? phone;
-    final String coverage = data['zone'] ?? 'Tamale, Northern Ghana';
-    final double rating = double.tryParse((data['ratingAverage'] ?? data['rating'] ?? 5.0).toString()) ?? 5.0;
-    final int reviewsCount = int.tryParse((data['reviewsCount'] ?? data['reviewCount'] ?? 0).toString()) ?? 0;
-    final String aboutText = data['aboutText'] ?? data['bio'] ?? data['description'] ?? "Verified business offering high quality products, equipment rentals, and artisan services in Northern Ghana.";
+    final String zone = data['zone'] ?? data['addressDetails'] ?? 'Tamale, Northern Ghana';
+    final String addressDetails = data['addressDetails'] ?? zone;
+    final String landmark = data['landmark'] ?? '';
+    final dynamic latitude = data['latitude'];
+    final dynamic longitude = data['longitude'];
+
+    final String description = data['description'] ?? data['aboutText'] ?? data['bio'] ?? "Verified business offering high quality products, equipment rentals, and artisan services in Northern Ghana.";
 
     final Map<String, dynamic> catalogs = data['catalogs'] ?? {};
     final List productsList = catalogs['products'] ?? (data['products'] is List ? data['products'] : []);
@@ -248,7 +479,8 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
     final List servicesList = catalogs['services'] ?? (data['services'] is List ? data['services'] : []);
 
     final String logoUrl = data['logoUrl'] ?? data['user']?['avatarUrl'] ?? '';
-    final String bannerUrl = data['bannerUrl'] ?? data['storefrontPhotoUrl'] ?? '';
+    final String bannerUrl = data['bannerUrl'] ?? '';
+    final String storefrontPhotoUrl = data['storefrontPhotoUrl'] ?? '';
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
@@ -257,25 +489,25 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Storefront', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        title: Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           ServoraFavoriteButton(businessId: widget.slug, businessName: name),
           IconButton(
             icon: const Icon(Icons.share_rounded, size: 20),
             onPressed: () => _shareStorefront(name, widget.slug),
           ),
-          const Gap(8),
+          const Gap(6),
         ],
       ),
       body: CustomScrollView(
         slivers: [
-          // Optional Storefront Banner Image
+          // 1. Top Cover Banner Image
           if (bannerUrl.isNotEmpty)
             SliverToBoxAdapter(
               child: GestureDetector(
                 onTap: () => ServoraImageLightbox.show(context, title: name, images: [bannerUrl]),
                 child: SizedBox(
-                  height: 140,
+                  height: 150,
                   width: double.infinity,
                   child: Image.network(
                     bannerUrl,
@@ -286,7 +518,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
               ),
             ),
 
-          // Section A: Main Provider Identity Header Card
+          // 2. Identity Header Card (Logo, Name, Tagline, Badges & Action Buttons)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -294,10 +526,8 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: isDark ? ServoraColors.darkSurface : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder,
-                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
@@ -309,24 +539,25 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Top Avatar & Title Stack
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Avatar / Profile Logo Image
+                        // Avatar / Profile Logo Image (Tap to open high-res zoom lightbox)
                         GestureDetector(
                           onTap: logoUrl.isNotEmpty
                               ? () => ServoraImageLightbox.show(context, title: name, images: [logoUrl])
                               : null,
                           child: Container(
-                            width: 68,
-                            height: 68,
+                            width: 72,
+                            height: 72,
                             decoration: BoxDecoration(
                               color: ServoraColors.emerald600.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(18),
                               border: Border.all(color: ServoraColors.emerald600.withOpacity(0.3), width: 1.5),
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
+                              borderRadius: BorderRadius.circular(17),
                               child: logoUrl.isNotEmpty
                                   ? Image.network(
                                       logoUrl,
@@ -347,114 +578,334 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                             ),
                           ),
                         ),
-                        const Gap(12),
+                        const Gap(14),
 
-                        // Title & Badges
+                        // Title, Badges & Zone
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
                                 children: [
-                                  Expanded(
-                                    child: Text(
-                                      name,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w900,
-                                        color: isDark ? Colors.white : const Color(0xFF18181B),
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const Gap(6),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFEF3C7),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text('🛡️', style: TextStyle(fontSize: 10)),
-                                        Gap(3),
-                                        Text('Verified', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFD97706))),
+                                        const Text('🛡️', style: TextStyle(fontSize: 10)),
+                                        const Gap(3),
+                                        Text(
+                                          'Verified $verificationStatus',
+                                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFFD97706)),
+                                        ),
                                       ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      zone,
+                                      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.grey[700]),
                                     ),
                                   ),
                                 ],
                               ),
-                              const Gap(4),
-                              Text(
-                                'Artisan: $artisanName • $experienceYears yrs exp',
-                                style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.grey[700], fontWeight: FontWeight.w500),
-                              ),
                               const Gap(6),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 4,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.location_on_rounded, size: 12, color: ServoraColors.emerald600),
-                                      const Gap(3),
-                                      Text(coverage, style: TextStyle(fontSize: 10, color: isDark ? Colors.white70 : Colors.grey[800], fontWeight: FontWeight.w600)),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.star_rounded, size: 13, color: Colors.amber),
-                                      const Gap(2),
-                                      Text(
-                                        rating > 0 ? '$rating ($reviewsCount reviews)' : 'New Merchant',
-                                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                              Text(
+                                name,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? Colors.white : const Color(0xFF18181B),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
+                              if (tagline.isNotEmpty) ...[
+                                const Gap(3),
+                                Text(
+                                  tagline,
+                                  style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.grey[700], fontWeight: FontWeight.w500),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ],
                           ),
                         ),
                       ],
                     ),
-                    if (aboutText.isNotEmpty) ...[
-                      const Gap(12),
-                      Text(
-                        aboutText,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          height: 1.4,
-                          color: isDark ? Colors.white70 : Colors.grey[800],
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
                     const Gap(14),
 
-                    // WhatsApp Instant Action Button
+                    // Primary Action CTAs Row (WhatsApp, Call, QR Code, Flyer, Quote)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF25D366),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.chat_bubble_rounded, size: 14),
+                          label: const Text('WhatsApp', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                          onPressed: () => WhatsAppHelper.openWhatsApp(
+                            phone: whatsapp,
+                            message: "Hello $name, I am contacting you via your Servora storefront.",
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.phone_rounded, size: 14),
+                          label: const Text('Call', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                          onPressed: () => _makePhoneCall(phone),
+                        ),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.qr_code_2_rounded, size: 15, color: ServoraColors.emerald600),
+                          label: const Text('QR Code', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () => _showQrDialog(name, 'https://servora.vercel.app/biz/${widget.slug}'),
+                        ),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.image_rounded, size: 15, color: ServoraColors.emerald600),
+                          label: const Text('Promo Flyer', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () => _showPromoFlyerDialog(name, tagline, phone, zone, logoUrl),
+                        ),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.request_quote_rounded, size: 15, color: Color(0xFFD97706)),
+                          label: const Text('Get Price Estimate', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () => _showPriceEstimateDialog(name, whatsapp),
+                        ),
+                      ],
+                    ),
+
+                    if (description.isNotEmpty) ...[
+                      const Gap(14),
+                      const Divider(height: 1),
+                      const Gap(12),
+                      Text(
+                        description,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          height: 1.5,
+                          color: isDark ? Colors.white70 : Colors.grey[800],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // 3. Physical Storefront & Workshop Photo Showcase (Exactly like Web)
+          if (storefrontPhotoUrl.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? ServoraColors.darkSurface : Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.storefront_rounded, size: 16, color: ServoraColors.emerald600),
+                              Gap(6),
+                              Text(
+                                'PHYSICAL STOREFRONT & WORKSHOP PHOTO',
+                                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: ServoraColors.emerald600.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'Verified Location',
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Gap(12),
+                      GestureDetector(
+                        onTap: () => ServoraImageLightbox.show(context, title: '$name Storefront', images: [storefrontPhotoUrl]),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: SizedBox(
+                                height: 180,
+                                width: double.infinity,
+                                child: Image.network(
+                                  storefrontPhotoUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.storefront_rounded, size: 48, color: Colors.grey)),
+                                ),
+                              ),
+                            ),
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [Colors.transparent, Colors.black.withOpacity(0.75)],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              left: 12,
+                              bottom: 12,
+                              right: 90,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.location_on_rounded, size: 12, color: ServoraColors.emerald500),
+                                      const Gap(3),
+                                      Expanded(
+                                        child: Text(
+                                          addressDetails,
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (landmark.isNotEmpty) ...[
+                                    const Gap(2),
+                                    Text('Landmark: $landmark', style: const TextStyle(fontSize: 9.5, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            Positioned(
+                              right: 12,
+                              bottom: 12,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.zoom_in_rounded, size: 13, color: Colors.black),
+                                    Gap(3),
+                                    Text('Full Photo', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // 4. Location & Live Google Maps Directions Section (Exactly like Web)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? ServoraColors.darkSurface : Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: ServoraColors.emerald600.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(Icons.location_on_rounded, color: ServoraColors.emerald600, size: 20),
+                        ),
+                        const Gap(12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(addressDetails, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                              if (landmark.isNotEmpty) ...[
+                                const Gap(2),
+                                Text('Landmark: $landmark', style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.grey[700])),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(14),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF25D366),
+                          backgroundColor: ServoraColors.emerald600,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 11),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           elevation: 0,
                         ),
-                        icon: const Icon(Icons.chat_bubble_rounded, size: 16),
-                        label: const Text('Chat / Order on WhatsApp', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
-                        onPressed: () => WhatsAppHelper.openWhatsApp(
-                          phone: whatsapp,
-                          message: "Hello $name, I found your verified profile on Servora and would like to make an inquiry.",
-                        ),
+                        icon: const Icon(Icons.navigation_rounded, size: 16),
+                        label: const Text('Open in Google Maps (Live Directions) 🚗', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                        onPressed: () => _openGoogleMaps(latitude, longitude, addressDetails),
                       ),
                     ),
                   ],
@@ -463,7 +914,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
             ),
           ),
 
-          // Section B: 3-Tab Segment Selector (Products, Tool Rentals, Services Portfolio)
+          // 5. 3-Tab Segment Selector (Products, Equipment Rentals, Services Offered)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -477,15 +928,15 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                 child: Row(
                   children: [
                     _buildSegmentTab(0, 'Products', productsList.length, isDark),
-                    _buildSegmentTab(1, 'Rentals', rentalsList.length, isDark),
-                    _buildSegmentTab(2, 'Services', servicesList.length, isDark),
+                    _buildSegmentTab(1, 'Equipment Rentals', rentalsList.length, isDark),
+                    _buildSegmentTab(2, 'Services Offered', servicesList.length, isDark),
                   ],
                 ),
               ),
             ),
           ),
 
-          // Section C: Active Tab Content
+          // 6. Tab Content Area
           if (_activeTabIndex == 0) ...[
             // PRODUCTS TAB
             if (productsList.isEmpty)
@@ -501,7 +952,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                 sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.62,
+                    childAspectRatio: 0.60,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -514,10 +965,15 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                           ? pImages[activeIdx.clamp(0, pImages.length - 1)]
                           : 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80';
 
+                      final double price = (p['price'] is num) ? (p['price'] as num).toDouble() : (double.tryParse(p['price']?.toString() ?? '0') ?? 0.0);
+                      final double? originalPrice = (p['originalPrice'] != null) ? double.tryParse(p['originalPrice'].toString()) : null;
+                      final hasDiscount = originalPrice != null && originalPrice > price;
+                      final discountPct = hasDiscount ? (((originalPrice - price) / originalPrice) * 100).round() : 0;
+
                       return Container(
                         decoration: BoxDecoration(
                           color: isDark ? ServoraColors.darkSurface : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
                           boxShadow: [
                             BoxShadow(
@@ -541,9 +997,9 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                               child: Stack(
                                 children: [
                                   ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                                     child: AspectRatio(
-                                      aspectRatio: 1.2,
+                                      aspectRatio: 1.15,
                                       child: Image.network(
                                         currentImg,
                                         fit: BoxFit.cover,
@@ -554,8 +1010,21 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                                       ),
                                     ),
                                   ),
+                                  if (hasDiscount)
+                                    Positioned(
+                                      top: 6,
+                                      left: 6,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.redAccent,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text('$discountPct% OFF', style: const TextStyle(fontSize: 8.5, color: Colors.white, fontWeight: FontWeight.w900)),
+                                      ),
+                                    ),
                                   Positioned(
-                                    top: 6,
+                                    bottom: 6,
                                     right: 6,
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -563,14 +1032,17 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                                         color: Colors.black.withOpacity(0.7),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Text('🔍 Zoom', style: TextStyle(fontSize: 8.5, color: Colors.white, fontWeight: FontWeight.bold)),
+                                      child: Text(
+                                        pImages.length > 1 ? '📸 ${pImages.length} Photos' : '🔍 Zoom',
+                                        style: const TextStyle(fontSize: 8.5, color: Colors.white, fontWeight: FontWeight.bold),
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
 
-                            // Multi-Image Mini Thumbnails
+                            // Multi-Image Mini Thumbnails Strip
                             if (pImages.length > 1)
                               Container(
                                 height: 28,
@@ -615,9 +1087,24 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const Gap(4),
-                                  Text(
-                                    'GH₵ ${p['price']}',
-                                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'GH₵ ${price.toStringAsFixed(0)}',
+                                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
+                                      ),
+                                      if (hasDiscount) ...[
+                                        const Gap(4),
+                                        Text(
+                                          'GH₵ ${originalPrice.toStringAsFixed(0)}',
+                                          style: TextStyle(
+                                            fontSize: 9.5,
+                                            decoration: TextDecoration.lineThrough,
+                                            color: isDark ? Colors.white38 : Colors.grey[500],
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                   const Gap(6),
                                   SizedBox(
@@ -632,7 +1119,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                                       ),
                                       onPressed: () => WhatsAppHelper.openWhatsApp(
                                         phone: whatsapp,
-                                        message: "Hello $name, I want to inquire about '${p['title']}' listed on Servora.",
+                                        message: "Hello $name, I want to buy '${p['title']}' listed on your Servora storefront.",
                                       ),
                                       child: const Text('Buy on WhatsApp', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                                     ),
@@ -649,7 +1136,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                 ),
               ),
           ] else if (_activeTabIndex == 1) ...[
-            // TOOL & EQUIPMENT RENTALS TAB
+            // EQUIPMENT RENTALS TAB
             if (rentalsList.isEmpty)
               const SliverToBoxAdapter(
                 child: Padding(
@@ -673,13 +1160,12 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
                           color: isDark ? ServoraColors.darkSurface : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Equipment Photo Banner
                             GestureDetector(
                               onTap: () => ServoraImageLightbox.show(
                                 context,
@@ -689,7 +1175,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                               child: Stack(
                                 children: [
                                   ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                                     child: SizedBox(
                                       height: 140,
                                       width: double.infinity,
@@ -712,12 +1198,15 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                                         color: Colors.black.withOpacity(0.7),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Row(
+                                      child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(Icons.zoom_in_rounded, size: 12, color: Colors.white),
-                                          Gap(3),
-                                          Text('Full View', style: TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold)),
+                                          const Icon(Icons.zoom_in_rounded, size: 12, color: Colors.white),
+                                          const Gap(3),
+                                          Text(
+                                            rImages.length > 1 ? '📸 ${rImages.length} Photos' : 'Full Photo',
+                                            style: const TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -763,7 +1252,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                                         label: const Text('Rent on WhatsApp', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                                         onPressed: () => WhatsAppHelper.openWhatsApp(
                                           phone: whatsapp,
-                                          message: "Hello $name, I want to rent '${r['title']}' listed on Servora.",
+                                          message: "Hello $name, I want to rent '${r['title']}' listed on your Servora storefront.",
                                         ),
                                       ),
                                     ],
@@ -780,7 +1269,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                 ),
               ),
           ] else ...[
-            // SERVICES PORTFOLIO TAB
+            // SERVICES OFFERED TAB
             if (servicesList.isEmpty)
               const SliverToBoxAdapter(
                 child: Padding(
@@ -802,7 +1291,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
                           color: isDark ? ServoraColors.darkSurface : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
                         ),
                         child: Column(
@@ -818,7 +1307,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                                 child: Stack(
                                   children: [
                                     ClipRRect(
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                                       child: SizedBox(
                                         height: 140,
                                         width: double.infinity,
@@ -829,22 +1318,21 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                                         ),
                                       ),
                                     ),
-                                    if (sPhotos.length > 1)
-                                      Positioned(
-                                        bottom: 8,
-                                        right: 8,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(0.75),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            '👁️ ${sPhotos.length} Work Photos',
-                                            style: const TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold),
-                                          ),
+                                    Positioned(
+                                      bottom: 8,
+                                      right: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.75),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          '📸 ${sPhotos.length} Work Photos',
+                                          style: const TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold),
                                         ),
                                       ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -924,10 +1412,12 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
             child: Text(
               '$label ($count)',
               style: TextStyle(
-                fontSize: 11.5,
+                fontSize: 10.5,
                 fontWeight: FontWeight.bold,
                 color: isSel ? Colors.white : (isDark ? Colors.white60 : Colors.grey[700]),
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),

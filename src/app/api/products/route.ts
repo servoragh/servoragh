@@ -94,6 +94,8 @@ export async function GET(request: Request) {
             name: true,
             phone: true,
             avatarUrl: true,
+            businessProfile: { select: { slug: true, businessName: true, logoUrl: true, zone: true } },
+            providerProfile: { select: { slug: true, businessName: true, logoUrl: true, serviceArea: true } },
           },
         },
         business: {
@@ -119,6 +121,31 @@ export async function GET(request: Request) {
         ? JSON.parse(item.images || "[]")
         : [];
 
+      const providerSlug =
+        item.business?.slug ||
+        item.seller?.businessProfile?.slug ||
+        item.seller?.providerProfile?.slug ||
+        "savannah-fresh-farms";
+
+      const providerName =
+        item.business?.businessName ||
+        item.seller?.businessProfile?.businessName ||
+        item.seller?.providerProfile?.businessName ||
+        item.seller?.name ||
+        "Verified Enterprise";
+
+      const providerLogo =
+        item.business?.logoUrl ||
+        item.seller?.businessProfile?.logoUrl ||
+        item.seller?.avatarUrl ||
+        null;
+
+      const providerArea =
+        item.area ||
+        item.business?.zone ||
+        item.seller?.businessProfile?.zone ||
+        "Tamale";
+
       return {
         id: item.id,
         title: item.title,
@@ -133,14 +160,14 @@ export async function GET(request: Request) {
         createdAt: item.createdAt,
         provider: {
           id: item.business?.id || item.sellerId || "business",
-          businessName: item.business?.businessName || item.seller?.name || "Verified Enterprise",
-          slug: item.business?.slug || "biz",
-          logoUrl: item.business?.logoUrl || item.seller?.avatarUrl || null,
-          serviceArea: item.area || item.business?.zone || "Tamale",
+          businessName: providerName,
+          slug: providerSlug,
+          logoUrl: providerLogo,
+          serviceArea: providerArea,
           ratingAverage: item.business?.ratingAverage || 5.0,
           verificationStatus: item.business?.verificationStatus || "TIER_1_BASIC",
           user: {
-            name: item.seller?.name || item.business?.businessName || "Artisan Merchant",
+            name: item.seller?.name || providerName,
             phone: item.seller?.phone || "",
             avatarUrl: item.seller?.avatarUrl || null,
           },

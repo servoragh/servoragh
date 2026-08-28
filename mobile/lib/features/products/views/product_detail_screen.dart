@@ -74,6 +74,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final discountPct = hasDiscount ? (((originalPrice - price) / originalPrice) * 100).round() : 0;
 
     final seller = widget.product['seller'] ?? 'Verified Enterprise';
+    final providerSlug = widget.product['providerSlug'] ?? widget.product['sellerSlug'] ?? widget.product['provider']?['slug'] ?? 'savannah-fresh-farms';
     final location = widget.product['location'] ?? 'Sakasaka, Tamale';
     final phone = widget.product['phone'] ?? '+233240000000';
     final description = widget.product['description'] ??
@@ -268,41 +269,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const Divider(height: 32),
 
-                      // Merchant / Seller Card
-                      ServoraCard(
-                        padding: const EdgeInsets.all(14),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 22,
-                              backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
-                              child: Text(
-                                seller[0],
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                      // Merchant / Seller Card (Tap to open full verified digital storefront)
+                      GestureDetector(
+                        onTap: () => context.push('/biz/$providerSlug'),
+                        child: ServoraCard(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 22,
+                                backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
+                                child: Text(
+                                  seller.isNotEmpty ? seller[0].toUpperCase() : 'S',
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                                ),
                               ),
-                            ),
-                            const Gap(12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    seller,
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                  ),
-                                  const Gap(2),
-                                  Text(
-                                    '📍 $location • Verified Ghana Card',
-                                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                                  ),
-                                ],
+                              const Gap(12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      seller,
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                    ),
+                                    const Gap(2),
+                                    Text(
+                                      '📍 $location • Verified Storefront',
+                                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            TextButton(
-                              onPressed: () => context.push('/biz/kwame-electrical-tamale'),
-                              child: const Text('Store ➔', style: TextStyle(color: ServoraColors.emerald600, fontWeight: FontWeight.bold, fontSize: 12)),
-                            ),
-                          ],
+                              TextButton(
+                                onPressed: () => context.push('/biz/$providerSlug'),
+                                child: const Text('Store ➔', style: TextStyle(color: ServoraColors.emerald600, fontWeight: FontWeight.bold, fontSize: 12)),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const Gap(24),

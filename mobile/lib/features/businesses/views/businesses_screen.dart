@@ -136,7 +136,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
                 'pricingFixedStart': m['pricingFixedStart'],
                 'bio': m['bio'] ?? m['description'] ?? 'Certified local business and service specialist in Northern Ghana.',
                 'phone': user['phone'] ?? m['phone'] ?? '+233240000000',
-                'slug': m['slug'] ?? 'kwame-electrical-tamale',
+                'slug': m['slug'] ?? m['id']?.toString() ?? 'savannah-fresh-farms',
                 'trustScore': m['verificationStatus'] == 'VERIFIED' ? 100 : 99,
                 'badges': badgesList,
               };

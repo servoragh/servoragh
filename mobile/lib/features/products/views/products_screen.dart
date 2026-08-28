@@ -41,6 +41,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
       'originalPrice': 3000.0,
       'location': 'Sakasaka, Tamale',
       'seller': 'Kwame Electrical',
+      'sellerSlug': 'kwame-electrical-tamale',
+      'providerSlug': 'kwame-electrical-tamale',
       'rating': 4.9,
       'phone': '+233244889900',
       'escrow': true,
@@ -56,6 +58,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
       'originalPrice': 1000.0,
       'location': 'Nyohini, Tamale',
       'seller': 'Northern Authentic Fugu',
+      'sellerSlug': 'northern-grace-fugu-tamale',
+      'providerSlug': 'northern-grace-fugu-tamale',
       'rating': 5.0,
       'phone': '+233501234567',
       'escrow': true,
@@ -71,6 +75,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
       'originalPrice': 1500.0,
       'location': 'Choggu, Tamale',
       'seller': 'Salifu Hardware',
+      'sellerSlug': 'fuseini-phone-repair-sakasaka',
+      'providerSlug': 'fuseini-phone-repair-sakasaka',
       'rating': 4.8,
       'phone': '+233201122334',
       'escrow': true,
@@ -86,6 +92,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
       'originalPrice': 400.0,
       'location': 'Bolgatanga Central',
       'seller': 'Upper East Farmers Guild',
+      'sellerSlug': 'savannah-fresh-farms',
+      'providerSlug': 'savannah-fresh-farms',
       'rating': 4.7,
       'phone': '+233240000000',
       'escrow': true,
@@ -139,6 +147,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
             originalPriceNum = double.tryParse(p['originalPrice'].toString());
           }
 
+          final providerSlug = provider['slug'] ?? p['providerSlug'] ?? p['sellerSlug'] ?? 'savannah-fresh-farms';
+
           return {
             'id': p['id'] ?? 'prod',
             'title': p['title'] ?? 'Product',
@@ -148,6 +158,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
             'description': p['description'] ?? 'No detailed description provided by seller.',
             'location': provider['serviceArea'] ?? 'Tamale',
             'seller': provider['businessName'] ?? 'Verified Seller',
+            'sellerSlug': providerSlug,
+            'providerSlug': providerSlug,
             'rating': 5.0,
             'phone': provider['user']?['phone'] ?? '+233240000000',
             'escrow': true,
