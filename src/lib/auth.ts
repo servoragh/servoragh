@@ -47,6 +47,33 @@ export async function getSession(req?: Request): Promise<SessionUser | null> {
         const user = verifyToken(token);
         if (user) return user;
       }
+
+      // Mobile / Header fallback resolution
+      const phoneHeader = req.headers.get("x-user-phone") || req.headers.get("x-phone");
+      const idHeader = req.headers.get("x-user-id") || req.headers.get("x-id");
+      if (phoneHeader || idHeader) {
+        const dbUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { id: idHeader || undefined },
+              { phone: phoneHeader || undefined },
+              { phone: phoneHeader ? phoneHeader.replace("+233", "0") : undefined },
+              { phone: phoneHeader ? "+233" + phoneHeader.replace(/^0/, "") : undefined },
+            ].filter(Boolean),
+          },
+        });
+        if (dbUser) {
+          return {
+            id: dbUser.id,
+            name: dbUser.name,
+            phone: dbUser.phone,
+            email: dbUser.email,
+            role: dbUser.role as any,
+            avatarUrl: dbUser.avatarUrl,
+            isPhoneVerified: dbUser.isPhoneVerified,
+          };
+        }
+      }
     }
     const cookieStore = await cookies();
     const token = cookieStore.get(TOKEN_NAME)?.value;

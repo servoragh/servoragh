@@ -70,6 +70,7 @@ import { AdminSecurityHub } from "@/components/AdminSecurityHub";
 import { AdminPromosHub } from "@/components/AdminPromosHub";
 import { AdminReviewsHub } from "@/components/AdminReviewsHub";
 import { AdminApiGatewaysHub } from "@/components/AdminApiGatewaysHub";
+import { AdminRequestModerationModal } from "@/components/AdminRequestModerationModal";
 import { AdminLayoutShell } from "@/components/AdminLayoutShell";
 import { formatDate, formatGHS } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -1060,90 +1061,15 @@ export default function AdminDashboardPage() {
       {activeView === "delivery" && <AdminDeliveryManagementHub />}
 
       {/* ------------------------------------------------------------- */}
-      {/* SERVICE REQUEST INSPECTION MODAL */}
+      {/* SERVICE REQUEST INSPECTION & ULTRA-MODERN MODERATION MODAL */}
       {/* ------------------------------------------------------------- */}
       {inspectingRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 text-slate-900 dark:text-white relative">
-            <button
-              onClick={() => setInspectingRequest(null)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full bg-slate-100 dark:bg-zinc-800 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="space-y-1">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 uppercase">
-                Status: {inspectingRequest.status}
-              </span>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white pt-1">
-                {inspectingRequest.title}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                Category: {inspectingRequest.service?.name || "General Service"} • Posted {formatDate(inspectingRequest.createdAt)}
-              </p>
-            </div>
-
-            {/* Description */}
-            <div className="p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs space-y-1.5">
-              <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
-                Job Description / Issue Detail:
-              </span>
-              <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-                {inspectingRequest.description || "Customer placed request for rapid service dispatch."}
-              </p>
-            </div>
-
-            {/* Customer Contact Panel */}
-            <div className="p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs space-y-2">
-              <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
-                Customer Info & Location:
-              </span>
-              <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
-                <span>{inspectingRequest.customer?.name || inspectingRequest.guestName || "Customer"}</span>
-                <span className="text-slate-500 font-mono text-[11px]">📍 {inspectingRequest.location?.area || "Tamale"}</span>
-              </div>
-              <div className="text-[11px] text-slate-500 font-mono">
-                Phone: {inspectingRequest.customer?.phone || inspectingRequest.guestPhone || "+233240000000"}
-              </div>
-
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-zinc-800">
-                <a
-                  href={`https://wa.me/${(inspectingRequest.customer?.phone || inspectingRequest.guestPhone || "").replace(/[^0-9]/g, "")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" /> WhatsApp Customer
-                </a>
-                <a
-                  href={`tel:${inspectingRequest.customer?.phone || inspectingRequest.guestPhone || ""}`}
-                  className="py-2 px-3 bg-slate-200 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 font-bold rounded-xl text-xs flex items-center justify-center gap-1 hover:bg-slate-300"
-                >
-                  <PhoneCall className="w-3.5 h-3.5" /> Call
-                </a>
-              </div>
-            </div>
-
-            {/* Action Bar */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-zinc-800 gap-2">
-              <Link
-                href={`/requests/${inspectingRequest.id}`}
-                target="_blank"
-                className="py-2 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-xs"
-              >
-                <ArrowUpRight className="w-4 h-4" /> View Public Page ↗
-              </Link>
-
-              <button
-                onClick={() => setInspectingRequest(null)}
-                className="py-2 px-4 bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold rounded-xl text-xs hover:bg-slate-300 cursor-pointer"
-              >
-                Close Details
-              </button>
-            </div>
-          </div>
-        </div>
+        <AdminRequestModerationModal
+          request={inspectingRequest}
+          onClose={() => setInspectingRequest(null)}
+          onUpdate={fetchAdminStats}
+          isDark={themeMode === "dark"}
+        />
       )}
     </AdminLayoutShell>
   );

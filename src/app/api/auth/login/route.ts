@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { comparePassword, hashPassword, setSessionCookie, SessionUser } from "@/lib/auth";
+import { comparePassword, hashPassword, setSessionCookie, signToken, SessionUser } from "@/lib/auth";
 import { getPhoneVariants } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -123,7 +123,8 @@ export async function POST(request: Request) {
       await setSessionCookie(sessionUser);
     }
 
-    return NextResponse.json({ success: true, user: sessionUser, token: "session_verified_token" });
+    const token = sessionUser ? signToken(sessionUser) : "session_verified_token";
+    return NextResponse.json({ success: true, user: sessionUser, token });
   } catch (error: any) {
     console.error("Database Login Error:", error);
     return NextResponse.json(

@@ -67,10 +67,15 @@ class _CustomerPortalViewState extends State<CustomerPortalView> {
 
     try {
       final token = await authNotifier.storage.getToken();
+      final currentUser = authNotifier.state.user;
       final res = await _dio.get(
         '/account/profile',
         options: Options(
-          headers: token != null ? {'Authorization': 'Bearer $token'} : {},
+          headers: {
+            if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+            if (currentUser?.phone != null && currentUser!.phone.isNotEmpty) 'x-user-phone': currentUser.phone,
+            if (currentUser?.id != null && currentUser!.id.isNotEmpty) 'x-user-id': currentUser.id,
+          },
         ),
       );
 

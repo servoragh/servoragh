@@ -211,7 +211,7 @@ export async function POST(request: Request) {
       // Generate 4-digit OTP & Claim Token
       guestOtpCode = Math.floor(1000 + Math.random() * 9000).toString();
       guestClaimToken = `claim-${crypto.randomBytes(12).toString("hex")}`;
-      initialStatus = "PENDING_VERIFICATION";
+      initialStatus = "OPEN"; // Immediately public & syndicated to community board!
     }
 
     // Default or Fallback Location
