@@ -114,7 +114,13 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             const Gap(10),
             TextButton(
-              onPressed: () => context.pop(),
+              onPressed: () {
+                if (Navigator.of(context).canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/home');
+                }
+              },
               child: const Text(
                 'Cancel',
                 style: TextStyle(

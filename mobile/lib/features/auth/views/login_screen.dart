@@ -208,26 +208,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Column(
                         children: [
-                          Container(
-                            width: 62,
-                            height: 62,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [ServoraColors.emerald600, Color(0xFF0D9488)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: ServoraColors.emerald600.withOpacity(0.3),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              width: 72,
+                              height: 72,
+                              fit: BoxFit.contain,
+                              errorBuilder: (ctx, err, stack) => Container(
+                                width: 62,
+                                height: 62,
+                                decoration: BoxDecoration(
+                                  color: ServoraColors.emerald600,
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                              ],
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.handyman_rounded, color: Colors.white, size: 30),
+                                child: const Center(
+                                  child: Icon(Icons.handyman_rounded, color: Colors.white, size: 30),
+                                ),
+                              ),
                             ),
                           ),
                           const Gap(12),

@@ -94,7 +94,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     backgroundColor: Colors.black54,
                     child: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
                   ),
-                  onPressed: () => context.pop(),
+                  onPressed: () {
+                    if (Navigator.of(context).canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/products');
+                    }
+                  },
                 ),
                 actions: [
                   if (hasDiscount)

@@ -23,6 +23,16 @@ class _EscrowDealScreenState extends State<EscrowDealScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Safe MoMo Escrow Protection 🛡️'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pushReplacementNamed('/home');
+            }
+          },
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

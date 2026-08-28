@@ -270,8 +270,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 : LayoutBuilder(
                     builder: (context, constraints) {
                       final double itemWidth = (constraints.maxWidth - 44) / 2;
-                      final double dynamicAspectRatio = (itemWidth / 246.0).clamp(0.68, 0.78);
-                      final double imgHeight = (itemWidth * 0.62).clamp(96.0, 114.0);
+                      final double dynamicAspectRatio = (itemWidth / 268.0).clamp(0.60, 0.68);
+                      final double imgHeight = (itemWidth * 0.55).clamp(86.0, 102.0);
 
                       return GridView.builder(
                         padding: const EdgeInsets.all(16),
@@ -354,7 +354,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 ],
                               ),
                               Padding(
-                                padding: const EdgeInsets.all(10),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [

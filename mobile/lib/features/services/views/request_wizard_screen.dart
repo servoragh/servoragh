@@ -55,7 +55,11 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
             if (_currentStep > 1) {
               setState(() => _currentStep -= 1);
             } else {
-              context.pop();
+              if (Navigator.of(context).canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
             }
           },
         ),

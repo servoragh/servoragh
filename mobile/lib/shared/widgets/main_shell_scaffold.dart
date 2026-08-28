@@ -69,55 +69,63 @@ class MainShellScaffold extends StatelessWidget {
           }
         }
 
-        return Scaffold(
-          body: child,
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: selectedIndex,
-            onDestinationSelected: (index) => _onItemTapped(index, context),
-            destinations: [
-              const NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home_filled, color: ServoraColors.emerald600),
-                label: 'Home',
-              ),
-              const NavigationDestination(
-                icon: Icon(Icons.shopping_bag_outlined),
-                selectedIcon: Icon(Icons.shopping_bag_rounded, color: ServoraColors.emerald600),
-                label: 'Products',
-              ),
-
-              // EXACT CENTER PIECE ITEM (#3 OUT OF 5) - PROMINENT FLOATING EMERALD POST BUTTON
-              NavigationDestination(
-                icon: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: ServoraColors.emerald600,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: ServoraColors.emerald600.withOpacity(0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 26),
+        return PopScope(
+          canPop: selectedIndex == 0,
+          onPopInvoked: (didPop) {
+            if (!didPop) {
+              context.go('/home');
+            }
+          },
+          child: Scaffold(
+            body: child,
+            bottomNavigationBar: NavigationBar(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (index) => _onItemTapped(index, context),
+              destinations: [
+                const NavigationDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home_filled, color: ServoraColors.emerald600),
+                  label: 'Home',
                 ),
-                label: 'Post',
-              ),
+                const NavigationDestination(
+                  icon: Icon(Icons.shopping_bag_outlined),
+                  selectedIcon: Icon(Icons.shopping_bag_rounded, color: ServoraColors.emerald600),
+                  label: 'Products',
+                ),
 
-              const NavigationDestination(
-                icon: Icon(Icons.people_outline_rounded),
-                selectedIcon: Icon(Icons.people_rounded, color: ServoraColors.emerald600),
-                label: 'Notice Board',
-              ),
-              NavigationDestination(
-                icon: Icon(accountIcon),
-                selectedIcon: Icon(accountSelectedIcon, color: ServoraColors.emerald600),
-                label: accountLabel,
-              ),
-            ],
+                // EXACT CENTER PIECE ITEM (#3 OUT OF 5) - PROMINENT FLOATING EMERALD POST BUTTON
+                NavigationDestination(
+                  icon: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: ServoraColors.emerald600,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: ServoraColors.emerald600.withOpacity(0.4),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.add_rounded, color: Colors.white, size: 26),
+                  ),
+                  label: 'Post',
+                ),
+
+                const NavigationDestination(
+                  icon: Icon(Icons.people_outline_rounded),
+                  selectedIcon: Icon(Icons.people_rounded, color: ServoraColors.emerald600),
+                  label: 'Notice Board',
+                ),
+                NavigationDestination(
+                  icon: Icon(accountIcon),
+                  selectedIcon: Icon(accountSelectedIcon, color: ServoraColors.emerald600),
+                  label: accountLabel,
+                ),
+              ],
+            ),
           ),
         );
       },

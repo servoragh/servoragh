@@ -96,7 +96,9 @@ class AuthNotifier extends ChangeNotifier {
     } else if (cleanInput == 'kwame.electric@gmail.com' || cleanInput == '+233244889900' || cleanInput == '0244889900') {
       demoUser = UserModel(
         id: 'provider-id',
-        name: 'Kwame Electrical & Solar',
+        name: 'Kwame Mensah',
+        businessName: 'Kwame Electrical & Solar Solutions',
+        slug: 'kwame-electrical-tamale',
         phone: '+233244889900',
         email: 'kwame.electric@gmail.com',
         role: 'PROVIDER',
