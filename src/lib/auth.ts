@@ -38,8 +38,16 @@ export function verifyToken(token: string): SessionUser | null {
   }
 }
 
-export async function getSession(): Promise<SessionUser | null> {
+export async function getSession(req?: Request): Promise<SessionUser | null> {
   try {
+    if (req) {
+      const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.substring(7).trim();
+        const user = verifyToken(token);
+        if (user) return user;
+      }
+    }
     const cookieStore = await cookies();
     const token = cookieStore.get(TOKEN_NAME)?.value;
     if (!token) return null;

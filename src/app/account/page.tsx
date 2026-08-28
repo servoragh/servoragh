@@ -1,5 +1,5 @@
 import CustomerAccountHub from "@/components/CustomerAccountHub";
 
-export default function UserDashboardPage() {
+export default function AccountPage() {
   return <CustomerAccountHub />;
 }

@@ -4,12 +4,12 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_card.dart';
-import '../../../shared/widgets/status_badge.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../main.dart';
 import '../../business_portal/views/business_portal_screen.dart';
 import '../../admin/views/admin_portal_screen.dart';
+import 'customer_portal_view.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -279,124 +279,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 2. CUSTOMER PORTAL VIEW
   // ==========================================
   Widget _buildCustomerPortalView(BuildContext context, user, bool isDark) {
-    final String name = user?.name ?? 'Customer';
-    final String phone = user?.phone ?? '+233 24 000 0000';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // User Header Card
-        ServoraCard(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : 'C',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
-                ),
-              ),
-              const Gap(14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            name,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Gap(6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: ServoraColors.emerald600.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'BUYER',
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Gap(2),
-                    Text(phone, style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
-                    const Gap(6),
-                    StatusBadge.verifiedGhanaCard(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(duration: 200.ms),
-        const Gap(14),
-
-        // Customer Metric Cards
-        Row(
-          children: [
-            _buildMetricCard(context, count: '3 Active', label: 'My Requests', icon: Icons.assignment_outlined),
-            const Gap(10),
-            _buildMetricCard(context, count: '12 Saved', label: 'Favorites', icon: Icons.favorite_rounded),
-            const Gap(10),
-            _buildMetricCard(context, count: '100% Safe', label: 'Escrow Vault', icon: Icons.shield_rounded),
-          ],
-        ),
-        const Gap(14),
-
-        // Mode Switcher Banner
-        _buildModeSwitcher(
-          isMerchant: false,
-          onToggle: () => setState(() => _isMerchantMode = true),
-        ),
-        const Gap(14),
-
-        // Customer Quick Actions
-        const Text('Customer Dashboard Features:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.post_add_rounded,
-          title: 'Post New Price Request',
-          subtitle: 'Broadcast a job to local carpenters, electricians, mechanics',
-          onTap: () => context.push('/services/request'),
-        ),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.favorite_outline_rounded,
-          title: 'Saved Businesses & Products',
-          subtitle: 'View your liked stores and bookmarked items',
-          onTap: () => context.go('/businesses'),
-        ),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.shield_outlined,
-          title: 'Active Escrow Protection Tracker',
-          subtitle: 'View held funds and confirm received deliveries',
-          onTap: () => context.push('/escrow'),
-        ),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.storefront_rounded,
-          title: 'Switch to Merchant / Register Business',
-          subtitle: 'Create a business profile and list your goods and services',
-          onTap: () => setState(() => _isMerchantMode = true),
-        ),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.chat_rounded,
-          title: 'WhatsApp Help & Support',
-          subtitle: 'Chat directly with Servora Northern team',
-          onTap: () => WhatsAppHelper.openWhatsApp(
-            phone: '+233240000000',
-            message: 'Hello Servora, I need customer support on my account ($name, $phone).',
-          ),
+        CustomerPortalView(
+          onSwitchToMerchant: () => setState(() => _isMerchantMode = true),
         ),
         const Gap(16),
 
@@ -404,7 +291,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _buildActionTile(
           icon: Icons.logout_rounded,
           title: 'Log Out',
-          subtitle: 'Sign out and continue browsing as guest',
+          subtitle: 'Sign out of your customer account',
           textColor: Colors.red,
           onTap: () => _handleLogout(context),
         ),
@@ -489,33 +376,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onChanged: (val) => onToggle(),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMetricCard(BuildContext context, {required String count, required String label, required IconData icon}) {
-    return Expanded(
-      child: ServoraCard(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-        child: Column(
-          children: [
-            Icon(icon, size: 18, color: ServoraColors.emerald600),
-            const Gap(4),
-            Text(
-              count,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const Gap(2),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 9.5, color: Colors.grey, fontWeight: FontWeight.bold),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
       ),
     );
   }
