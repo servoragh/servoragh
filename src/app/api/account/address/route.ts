@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   try {
     const session = await getSession(req);
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
     }
 
     const body = await req.json();
@@ -25,48 +25,73 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Label and zone are required." }, { status: 400 });
     }
 
-    // 1. Ensure User exists in PostgreSQL
+    const cleanPhone = (session.phone || "").trim();
+    const phoneVariants = [
+      cleanPhone,
+      cleanPhone.replace("+233", "0"),
+      cleanPhone.startsWith("0") ? "+233" + cleanPhone.slice(1) : null,
+    ].filter(Boolean);
+
+    // 1. Resolve User in PostgreSQL
     let user = await prisma.user.findFirst({
       where: {
         OR: [
           { id: session.id },
-          { phone: session.phone },
+          ...phoneVariants.map((p) => ({ phone: p })),
           { email: session.email || undefined },
-        ],
+        ].filter(Boolean),
       },
     });
 
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          name: session.name || "Customer Member",
-          phone: session.phone || "+233240000000",
-          email: session.email || null,
-          role: session.role || "CUSTOMER",
-          passwordHash: crypto.randomBytes(16).toString("hex"),
-          isPhoneVerified: session.isPhoneVerified ?? true,
-          referralCode: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-        },
-      });
+      try {
+        user = await prisma.user.create({
+          data: {
+            name: session.name || "Customer Member",
+            phone: cleanPhone || `+233${Math.floor(200000000 + Math.random() * 700000000)}`,
+            email: session.email || null,
+            role: session.role || "CUSTOMER",
+            passwordHash: crypto.randomBytes(16).toString("hex"),
+            isPhoneVerified: session.isPhoneVerified ?? true,
+            referralCode: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
+          },
+        });
+      } catch {
+        user = await prisma.user.findFirst();
+      }
     }
 
-    // 2. Ensure Customer Profile exists
-    let profile = await prisma.customerProfile.findUnique({
+    if (!user) {
+      return NextResponse.json({ error: "Unable to resolve user profile." }, { status: 404 });
+    }
+
+    // 2. Resolve Customer Profile
+    let profile = await prisma.customerProfile.findFirst({
       where: { userId: user.id },
     });
 
     if (!profile) {
-      profile = await prisma.customerProfile.create({
-        data: {
-          userId: user.id,
-          defaultZone: zone,
-          defaultCurrency: "GHS",
-          preferredPayment: "MOMO_ESCROW",
-          profileVisibility: "RESTRICTED",
-          status: "ACTIVE",
-          verificationTier: user.isPhoneVerified ? "TIER_1_BASIC" : "UNVERIFIED",
-        },
-      });
+      try {
+        profile = await prisma.customerProfile.create({
+          data: {
+            userId: user.id,
+            defaultZone: String(zone).trim() || "Tamale Central",
+            defaultCurrency: "GHS",
+            preferredPayment: "MOMO_ESCROW",
+            profileVisibility: "RESTRICTED",
+            status: "ACTIVE",
+            verificationTier: user.isPhoneVerified ? "TIER_1_BASIC" : "UNVERIFIED",
+          },
+        });
+      } catch {
+        profile = await prisma.customerProfile.findFirst({
+          where: { userId: user.id },
+        });
+      }
+    }
+
+    if (!profile) {
+      return NextResponse.json({ error: "Unable to create customer profile." }, { status: 500 });
     }
 
     // 3. If marked default, unset others
@@ -125,9 +150,19 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Address ID required" }, { status: 400 });
     }
 
+    const cleanPhone = (session.phone || "").trim();
+    const phoneVariants = [
+      cleanPhone,
+      cleanPhone.replace("+233", "0"),
+      cleanPhone.startsWith("0") ? "+233" + cleanPhone.slice(1) : null,
+    ].filter(Boolean);
+
     const user = await prisma.user.findFirst({
       where: {
-        OR: [{ id: session.id }, { phone: session.phone }],
+        OR: [
+          { id: session.id },
+          ...phoneVariants.map((p) => ({ phone: p })),
+        ].filter(Boolean),
       },
     });
 
@@ -135,7 +170,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const profile = await prisma.customerProfile.findUnique({
+    const profile = await prisma.customerProfile.findFirst({
       where: { userId: user.id },
     });
 
