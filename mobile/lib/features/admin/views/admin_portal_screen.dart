@@ -504,6 +504,366 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     );
   }
 
+  // ==========================================
+  // TOPBAR MODALS (Search & Notifications)
+  // ==========================================
+  void _openGlobalSearchModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0F172A) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Admin Global Search 🔍', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  IconButton(icon: const Icon(Icons.close_rounded, size: 20), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              const Gap(10),
+              TextField(
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search across 13 entities (users, stores, products, gigs)...',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ),
+                onChanged: (val) {
+                  setState(() => _searchQuery = val);
+                },
+              ),
+              const Gap(14),
+              const Text('Quick Jump Views:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+              const Gap(8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  ActionChip(
+                    label: const Text('Customer CRM', style: TextStyle(fontSize: 11)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      setState(() => _activeView = 'crm');
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('Business Profiles', style: TextStyle(fontSize: 11)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      setState(() => _activeView = 'businesses');
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('ID Queue', style: TextStyle(fontSize: 11)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      setState(() => _activeView = 'verification');
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('Finance Escrow', style: TextStyle(fontSize: 11)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      setState(() => _activeView = 'escrow');
+                    },
+                  ),
+                ],
+              ),
+              const Gap(20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _openNotificationsSheet() {
+    final pendingCount = _stats['pendingVerifications'] ?? 4;
+    final totalProducts = _stats['totalProducts'] ?? 46;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0F172A) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Operational Alerts 🔔', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  IconButton(icon: const Icon(Icons.close_rounded, size: 20), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              const Gap(10),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFFEF3C7),
+                  child: Icon(Icons.shield_rounded, color: Color(0xFFB45309), size: 18),
+                ),
+                title: const Text('Pending ID Verifications', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                subtitle: Text('$pendingCount Ghana Card reviews awaiting supervisor check.', style: const TextStyle(fontSize: 11)),
+                trailing: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ServoraColors.emerald600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    setState(() => _activeView = 'verification');
+                  },
+                  child: const Text('Review', style: TextStyle(fontSize: 11)),
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFE0F2FE),
+                  child: Icon(Icons.shopping_bag_rounded, color: Color(0xFF0284C7), size: 18),
+                ),
+                title: const Text('Marketplace Product Listings', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                subtitle: Text('$totalProducts active catalog items across Northern Ghana.', style: const TextStyle(fontSize: 11)),
+                trailing: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ServoraColors.emerald600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    setState(() => _activeView = 'products');
+                  },
+                  child: const Text('Inspect', style: TextStyle(fontSize: 11)),
+                ),
+              ),
+              const Gap(10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // =========================================================
+  // EXACT WEB-PARITY HEADER (Matching User Screenshot)
+  // =========================================================
+  Widget _buildWebParityHeader(bool isDark) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // 1. Hamburger Menu Button
+          InkWell(
+            onTap: _openAdminNavDrawer,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.all(6.0),
+              child: Icon(
+                Icons.menu_rounded,
+                size: 22,
+                color: isDark ? Colors.white70 : const Color(0xFF334155),
+              ),
+            ),
+          ),
+          const Gap(4),
+
+          // 2. Green Wrench Square Badge
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFF059669),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Center(
+              child: Icon(Icons.handyman_rounded, color: Colors.white, size: 17),
+            ),
+          ),
+          const Gap(8),
+
+          // 3. Text "Servora Admin"
+          const Flexible(
+            child: Text(
+              'Servora Admin',
+              style: TextStyle(
+                fontSize: 15.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.3,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+
+          const Spacer(),
+
+          // 4. Green Search Pill (with white magnifying glass)
+          GestureDetector(
+            onTap: _openGlobalSearchModal,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFF059669),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(Icons.search_rounded, size: 15, color: Colors.white),
+            ),
+          ),
+          const Gap(4),
+
+          // 5. Plain Search Icon Button
+          InkWell(
+            onTap: _openGlobalSearchModal,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.all(5.0),
+              child: Icon(
+                Icons.search_rounded,
+                size: 19,
+                color: isDark ? Colors.white60 : const Color(0xFF64748B),
+              ),
+            ),
+          ),
+          const Gap(2),
+
+          // 6. Translucent Glow Circle with Purple Moon Icon
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF3F4F6),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.purple.withOpacity(0.12),
+                  blurRadius: 6,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.nightlight_round,
+                size: 14,
+                color: Color(0xFF9333EA),
+              ),
+            ),
+          ),
+          const Gap(4),
+
+          // 7. Notification Bell with Soft Red Dot
+          GestureDetector(
+            onTap: _openNotificationsSheet,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(5.0),
+                  child: Icon(
+                    Icons.notifications_none_rounded,
+                    size: 20,
+                    color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                  ),
+                ),
+                Positioned(
+                  top: 3,
+                  right: 3,
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFB7185),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Gap(4),
+
+          // 8. Vertical Divider Line
+          Container(
+            width: 1,
+            height: 20,
+            color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+          ),
+          const Gap(6),
+
+          // 9. User Initial Avatar Circle + Chevron Down
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF047857),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Text(
+                    'D',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+              const Gap(2),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 15,
+                color: isDark ? Colors.white60 : const Color(0xFF64748B),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -520,83 +880,8 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // =========================================================
-        // TOP ADMIN CONTROL STRIP (Menu button, Title & Live Status)
-        // =========================================================
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: isDark ? ServoraColors.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: isDark ? ServoraColors.darkCardBorder : Colors.grey.withOpacity(0.2)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: _openAdminNavDrawer,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF059669),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.menu_rounded, color: Colors.white, size: 22),
-                    ),
-                  ),
-                  const Gap(10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        children: [
-                          Text('Servora Admin', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
-                          Gap(6),
-                          Text('👑', style: TextStyle(fontSize: 14)),
-                        ],
-                      ),
-                      Text(
-                        _getViewTitle(_activeView),
-                        style: const TextStyle(fontSize: 11, color: ServoraColors.emerald600, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.refresh_rounded, size: 20),
-                    tooltip: 'Sync Database Metrics',
-                    onPressed: _fetchLiveAdminData,
-                  ),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF059669),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      elevation: 0,
-                    ),
-                    icon: const Icon(Icons.tune_rounded, size: 14),
-                    label: const Text('Menu', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                    onPressed: _openAdminNavDrawer,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ).animate().fadeIn(duration: 150.ms),
+        // Exact Web-Parity Header Bar
+        _buildWebParityHeader(isDark).animate().fadeIn(duration: 150.ms),
         const Gap(14),
 
         if (_errorMessage != null) ...[
@@ -647,27 +932,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
         if (_activeView == 'settings') _buildSettingsView(),
       ],
     );
-  }
-
-  String _getViewTitle(String viewId) {
-    switch (viewId) {
-      case 'overview': return 'Dashboard Overview';
-      case 'activity': return 'Live Activity Feed';
-      case 'crm': return 'Customer CRM & Members (360°)';
-      case 'businesses': return 'Business Profiles & Artisans';
-      case 'verification': return 'ID & Verification Queue';
-      case 'security': return 'Security & Fraud Engine';
-      case 'escrow': return 'Finance & MoMo Escrow';
-      case 'delivery': return 'Delivery Fleet & Dispatchers';
-      case 'products': return 'Product Moderation Hub';
-      case 'requests': return 'Service Requests & Gigs';
-      case 'rentals': return 'Tool Rentals Engine';
-      case 'disputes': return 'Disputes & Helpdesk';
-      case 'community': return 'Community Board Moderation';
-      case 'tickers': return 'Announcement Tickers';
-      case 'settings': return 'System Settings & Config';
-      default: return 'Supervisor Control';
-    }
   }
 
   // =========================================================
