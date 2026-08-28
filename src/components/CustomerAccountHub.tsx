@@ -227,19 +227,25 @@ export default function CustomerAccountHub() {
     e.preventDefault();
     setSavingAddress(true);
     try {
+      const lat = addressLatitude.trim();
+      const lng = addressLongitude.trim();
+      const parsedLat = lat && !isNaN(parseFloat(lat)) ? parseFloat(lat) : null;
+      const parsedLng = lng && !isNaN(parseFloat(lng)) ? parseFloat(lng) : null;
+
       const res = await fetch("/api/account/address", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          label: addressLabel,
-          zone: addressZone,
-          streetDetails: addressStreet,
-          landmark: addressLandmark,
-          latitude: addressLatitude ? parseFloat(addressLatitude) : null,
-          longitude: addressLongitude ? parseFloat(addressLongitude) : null,
+          label: addressLabel.trim(),
+          zone: addressZone.trim(),
+          streetDetails: addressStreet.trim() || null,
+          landmark: addressLandmark.trim() || null,
+          latitude: parsedLat,
+          longitude: parsedLng,
           isDefault: addressDefault,
         }),
       });
+
       if (res.ok) {
         setShowAddAddressModal(false);
         setAddressStreet("");
@@ -247,6 +253,9 @@ export default function CustomerAccountHub() {
         setAddressLatitude("");
         setAddressLongitude("");
         fetchCustomerHubData();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "Failed to save address.");
       }
     } catch (err) {
       alert("Failed to save address.");
