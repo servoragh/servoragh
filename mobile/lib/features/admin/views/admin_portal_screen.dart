@@ -186,207 +186,233 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   // SIDEBAR DRAWER (Exact Web Screenshot Layout)
   // ==========================================
   void _openAdminNavDrawer() {
-    showModalBottomSheet(
+    showGeneralDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
+      barrierDismissible: true,
+      barrierLabel: 'Admin Navigation',
+      barrierColor: Colors.black.withOpacity(0.55),
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (ctx, anim1, anim2) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
         final pendingCount = _stats['pendingVerifications'] ?? 4;
 
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F172A) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.90),
-          child: Column(
-            children: [
-              // Header with Green Circle Icon & Close Button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: MediaQuery.of(ctx).size.width * 0.84,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 24,
+                    offset: const Offset(8, 0),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Column(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF059669),
-                            borderRadius: BorderRadius.circular(12),
+                    // Header with Green Circle Icon & Close Button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF059669),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.handyman_rounded, color: Colors.white, size: 18),
+                              ),
+                              const Gap(10),
+                              const Text(
+                                'Servora Admin',
+                                style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900),
+                              ),
+                            ],
                           ),
-                          child: const Icon(Icons.build_rounded, color: Colors.white, size: 20),
-                        ),
-                        const Gap(10),
-                        const Text(
-                          'Servora Admin',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
-                        ),
-                      ],
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 22),
+                            onPressed: () => Navigator.of(ctx).pop(),
+                          ),
+                        ],
+                      ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 22),
-                      onPressed: () => Navigator.of(ctx).pop(),
+                    const Divider(height: 1),
+
+                    // Scrollable Nav List
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        children: [
+                          // OVERVIEW SECTION
+                          _buildNavSectionHeader('OVERVIEW'),
+                          _buildNavItem(
+                            icon: Icons.rocket_launch_rounded,
+                            label: 'Dashboard Overview',
+                            viewId: 'overview',
+                            ctx: ctx,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.show_chart_rounded,
+                            label: 'Live Activity Feed',
+                            viewId: 'activity',
+                            ctx: ctx,
+                          ),
+                          const Gap(12),
+
+                          // USER & TRUST MANAGEMENT
+                          _buildNavSectionHeader('USER & TRUST MANAGEMENT'),
+                          _buildNavItem(
+                            icon: Icons.people_outline_rounded,
+                            label: 'Customer CRM & Members',
+                            badge: '360°',
+                            viewId: 'crm',
+                            ctx: ctx,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.apartment_rounded,
+                            label: 'Business Profiles & Artisans',
+                            viewId: 'businesses',
+                            ctx: ctx,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.shield_outlined,
+                            label: 'ID & Verification Queue',
+                            badge: '$pendingCount',
+                            badgeColor: Colors.blueAccent,
+                            viewId: 'verification',
+                            ctx: ctx,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.security_outlined,
+                            label: 'Security & Fraud Engine',
+                            badge: 'Blacklist',
+                            viewId: 'security',
+                            ctx: ctx,
+                          ),
+                          const Gap(12),
+
+                          // MARKETPLACE & SERVICES
+                          _buildNavSectionHeader('MARKETPLACE & SERVICES'),
+                          _buildNavItem(
+                            icon: Icons.attach_money_rounded,
+                            label: 'Finance & MoMo Escrow',
+                            badge: 'MoMo',
+                            viewId: 'escrow',
+                            ctx: ctx,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.local_shipping_outlined,
+                            label: 'Delivery Fleet & Dispatch...',
+                            badge: 'Fleet',
+                            viewId: 'delivery',
+                            ctx: ctx,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.shopping_bag_outlined,
+                            label: 'Product Moderation',
+                            viewId: 'products',
+                            ctx: ctx,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            label: 'Service Requests & Gigs',
+                            viewId: 'requests',
+                            ctx: ctx,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.handyman_outlined,
+                            label: 'Tool Rentals Engine',
+                            viewId: 'rentals',
+                            ctx: ctx,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.balance_outlined,
+                            label: 'Disputes & Helpdesk',
+                            viewId: 'disputes',
+                            ctx: ctx,
+                          ),
+                          const Gap(12),
+
+                          // ECOSYSTEM & COMMUNITY
+                          _buildNavSectionHeader('ECOSYSTEM & COMMUNITY'),
+                          _buildNavItem(
+                            icon: Icons.groups_outlined,
+                            label: 'Community Board Moderation',
+                            viewId: 'community',
+                            ctx: ctx,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.campaign_outlined,
+                            label: 'Announcement Tickers',
+                            badge: 'Live',
+                            viewId: 'tickers',
+                            ctx: ctx,
+                          ),
+                          const Gap(12),
+
+                          // SYSTEM & INFRASTRUCTURE
+                          _buildNavSectionHeader('SYSTEM & INFRASTRUCTURE'),
+                          _buildNavItem(
+                            icon: Icons.settings_outlined,
+                            label: 'System & Infrastructure Settings',
+                            badge: 'Master',
+                            viewId: 'settings',
+                            ctx: ctx,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Bottom Status Bar
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.black26 : const Color(0xFFF8FAFC),
+                        border: Border(top: BorderSide(color: isDark ? Colors.white12 : Colors.grey.withOpacity(0.2))),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Text('Region: ', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                              Text('Northern Ghana', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Text('PWA Engine: ', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                              Text('Active', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1),
-
-              // Scrollable Nav List
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  children: [
-                    // OVERVIEW SECTION
-                    _buildNavSectionHeader('OVERVIEW'),
-                    _buildNavItem(
-                      icon: Icons.rocket_launch_rounded,
-                      label: 'Dashboard Overview',
-                      viewId: 'overview',
-                      ctx: ctx,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.show_chart_rounded,
-                      label: 'Live Activity Feed',
-                      viewId: 'activity',
-                      ctx: ctx,
-                    ),
-                    const Gap(12),
-
-                    // USER & TRUST MANAGEMENT
-                    _buildNavSectionHeader('USER & TRUST MANAGEMENT'),
-                    _buildNavItem(
-                      icon: Icons.people_outline_rounded,
-                      label: 'Customer CRM & Members',
-                      badge: '360°',
-                      viewId: 'crm',
-                      ctx: ctx,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.apartment_rounded,
-                      label: 'Business Profiles & Artisans',
-                      viewId: 'businesses',
-                      ctx: ctx,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.shield_outlined,
-                      label: 'ID & Verification Queue',
-                      badge: '$pendingCount',
-                      badgeColor: Colors.blueAccent,
-                      viewId: 'verification',
-                      ctx: ctx,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.security_outlined,
-                      label: 'Security & Fraud Engine',
-                      badge: 'Blacklist',
-                      viewId: 'security',
-                      ctx: ctx,
-                    ),
-                    const Gap(12),
-
-                    // MARKETPLACE & SERVICES
-                    _buildNavSectionHeader('MARKETPLACE & SERVICES'),
-                    _buildNavItem(
-                      icon: Icons.attach_money_rounded,
-                      label: 'Finance & MoMo Escrow',
-                      badge: 'MoMo',
-                      viewId: 'escrow',
-                      ctx: ctx,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.local_shipping_outlined,
-                      label: 'Delivery Fleet & Dispatch...',
-                      badge: 'Fleet',
-                      viewId: 'delivery',
-                      ctx: ctx,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.shopping_bag_outlined,
-                      label: 'Product Moderation',
-                      viewId: 'products',
-                      ctx: ctx,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.chat_bubble_outline_rounded,
-                      label: 'Service Requests & Gigs',
-                      viewId: 'requests',
-                      ctx: ctx,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.handyman_outlined,
-                      label: 'Tool Rentals Engine',
-                      viewId: 'rentals',
-                      ctx: ctx,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.balance_outlined,
-                      label: 'Disputes & Helpdesk',
-                      viewId: 'disputes',
-                      ctx: ctx,
-                    ),
-                    const Gap(12),
-
-                    // ECOSYSTEM & COMMUNITY
-                    _buildNavSectionHeader('ECOSYSTEM & COMMUNITY'),
-                    _buildNavItem(
-                      icon: Icons.groups_outlined,
-                      label: 'Community Board Moderation',
-                      viewId: 'community',
-                      ctx: ctx,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.campaign_outlined,
-                      label: 'Announcement Tickers',
-                      badge: 'Live',
-                      viewId: 'tickers',
-                      ctx: ctx,
-                    ),
-                    const Gap(12),
-
-                    // SYSTEM & INFRASTRUCTURE
-                    _buildNavSectionHeader('SYSTEM & INFRASTRUCTURE'),
-                    _buildNavItem(
-                      icon: Icons.settings_outlined,
-                      label: 'System & Infrastructure Settings',
-                      badge: 'Master',
-                      viewId: 'settings',
-                      ctx: ctx,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Bottom Status Bar
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.black26 : const Color(0xFFF8FAFC),
-                  border: Border(top: BorderSide(color: isDark ? Colors.white12 : Colors.grey.withOpacity(0.2))),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Text('Region: ', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                        Text('Northern Ghana', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Text('PWA Engine: ', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                        Text('Active', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
+        );
+      },
+      transitionBuilder: (ctx, anim, secondaryAnim, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(-1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+          child: child,
         );
       },
     );
