@@ -24,7 +24,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
   String _selectedLocation = 'Sakasaka, Tamale';
   bool _isLoadingLiveApi = false;
   List<Map<String, dynamic>> _liveProducts = [];
@@ -326,50 +325,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Image.asset(
-                            'assets/images/logo.png',
-                            width: 42,
-                            height: 42,
-                            fit: BoxFit.contain,
-                          ),
-                          const Gap(10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Servora',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w900,
-                                      color: isDark ? Colors.white : const Color(0xFF18181B),
-                                    ),
-                                  ),
-                                  const Text(
-                                    '.gh',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w900,
-                                      color: ServoraColors.emerald600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Text(
-                                'NORTHERN MARKETPLACE',
-                                style: TextStyle(
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w900,
-                                  color: ServoraColors.emerald600,
-                                  letterSpacing: 0.9,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      Image.asset(
+                        'assets/images/logo.png',
+                        height: 40,
+                        fit: BoxFit.contain,
                       ),
                       Row(
                         children: [

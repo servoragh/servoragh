@@ -170,10 +170,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.red.withOpacity(0.3)),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
                         Icon(Icons.admin_panel_settings_rounded, color: Colors.red, size: 20),
                         Gap(8),
@@ -183,8 +183,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
-                    const Gap(6),
-                    const Text(
+                    Gap(6),
+                    Text(
                       'You have administrative privileges to moderate listings, approve business profiles, and inspect system audit logs.',
                       style: TextStyle(fontSize: 11, color: Colors.grey),
                     ),

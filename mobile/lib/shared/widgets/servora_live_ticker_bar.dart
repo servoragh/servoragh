@@ -188,7 +188,7 @@ class _ServoraLiveTickerBarState extends State<ServoraLiveTickerBar> {
       ),
       child: Row(
         children: [
-          // Live Pulse Dot & Brand Tag
+          // Live Pulse Dot & Brand Logo
           Row(
             children: [
               Container(
@@ -200,13 +200,13 @@ class _ServoraLiveTickerBarState extends State<ServoraLiveTickerBar> {
                 ),
               ),
               const Gap(6),
-              const Text(
-                'SERVORA.GH',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  color: ServoraColors.emerald500,
-                  letterSpacing: 0.6,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 16,
+                  height: 16,
+                  fit: BoxFit.contain,
                 ),
               ),
             ],

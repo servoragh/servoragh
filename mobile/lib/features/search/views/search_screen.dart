@@ -21,7 +21,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   bool _isSearching = false;
   List<dynamic> _searchResults = [];
-  String _activeScope = 'all';
 
   final List<String> _recentSearches = [
     'Solar Inverter Sakasaka',

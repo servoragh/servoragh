@@ -7,6 +7,7 @@ import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../../shared/widgets/servora_shimmer_skeleton.dart';
 import '../../../core/utils/whatsapp_helper.dart';
+import '../../../shared/widgets/servora_image_lightbox.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Map<String, dynamic> product;
@@ -122,19 +123,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         itemCount: images.length,
                         onPageChanged: (index) => setState(() => _activeImageIndex = index),
                         itemBuilder: (context, index) {
-                          return CachedNetworkImage(
-                            imageUrl: images[index],
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            placeholder: (_, __) => const ServoraShimmerSkeleton(
-                              width: double.infinity,
-                              height: 320,
-                              borderRadius: 0,
+                          return GestureDetector(
+                            onTap: () => ServoraImageLightbox.show(
+                              context,
+                              title: title,
+                              images: images,
+                              initialIndex: index,
                             ),
-                            errorWidget: (_, __, ___) => Container(
-                              color: ServoraColors.emerald600.withOpacity(0.12),
-                              child: const Center(
-                                child: Icon(Icons.inventory_2_rounded, size: 80, color: ServoraColors.emerald600),
+                            child: CachedNetworkImage(
+                              imageUrl: images[index],
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              placeholder: (_, __) => const ServoraShimmerSkeleton(
+                                width: double.infinity,
+                                height: 320,
+                                borderRadius: 0,
+                              ),
+                              errorWidget: (_, __, ___) => Container(
+                                color: ServoraColors.emerald600.withOpacity(0.12),
+                                child: const Center(
+                                  child: Icon(Icons.inventory_2_rounded, size: 80, color: ServoraColors.emerald600),
+                                ),
                               ),
                             ),
                           );

@@ -84,13 +84,21 @@ export async function GET(
             description: s.description,
             startingPrice: s.startingPrice ? Number(s.startingPrice) : null,
             estimatedTime: s.estimatedDuration || "On Request",
+            portfolioPhotos: Array.isArray(s.portfolioPhotos)
+              ? JSON.stringify(s.portfolioPhotos)
+              : s.portfolioPhotos || "[]",
+            images: Array.isArray(s.portfolioPhotos)
+              ? JSON.stringify(s.portfolioPhotos)
+              : s.portfolioPhotos || "[]",
           })),
           rentals: profile.rentals.map((r) => ({
             id: r.id,
             title: r.title,
             description: r.description,
             dailyRate: Number(r.dailyRate),
+            weeklyRate: r.weeklyRate ? Number(r.weeklyRate) : null,
             depositRequired: r.securityDeposit ? Number(r.securityDeposit) : 0,
+            operatorIncluded: r.operatorIncluded ?? false,
             images: Array.isArray(r.images) ? JSON.stringify(r.images) : r.images || "[]",
             isAvailable: r.isAvailable,
           })),
