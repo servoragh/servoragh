@@ -51,27 +51,36 @@ export async function getSession(req?: Request): Promise<SessionUser | null> {
       // Mobile / Header fallback resolution
       const phoneHeader = req.headers.get("x-user-phone") || req.headers.get("x-phone");
       const idHeader = req.headers.get("x-user-id") || req.headers.get("x-id");
+      const isValidUuid = (s?: string | null) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
       if (phoneHeader || idHeader) {
-        const dbUser = await prisma.user.findFirst({
-          where: {
-            OR: [
-              { id: idHeader || undefined },
-              { phone: phoneHeader || undefined },
-              { phone: phoneHeader ? phoneHeader.replace("+233", "0") : undefined },
-              { phone: phoneHeader ? "+233" + phoneHeader.replace(/^0/, "") : undefined },
-            ].filter(Boolean),
-          },
-        });
-        if (dbUser) {
-          return {
-            id: dbUser.id,
-            name: dbUser.name,
-            phone: dbUser.phone,
-            email: dbUser.email,
-            role: dbUser.role as any,
-            avatarUrl: dbUser.avatarUrl,
-            isPhoneVerified: dbUser.isPhoneVerified,
-          };
+        const orConditions: any[] = [];
+        if (isValidUuid(idHeader)) {
+          orConditions.push({ id: idHeader });
+        }
+        if (phoneHeader) {
+          orConditions.push({ phone: phoneHeader });
+          orConditions.push({ phone: phoneHeader.replace("+233", "0") });
+          orConditions.push({ phone: "+233" + phoneHeader.replace(/^0/, "") });
+        }
+
+        if (orConditions.length > 0) {
+          const dbUser = await prisma.user.findFirst({
+            where: {
+              OR: orConditions,
+            },
+          });
+          if (dbUser) {
+            return {
+              id: dbUser.id,
+              name: dbUser.name,
+              phone: dbUser.phone,
+              email: dbUser.email,
+              role: dbUser.role as any,
+              avatarUrl: dbUser.avatarUrl,
+              isPhoneVerified: dbUser.isPhoneVerified,
+            };
+          }
         }
       }
     }

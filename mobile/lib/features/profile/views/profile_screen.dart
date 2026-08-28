@@ -20,6 +20,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isMerchantMode = false;
+  final GlobalKey<CustomerPortalViewState> _customerPortalKey = GlobalKey<CustomerPortalViewState>();
 
   void _handleLogout(BuildContext context) {
     showDialog(
@@ -107,7 +108,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: ServoraColors.emerald600,
             onRefresh: () async {
               await authNotifier.checkSession();
-              await Future.delayed(const Duration(milliseconds: 400));
+              await _customerPortalKey.currentState?.refreshData();
+              await Future.delayed(const Duration(milliseconds: 300));
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -283,6 +285,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         CustomerPortalView(
+          key: _customerPortalKey,
           onSwitchToMerchant: () => setState(() => _isMerchantMode = true),
         ),
         const Gap(16),

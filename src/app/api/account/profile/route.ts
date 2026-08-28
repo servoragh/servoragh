@@ -98,6 +98,8 @@ export async function GET(req: Request) {
     let communityPosts: any[] = [];
     let activityLogs: any[] = [];
 
+    const isValidUuid = (s?: string | null) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
     const cleanUserPhone = (user.phone || "").trim();
     const phoneVariants = [
       cleanUserPhone,
@@ -106,14 +108,13 @@ export async function GET(req: Request) {
     ].filter(Boolean);
 
     try {
+      const reqConditions: any[] = [];
+      if (isValidUuid(userId)) reqConditions.push({ customerId: userId });
+      if (isValidUuid(user.id)) reqConditions.push({ customerId: user.id });
+      phoneVariants.forEach((p) => reqConditions.push({ guestPhone: p }));
+
       serviceRequests = await prisma.serviceRequest.findMany({
-        where: {
-          OR: [
-            { customerId: userId },
-            { customerId: user.id },
-            ...phoneVariants.map((p) => ({ guestPhone: p })),
-          ],
-        },
+        where: reqConditions.length > 0 ? { OR: reqConditions } : undefined,
         include: {
           quotes: {
             include: {
@@ -132,13 +133,12 @@ export async function GET(req: Request) {
     }
 
     try {
+      const escrowConditions: any[] = [];
+      if (isValidUuid(userId)) escrowConditions.push({ customerId: userId });
+      if (isValidUuid(user.id)) escrowConditions.push({ customerId: user.id });
+
       escrowDeals = await prisma.escrowDeal.findMany({
-        where: {
-          OR: [
-            { customerId: userId },
-            { customerId: user.id },
-          ],
-        },
+        where: escrowConditions.length > 0 ? { OR: escrowConditions } : undefined,
         include: {
           provider: {
             select: { id: true, name: true, phone: true, avatarUrl: true },
@@ -152,8 +152,12 @@ export async function GET(req: Request) {
     }
 
     try {
+      const disputeConditions: any[] = [];
+      if (isValidUuid(userId)) disputeConditions.push({ customerId: userId });
+      if (isValidUuid(user.id)) disputeConditions.push({ customerId: user.id });
+
       disputes = await prisma.dispute.findMany({
-        where: { customerId: userId },
+        where: disputeConditions.length > 0 ? { OR: disputeConditions } : undefined,
         include: {
           provider: {
             select: { id: true, name: true, phone: true },
@@ -167,8 +171,12 @@ export async function GET(req: Request) {
     }
 
     try {
+      const favConditions: any[] = [];
+      if (isValidUuid(userId)) favConditions.push({ userId });
+      if (isValidUuid(user.id)) favConditions.push({ userId: user.id });
+
       favorites = await prisma.businessFavorite.findMany({
-        where: { userId },
+        where: favConditions.length > 0 ? { OR: favConditions } : undefined,
         include: {
           business: {
             include: {
@@ -184,8 +192,12 @@ export async function GET(req: Request) {
     }
 
     try {
+      const reviewConditions: any[] = [];
+      if (isValidUuid(userId)) reviewConditions.push({ authorId: userId });
+      if (isValidUuid(user.id)) reviewConditions.push({ authorId: user.id });
+
       reviews = await prisma.review.findMany({
-        where: { authorId: userId },
+        where: reviewConditions.length > 0 ? { OR: reviewConditions } : undefined,
         include: {
           target: {
             select: { name: true, avatarUrl: true },
@@ -198,14 +210,13 @@ export async function GET(req: Request) {
     }
 
     try {
+      const postConditions: any[] = [];
+      if (isValidUuid(userId)) postConditions.push({ authorId: userId });
+      if (isValidUuid(user.id)) postConditions.push({ authorId: user.id });
+      phoneVariants.forEach((p) => postConditions.push({ guestPhone: p }));
+
       communityPosts = await prisma.communityPost.findMany({
-        where: {
-          OR: [
-            { authorId: userId },
-            { authorId: user.id },
-            ...phoneVariants.map((p) => ({ guestPhone: p })),
-          ],
-        },
+        where: postConditions.length > 0 ? { OR: postConditions } : undefined,
         include: {
           comments: true,
           upvotes: true,
@@ -217,8 +228,12 @@ export async function GET(req: Request) {
     }
 
     try {
+      const actConditions: any[] = [];
+      if (isValidUuid(userId)) actConditions.push({ userId });
+      if (isValidUuid(user.id)) actConditions.push({ userId: user.id });
+
       activityLogs = await prisma.userActivityLog.findMany({
-        where: { userId },
+        where: actConditions.length > 0 ? { OR: actConditions } : undefined,
         orderBy: { createdAt: "desc" },
         take: 25,
       });

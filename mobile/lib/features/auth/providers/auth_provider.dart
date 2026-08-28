@@ -86,7 +86,7 @@ class AuthNotifier extends ChangeNotifier {
     UserModel? demoUser;
     if (cleanInput == 'admin@servora.gh' || cleanInput == '+233240000000' || cleanInput == '0240000000') {
       demoUser = UserModel(
-        id: 'admin-id',
+        id: '8d5b833f-6373-4ddb-9c8c-d493ba287024',
         name: 'Servora Master Admin',
         phone: '+233240000000',
         email: 'admin@servora.gh',
@@ -95,7 +95,7 @@ class AuthNotifier extends ChangeNotifier {
       );
     } else if (cleanInput == 'savannah@gmail.com' || cleanInput == '+233245678901' || cleanInput == '0245678901') {
       demoUser = UserModel(
-        id: 'savannah-id',
+        id: '77efe63e-4307-4087-9f0c-b126c9754d45',
         name: 'Rashid Yakubu',
         businessName: 'Savannah Fresh Farm Produce & Agro-Goods',
         slug: 'savannah-fresh-farms',
@@ -108,7 +108,7 @@ class AuthNotifier extends ChangeNotifier {
       );
     } else if (cleanInput == 'kwame.electric@gmail.com' || cleanInput == '+233244889900' || cleanInput == '0244889900') {
       demoUser = UserModel(
-        id: 'provider-id',
+        id: 'e1b1bd22-54d4-41bb-995a-be6e5c70e454',
         name: 'Kwame Mensah',
         businessName: 'Kwame Electrical & Solar Solutions',
         slug: 'kwame-electrical-tamale',
@@ -120,7 +120,7 @@ class AuthNotifier extends ChangeNotifier {
       );
     } else if (cleanInput == 'amina@gmail.com' || cleanInput == '+233241112233' || cleanInput == '0241112233') {
       demoUser = UserModel(
-        id: 'customer-id',
+        id: 'd60e355b-776b-4d43-b638-b583e8908233',
         name: 'Amina Abdul-Rahman',
         phone: '+233241112233',
         email: 'amina@gmail.com',

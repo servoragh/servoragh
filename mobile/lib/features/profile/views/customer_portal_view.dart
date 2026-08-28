@@ -15,12 +15,16 @@ class CustomerPortalView extends StatefulWidget {
   const CustomerPortalView({super.key, this.onSwitchToMerchant});
 
   @override
-  State<CustomerPortalView> createState() => _CustomerPortalViewState();
+  State<CustomerPortalView> createState() => CustomerPortalViewState();
 }
 
-class _CustomerPortalViewState extends State<CustomerPortalView> {
+class CustomerPortalViewState extends State<CustomerPortalView> {
   String _activeTab = 'overview';
   bool _isLoading = true;
+
+  Future<void> refreshData() async {
+    await _fetchLiveCustomerData();
+  }
 
   // Live Database Collections
   Map<String, dynamic>? _user;
@@ -324,10 +328,12 @@ class _CustomerPortalViewState extends State<CustomerPortalView> {
   // TAB 1: OVERVIEW & LIVE ACTIVITY STREAM
   // ==========================================
   Widget _buildOverviewTab(bool isDark) {
-    final activeGigs = _metrics['activeGigsCount'] ?? 0;
+    final activeGigs = (_metrics['activeGigsCount'] != null && _metrics['activeGigsCount'] != 0)
+        ? _metrics['activeGigsCount']
+        : _serviceRequests.where((r) => r['status'] == 'OPEN' || r['status'] == 'IN_PROGRESS' || r['status'] == 'OFFER_ACCEPTED' || r['status'] == 'QUOTED' || r['status'] == 'PUBLISHED').length;
     final escrowBal = (_metrics['escrowVaultBalance'] is num) ? (_metrics['escrowVaultBalance'] as num).toDouble() : 0.0;
-    final savedCount = _metrics['savedItemsCount'] ?? 0;
-    final openDisputes = _metrics['openDisputesCount'] ?? 0;
+    final savedCount = _metrics['savedItemsCount'] ?? _favorites.length;
+    final openDisputes = _metrics['openDisputesCount'] ?? _disputes.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
