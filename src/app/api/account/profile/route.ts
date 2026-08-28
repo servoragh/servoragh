@@ -12,15 +12,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
     }
 
+    const isValidUuid = (s?: string | null) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+    const orConditions: any[] = [];
+    if (isValidUuid(session.id)) orConditions.push({ id: session.id });
+    if (session.phone) {
+      orConditions.push({ phone: session.phone });
+      orConditions.push({ phone: session.phone.replace("+233", "0") });
+      orConditions.push({ phone: "+233" + session.phone.replace(/^0/, "") });
+    }
+    if (session.email) orConditions.push({ email: session.email });
+
     // 1. Ensure User exists in PostgreSQL
     let user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { id: session.id },
-          { phone: session.phone },
-          { email: session.email || undefined },
-        ],
-      },
+      where: orConditions.length > 0 ? { OR: orConditions } : undefined,
     });
 
     if (!user) {

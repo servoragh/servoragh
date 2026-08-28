@@ -40,54 +40,92 @@ export function verifyToken(token: string): SessionUser | null {
 
 export async function getSession(req?: Request): Promise<SessionUser | null> {
   try {
+    let sessionUser: SessionUser | null = null;
+    const isValidUuid = (s?: string | null) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
     if (req) {
       const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
       if (authHeader && authHeader.startsWith("Bearer ")) {
         const token = authHeader.substring(7).trim();
-        const user = verifyToken(token);
-        if (user) return user;
+        sessionUser = verifyToken(token);
       }
 
       // Mobile / Header fallback resolution
-      const phoneHeader = req.headers.get("x-user-phone") || req.headers.get("x-phone");
-      const idHeader = req.headers.get("x-user-id") || req.headers.get("x-id");
-      const isValidUuid = (s?: string | null) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+      if (!sessionUser) {
+        const phoneHeader = req.headers.get("x-user-phone") || req.headers.get("x-phone");
+        const idHeader = req.headers.get("x-user-id") || req.headers.get("x-id");
 
-      if (phoneHeader || idHeader) {
-        const orConditions: any[] = [];
-        if (isValidUuid(idHeader)) {
-          orConditions.push({ id: idHeader });
-        }
-        if (phoneHeader) {
-          orConditions.push({ phone: phoneHeader });
-          orConditions.push({ phone: phoneHeader.replace("+233", "0") });
-          orConditions.push({ phone: "+233" + phoneHeader.replace(/^0/, "") });
-        }
+        if (phoneHeader || idHeader) {
+          const orConditions: any[] = [];
+          if (isValidUuid(idHeader)) {
+            orConditions.push({ id: idHeader });
+          }
+          if (phoneHeader) {
+            orConditions.push({ phone: phoneHeader });
+            orConditions.push({ phone: phoneHeader.replace("+233", "0") });
+            orConditions.push({ phone: "+233" + phoneHeader.replace(/^0/, "") });
+          }
 
-        if (orConditions.length > 0) {
-          const dbUser = await prisma.user.findFirst({
-            where: {
-              OR: orConditions,
-            },
-          });
-          if (dbUser) {
-            return {
-              id: dbUser.id,
-              name: dbUser.name,
-              phone: dbUser.phone,
-              email: dbUser.email,
-              role: dbUser.role as any,
-              avatarUrl: dbUser.avatarUrl,
-              isPhoneVerified: dbUser.isPhoneVerified,
-            };
+          if (orConditions.length > 0) {
+            const dbUser = await prisma.user.findFirst({
+              where: {
+                OR: orConditions,
+              },
+            });
+            if (dbUser) {
+              sessionUser = {
+                id: dbUser.id,
+                name: dbUser.name,
+                phone: dbUser.phone,
+                email: dbUser.email,
+                role: dbUser.role as any,
+                avatarUrl: dbUser.avatarUrl,
+                isPhoneVerified: dbUser.isPhoneVerified,
+              };
+            }
           }
         }
       }
     }
-    const cookieStore = await cookies();
-    const token = cookieStore.get(TOKEN_NAME)?.value;
-    if (!token) return null;
-    return verifyToken(token);
+
+    if (!sessionUser) {
+      const cookieStore = await cookies();
+      const token = cookieStore.get(TOKEN_NAME)?.value;
+      if (token) {
+        sessionUser = verifyToken(token);
+      }
+    }
+
+    if (!sessionUser) return null;
+
+    // Guarantee sessionUser.id is ALWAYS a valid PostgreSQL UUID
+    if (!isValidUuid(sessionUser.id)) {
+      const cleanPhone = (sessionUser.phone || "").trim();
+      const phoneVariants = [
+        cleanPhone,
+        cleanPhone.replace("+233", "0"),
+        cleanPhone.startsWith("0") ? "+233" + cleanPhone.slice(1) : null,
+      ].filter(Boolean) as string[];
+
+      const dbUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            ...phoneVariants.map((p) => ({ phone: p })),
+            { email: sessionUser.email || undefined },
+          ],
+        },
+      });
+
+      if (dbUser) {
+        sessionUser.id = dbUser.id;
+        sessionUser.name = dbUser.name;
+        sessionUser.phone = dbUser.phone;
+        sessionUser.email = dbUser.email;
+        sessionUser.role = dbUser.role as any;
+      }
+    }
+
+    return sessionUser;
   } catch {
     return null;
   }

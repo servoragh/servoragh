@@ -32,15 +32,15 @@ export async function POST(req: Request) {
       cleanPhone.startsWith("0") ? "+233" + cleanPhone.slice(1) : null,
     ].filter(Boolean);
 
+    const isValidUuid = (s?: string | null) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+    const orConditions: any[] = [];
+    if (isValidUuid(session.id)) orConditions.push({ id: session.id });
+    phoneVariants.forEach((p) => orConditions.push({ phone: p }));
+    if (session.email) orConditions.push({ email: session.email });
+
     // 1. Resolve User in PostgreSQL
     let user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { id: session.id },
-          ...phoneVariants.map((p) => ({ phone: p })),
-          { email: session.email || undefined },
-        ].filter(Boolean),
-      },
+      where: orConditions.length > 0 ? { OR: orConditions } : undefined,
     });
 
     if (!user) {
