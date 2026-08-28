@@ -73,17 +73,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final bool isAdmin = userRole == 'ADMIN' || userRole == 'SUPER_ADMIN';
         final bool isProvider = userRole == 'PROVIDER' || _isMerchantMode;
 
-        // Dynamic Title based on auth state & role
-        String titleText = 'Guest Portal 🌐';
-        if (isLoggedIn) {
-          if (isAdmin) {
-            titleText = 'Master Admin Portal 👑';
-          } else if (isProvider) {
-            titleText = 'Business Merchant Portal 🏢';
-          } else {
-            titleText = 'Customer Dashboard 🛒';
-          }
+        if (isLoggedIn && isAdmin) {
+          return Scaffold(
+            body: SafeArea(
+              child: AdminPortalView(
+                onSwitchToCustomer: () => setState(() => _isMerchantMode = false),
+              ),
+            ),
+          );
         }
+
+        final String titleText = isLoggedIn
+            ? (isProvider ? 'Business Merchant Portal 🏢' : 'Customer Dashboard 🛒')
+            : 'Guest Portal 🌐';
 
         return Scaffold(
           appBar: AppBar(
@@ -111,8 +113,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     if (!isLoggedIn)
                       _buildGuestView(context, isDark)
-                    else if (isAdmin)
-                      _buildAdminPortalView(context, user, isDark)
                     else if (isProvider)
                       _buildProviderPortalView(context, user, isDark)
                     else
@@ -428,37 +428,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           icon: Icons.logout_rounded,
           title: 'Log Out of Merchant Account',
           subtitle: 'Sign out and continue browsing as guest',
-          textColor: Colors.red,
-          onTap: () => _handleLogout(context),
-        ),
-      ],
-    );
-  }
-
-  // ==========================================
-  // 4. MASTER ADMIN PORTAL VIEW
-  // ==========================================
-  Widget _buildAdminPortalView(BuildContext context, user, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AdminPortalView(
-          onSwitchToCustomer: () => setState(() => _isMerchantMode = false),
-        ),
-        const Gap(20),
-
-        // Mode Switcher Banner
-        _buildModeSwitcher(
-          isMerchant: false,
-          onToggle: () => setState(() => _isMerchantMode = false),
-        ),
-        const Gap(16),
-
-        // Log Out Button
-        _buildActionTile(
-          icon: Icons.logout_rounded,
-          title: 'Log Out of Admin Panel',
-          subtitle: 'Sign out and return to guest exploration',
           textColor: Colors.red,
           onTap: () => _handleLogout(context),
         ),

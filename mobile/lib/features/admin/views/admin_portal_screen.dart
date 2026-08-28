@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
@@ -7,6 +6,7 @@ import '../../../core/constants/constants.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_card.dart';
 import '../../../core/utils/whatsapp_helper.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class AdminPortalView extends StatefulWidget {
   final VoidCallback? onSwitchToCustomer;
@@ -47,8 +47,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   String _searchQuery = '';
   String _userRoleFilter = 'ALL';
   String _productStatusFilter = 'ALL';
-  String _settingsSubTab = 'general'; // 'general' | 'flags' | 'recycle' | 'taxonomy' | 'email' | 'health' | 'storage' | 'promos'
-  String _crmDrawerTab = 'identity'; // 'identity' | 'financial' | 'omnichannel' | 'notes'
+  String _settingsSubTab = 'general';
 
   static final Dio _dio = Dio(
     BaseOptions(
@@ -183,7 +182,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // ==========================================
-  // SIDEBAR DRAWER (Exact Web Screenshot Layout)
+  // SIDEBAR DRAWER (Animated Left-Edge Slide)
   // ==========================================
   void _openAdminNavDrawer() {
     showGeneralDialog(
@@ -191,7 +190,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
       barrierDismissible: true,
       barrierLabel: 'Admin Navigation',
       barrierColor: Colors.black.withOpacity(0.55),
-      transitionDuration: const Duration(milliseconds: 280),
+      transitionDuration: const Duration(milliseconds: 260),
       pageBuilder: (ctx, anim1, anim2) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
         final pendingCount = _stats['pendingVerifications'] ?? 4;
@@ -207,8 +206,8 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                 color: isDark ? const Color(0xFF0F172A) : Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 24,
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 25,
                     offset: const Offset(8, 0),
                   ),
                 ],
@@ -216,7 +215,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
               child: SafeArea(
                 child: Column(
                   children: [
-                    // Header with Green Circle Icon & Close Button
+                    // Header with Branding & Close Button
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       child: Row(
@@ -231,7 +230,7 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                                   color: const Color(0xFF059669),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(Icons.handyman_rounded, color: Colors.white, size: 18),
+                                child: const Icon(Icons.shield_rounded, color: Colors.white, size: 18),
                               ),
                               const Gap(10),
                               const Text(
@@ -504,195 +503,25 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     );
   }
 
-  // ==========================================
-  // TOPBAR MODALS (Search & Notifications)
-  // ==========================================
-  void _openGlobalSearchModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F172A) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Admin Global Search 🔍', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                  IconButton(icon: const Icon(Icons.close_rounded, size: 20), onPressed: () => Navigator.pop(ctx)),
-                ],
-              ),
-              const Gap(10),
-              TextField(
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'Search across 13 entities (users, stores, products, gigs)...',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 18),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                ),
-                onChanged: (val) {
-                  setState(() => _searchQuery = val);
-                },
-              ),
-              const Gap(14),
-              const Text('Quick Jump Views:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-              const Gap(8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  ActionChip(
-                    label: const Text('Customer CRM', style: TextStyle(fontSize: 11)),
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      setState(() => _activeView = 'crm');
-                    },
-                  ),
-                  ActionChip(
-                    label: const Text('Business Profiles', style: TextStyle(fontSize: 11)),
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      setState(() => _activeView = 'businesses');
-                    },
-                  ),
-                  ActionChip(
-                    label: const Text('ID Queue', style: TextStyle(fontSize: 11)),
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      setState(() => _activeView = 'verification');
-                    },
-                  ),
-                  ActionChip(
-                    label: const Text('Finance Escrow', style: TextStyle(fontSize: 11)),
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      setState(() => _activeView = 'escrow');
-                    },
-                  ),
-                ],
-              ),
-              const Gap(20),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _openNotificationsSheet() {
-    final pendingCount = _stats['pendingVerifications'] ?? 4;
-    final totalProducts = _stats['totalProducts'] ?? 46;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F172A) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Operational Alerts 🔔', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                  IconButton(icon: const Icon(Icons.close_rounded, size: 20), onPressed: () => Navigator.pop(ctx)),
-                ],
-              ),
-              const Gap(10),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFFEF3C7),
-                  child: Icon(Icons.shield_rounded, color: Color(0xFFB45309), size: 18),
-                ),
-                title: const Text('Pending ID Verifications', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                subtitle: Text('$pendingCount Ghana Card reviews awaiting supervisor check.', style: const TextStyle(fontSize: 11)),
-                trailing: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ServoraColors.emerald600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    setState(() => _activeView = 'verification');
-                  },
-                  child: const Text('Review', style: TextStyle(fontSize: 11)),
-                ),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE0F2FE),
-                  child: Icon(Icons.shopping_bag_rounded, color: Color(0xFF0284C7), size: 18),
-                ),
-                title: const Text('Marketplace Product Listings', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                subtitle: Text('$totalProducts active catalog items across Northern Ghana.', style: const TextStyle(fontSize: 11)),
-                trailing: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ServoraColors.emerald600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    setState(() => _activeView = 'products');
-                  },
-                  child: const Text('Inspect', style: TextStyle(fontSize: 11)),
-                ),
-              ),
-              const Gap(10),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   // =========================================================
-  // EXACT WEB-PARITY HEADER (Matching User Screenshot)
+  // CLEAN FULL-WIDTH TOPBAR (Matching Web Layout, 0 Island Margin)
   // =========================================================
   Widget _buildWebParityHeader(bool isDark) {
     return Container(
       height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+        color: isDark ? const Color(0xFF090D16) : Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+            width: 1,
           ),
-        ],
+        ),
       ),
       child: Row(
         children: [
-          // 1. Hamburger Menu Button
+          // Hamburger Menu Button
           InkWell(
             onTap: _openAdminNavDrawer,
             borderRadius: BorderRadius.circular(8),
@@ -705,42 +534,25 @@ class _AdminPortalViewState extends State<AdminPortalView> {
               ),
             ),
           ),
-          const Gap(4),
-
-          // 2. Green Wrench Square Badge
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: const Color(0xFF059669),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Center(
-              child: Icon(Icons.handyman_rounded, color: Colors.white, size: 17),
-            ),
-          ),
           const Gap(8),
 
-          // 3. Text "Servora Admin"
-          const Flexible(
-            child: Text(
-              'Servora Admin',
-              style: TextStyle(
-                fontSize: 15.5,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.3,
-              ),
-              overflow: TextOverflow.ellipsis,
+          // Title
+          const Text(
+            'Servora Admin',
+            style: TextStyle(
+              fontSize: 16.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.3,
             ),
           ),
 
           const Spacer(),
 
-          // 4. Green Search Pill (with white magnifying glass)
+          // Search Button (switches to CRM Search)
           GestureDetector(
-            onTap: _openGlobalSearchModal,
+            onTap: () => setState(() => _activeView = 'crm'),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFF059669),
                 borderRadius: BorderRadius.circular(20),
@@ -748,56 +560,16 @@ class _AdminPortalViewState extends State<AdminPortalView> {
               child: const Icon(Icons.search_rounded, size: 15, color: Colors.white),
             ),
           ),
-          const Gap(4),
+          const Gap(8),
 
-          // 5. Plain Search Icon Button
-          InkWell(
-            onTap: _openGlobalSearchModal,
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.all(5.0),
-              child: Icon(
-                Icons.search_rounded,
-                size: 19,
-                color: isDark ? Colors.white60 : const Color(0xFF64748B),
-              ),
-            ),
-          ),
-          const Gap(2),
-
-          // 6. Translucent Glow Circle with Purple Moon Icon
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF3F4F6),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.purple.withOpacity(0.12),
-                  blurRadius: 6,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.nightlight_round,
-                size: 14,
-                color: Color(0xFF9333EA),
-              ),
-            ),
-          ),
-          const Gap(4),
-
-          // 7. Notification Bell with Soft Red Dot
+          // Notification Bell (switches directly to ID verification queue)
           GestureDetector(
-            onTap: _openNotificationsSheet,
+            onTap: () => setState(() => _activeView = 'verification'),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(5.0),
+                  padding: const EdgeInsets.all(6.0),
                   child: Icon(
                     Icons.notifications_none_rounded,
                     size: 20,
@@ -805,8 +577,8 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                   ),
                 ),
                 Positioned(
-                  top: 3,
-                  right: 3,
+                  top: 4,
+                  right: 4,
                   child: Container(
                     width: 7,
                     height: 7,
@@ -819,45 +591,91 @@ class _AdminPortalViewState extends State<AdminPortalView> {
               ],
             ),
           ),
-          const Gap(4),
+          const Gap(8),
 
-          // 8. Vertical Divider Line
+          // Vertical Divider
           Container(
             width: 1,
             height: 20,
             color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
           ),
-          const Gap(6),
+          const Gap(8),
 
-          // 9. User Initial Avatar Circle + Chevron Down
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF047857),
-                  shape: BoxShape.circle,
+          // User Avatar Initial 'D' + Menu Action
+          PopupMenuButton<String>(
+            offset: const Offset(0, 40),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            color: isDark ? const Color(0xFF0F172A) : Colors.white,
+            onSelected: (val) {
+              if (val == 'LOGOUT') {
+                authNotifier.logout();
+              } else if (val == 'CUSTOMER') {
+                widget.onSwitchToCustomer?.call();
+              }
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'PROFILE',
+                enabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Administrator', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text('admin@servora.gh', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                  ],
                 ),
-                child: const Center(
-                  child: Text(
-                    'D',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13,
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'CUSTOMER',
+                child: Row(
+                  children: [
+                    Icon(Icons.person_outline_rounded, size: 16, color: ServoraColors.emerald600),
+                    Gap(8),
+                    Text('Switch to Customer View', style: TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'LOGOUT',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout_rounded, size: 16, color: Colors.red),
+                    Gap(8),
+                    Text('Sign Out', style: TextStyle(fontSize: 12, color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF047857),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'D',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const Gap(2),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 15,
-                color: isDark ? Colors.white60 : const Color(0xFF64748B),
-              ),
-            ],
+                const Gap(2),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 16,
+                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -880,56 +698,65 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Exact Web-Parity Header Bar
-        _buildWebParityHeader(isDark).animate().fadeIn(duration: 150.ms),
-        const Gap(14),
+        // Full-Width Seamless Web Topbar
+        _buildWebParityHeader(isDark),
 
-        if (_errorMessage != null) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.amber.withOpacity(0.4)),
-            ),
-            child: Row(
+        // Workspace Scrollable Body
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.cloud_off_rounded, size: 18, color: Colors.amber),
-                const Gap(10),
-                Expanded(
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.amber),
+                if (_errorMessage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.cloud_off_rounded, size: 18, color: Colors.amber),
+                        const Gap(10),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.amber),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _fetchLiveAdminData,
+                          child: const Text('Retry', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                TextButton(
-                  onPressed: _fetchLiveAdminData,
-                  child: const Text('Retry', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
-                ),
+                  const Gap(12),
+                ],
+
+                // Dynamic Workspace Views
+                if (_activeView == 'overview') _buildOverviewView(),
+                if (_activeView == 'activity') _buildActivityView(),
+                if (_activeView == 'crm') _buildCrmView(),
+                if (_activeView == 'businesses') _buildBusinessesView(),
+                if (_activeView == 'verification') _buildVerificationView(),
+                if (_activeView == 'security') _buildSecurityView(),
+                if (_activeView == 'escrow') _buildEscrowView(),
+                if (_activeView == 'delivery') _buildDeliveryView(),
+                if (_activeView == 'products') _buildProductsView(),
+                if (_activeView == 'requests') _buildRequestsView(),
+                if (_activeView == 'rentals') _buildRentalsView(),
+                if (_activeView == 'disputes') _buildDisputesView(),
+                if (_activeView == 'community') _buildCommunityView(),
+                if (_activeView == 'tickers') _buildTickersView(),
+                if (_activeView == 'settings') _buildSettingsView(),
+                const Gap(24),
               ],
             ),
           ),
-          const Gap(12),
-        ],
-
-        // =========================================================
-        // VIEW RENDERER BASED ON SELECTED WORKSPACE
-        // =========================================================
-        if (_activeView == 'overview') _buildOverviewView(),
-        if (_activeView == 'activity') _buildActivityView(),
-        if (_activeView == 'crm') _buildCrmView(),
-        if (_activeView == 'businesses') _buildBusinessesView(),
-        if (_activeView == 'verification') _buildVerificationView(),
-        if (_activeView == 'security') _buildSecurityView(),
-        if (_activeView == 'escrow') _buildEscrowView(),
-        if (_activeView == 'delivery') _buildDeliveryView(),
-        if (_activeView == 'products') _buildProductsView(),
-        if (_activeView == 'requests') _buildRequestsView(),
-        if (_activeView == 'rentals') _buildRentalsView(),
-        if (_activeView == 'disputes') _buildDisputesView(),
-        if (_activeView == 'community') _buildCommunityView(),
-        if (_activeView == 'tickers') _buildTickersView(),
-        if (_activeView == 'settings') _buildSettingsView(),
+        ),
       ],
     );
   }
@@ -1371,177 +1198,8 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // =========================================================
-  // 3. CUSTOMER CRM 360° WORKSPACE WITH DETAILS DRAWER
+  // 3. CUSTOMER CRM 360° WORKSPACE
   // =========================================================
-  void _openCustomer360Drawer(Map<String, dynamic> user) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final isDark = Theme.of(ctx).brightness == Brightness.dark;
-          final name = user['name'] ?? 'Customer Member';
-          final phone = user['phone'] ?? '+233 24 000 0000';
-          final email = user['email'] ?? 'No Email';
-          final role = user['role'] ?? 'CUSTOMER';
-
-          return Container(
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0F172A) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            padding: const EdgeInsets.all(18),
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const Gap(14),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
-                        child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'C', style: const TextStyle(fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
-                      ),
-                      const Gap(12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            Text('$phone • $email', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: ServoraColors.emerald600.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(role, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
-                      ),
-                    ],
-                  ),
-                  const Gap(16),
-
-                  // 360 Tabs
-                  Row(
-                    children: [
-                      _buildDrawerTabPill('Identity', 'identity', setModalState),
-                      const Gap(6),
-                      _buildDrawerTabPill('Financial & Escrow', 'financial', setModalState),
-                      const Gap(6),
-                      _buildDrawerTabPill('Omnichannel', 'omnichannel', setModalState),
-                    ],
-                  ),
-                  const Gap(14),
-
-                  if (_crmDrawerTab == 'identity') ...[
-                    _buildDrawerInfoRow('Account Status', 'ACTIVE / VERIFIED', Colors.green),
-                    _buildDrawerInfoRow('Risk Score', 'LOW RISK (0/100)', Colors.green),
-                    _buildDrawerInfoRow('Joined Region', 'Tamale Central, Northern Ghana', Colors.grey[700]!),
-                    const Gap(14),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        icon: const Icon(Icons.block_rounded, size: 16),
-                        label: const Text('Ban / Restrict Customer Account', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Account for $name flagged.')),
-                          );
-                        },
-                      ),
-                    ),
-                  ] else if (_crmDrawerTab == 'financial') ...[
-                    _buildDrawerInfoRow('MoMo Escrow Volume', 'GH₵ 420.00 (3 Deals)', ServoraColors.emerald600),
-                    _buildDrawerInfoRow('Pending Refunds', 'GH₵ 0.00', Colors.grey),
-                    _buildDrawerInfoRow('Platform Fee Paid', 'GH₵ 21.00', Colors.grey[700]!),
-                  ] else ...[
-                    _buildDrawerInfoRow('WhatsApp Dispatch', 'Enabled & Automated', Colors.green),
-                    _buildDrawerInfoRow('SMS Alerts Gateway', 'Delivered (100%)', Colors.green),
-                    const Gap(10),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF25D366),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      icon: const Icon(Icons.chat_rounded, size: 16),
-                      label: const Text('Direct WhatsApp Chat', style: TextStyle(fontWeight: FontWeight.bold)),
-                      onPressed: () => WhatsAppHelper.openWhatsApp(phone: phone, message: "Hello $name, this is Servora Admin Support."),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildDrawerTabPill(String label, String tabId, StateSetter setModalState) {
-    final isSel = _crmDrawerTab == tabId;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setModalState(() => _crmDrawerTab = tabId);
-          setState(() => _crmDrawerTab = tabId);
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isSel ? ServoraColors.emerald600 : Colors.grey.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: isSel ? Colors.white : Colors.grey[700],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDrawerInfoRow(String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 11.5, color: Colors.grey)),
-          Text(value, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: color)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCrmView() {
     final filtered = _users.where((u) {
       final matchesSearch = (u['name']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
@@ -1647,9 +1305,9 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.remove_red_eye_rounded, size: 20, color: ServoraColors.emerald600),
-                    tooltip: 'Inspect 360° Profile',
-                    onPressed: () => _openCustomer360Drawer(u),
+                    icon: const Icon(Icons.manage_accounts_rounded, size: 20, color: ServoraColors.emerald600),
+                    tooltip: 'Toggle User Role',
+                    onPressed: () => _handleAdminAction('TOGGLE_USER_ROLE', targetId: u['id']),
                   ),
                 ],
               ),
@@ -2071,6 +1729,9 @@ class _AdminPortalViewState extends State<AdminPortalView> {
             separatorBuilder: (_, __) => const Gap(8),
             itemBuilder: (context, idx) {
               final req = _serviceRequests[idx];
+              final phone = req['customer']?['phone'] ?? '';
+              final name = req['customer']?['name'] ?? 'Client';
+
               return ServoraCard(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -2084,7 +1745,21 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                       ],
                     ),
                     const Gap(4),
-                    Text('Customer: ${req['customer']?['name'] ?? 'Client'} (${req['customer']?['phone'] ?? ''})', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    Text('Customer: $name ($phone)', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    if (phone.isNotEmpty) ...[
+                      const Gap(8),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF25D366),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(Icons.chat_rounded, size: 14),
+                        label: const Text('WhatsApp Dispatch', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        onPressed: () => WhatsAppHelper.openWhatsApp(phone: phone, message: "Hello $name, this is Servora Admin Dispatch regarding your request: ${req['title']}"),
+                      ),
+                    ],
                   ],
                 ),
               );
