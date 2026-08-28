@@ -35,6 +35,52 @@ export async function GET(
     });
 
     if (!provider) {
+      const biz = await prisma.businessProfile.findUnique({
+        where: { slug },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              email: true,
+              avatarUrl: true,
+              isPhoneVerified: true,
+              createdAt: true,
+            },
+          },
+          services: true,
+        },
+      });
+
+      if (biz) {
+        return NextResponse.json({
+          provider: {
+            id: biz.id,
+            userId: biz.userId,
+            businessName: biz.businessName,
+            slug: biz.slug,
+            bio: biz.description,
+            yearsExperience: 1,
+            pricingHourly: null,
+            pricingFixedStart: null,
+            serviceArea: biz.zone,
+            verificationStatus: biz.verificationStatus,
+            logoUrl: biz.logoUrl,
+            ratingAverage: biz.ratingAverage,
+            reviewCount: biz.reviewsCount,
+            completedJobsCount: 0,
+            badges: "[\"PHONE_VERIFIED\"]",
+            portfolioUrls: "[]",
+            user: biz.user,
+            services: biz.services.map((s) => ({
+              service: { id: s.id, name: s.serviceName },
+            })),
+          },
+          reviews: [],
+        });
+      }
+
       return NextResponse.json({ error: "Provider profile not found." }, { status: 404 });
     }
 

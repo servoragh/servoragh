@@ -20,6 +20,8 @@ export async function POST(request: Request) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const isVideo = file.type?.startsWith("video/") || false;
+    const resourceType = isVideo ? "video" : "image";
 
     // 1. Try Cloudinary Signed REST Upload
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "qch4qejm";
@@ -31,7 +33,7 @@ export async function POST(request: Request) {
       const strToSign = `timestamp=${timestamp}${apiSecret}`;
       const signature = crypto.createHash("sha1").update(strToSign).digest("hex");
 
-      const base64Data = `data:${file.type || "image/png"};base64,${buffer.toString("base64")}`;
+      const base64Data = `data:${file.type || (isVideo ? "video/mp4" : "image/png")};base64,${buffer.toString("base64")}`;
 
       const uploadFormData = new FormData();
       uploadFormData.append("file", base64Data);
@@ -39,7 +41,7 @@ export async function POST(request: Request) {
       uploadFormData.append("timestamp", timestamp);
       uploadFormData.append("signature", signature);
 
-      const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
         method: "POST",
         body: uploadFormData,
       });
@@ -52,8 +54,10 @@ export async function POST(request: Request) {
           url: cloudData.secure_url,
           width: cloudData.width,
           height: cloudData.height,
+          duration: cloudData.duration,
           format: cloudData.format,
           bytes: cloudData.bytes,
+          resourceType,
         });
       }
     } catch (cloudErr) {
@@ -66,8 +70,8 @@ export async function POST(request: Request) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    const fileExt = file.name ? path.extname(file.name) : ".png";
-    const filename = `img_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}${fileExt || ".png"}`;
+    const fileExt = file.name ? path.extname(file.name) : (isVideo ? ".mp4" : ".png");
+    const filename = `${isVideo ? "vid" : "img"}_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}${fileExt || (isVideo ? ".mp4" : ".png")}`;
     const filePath = path.join(uploadDir, filename);
 
     fs.writeFileSync(filePath, buffer);
@@ -76,9 +80,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       url: localUrl,
+      resourceType,
     });
   } catch (error: any) {
     console.error("Upload API Error:", error);
-    return NextResponse.json({ error: "Failed to upload image." }, { status: 500 });
+    return NextResponse.json({ error: "Failed to upload file." }, { status: 500 });
   }
 }

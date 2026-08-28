@@ -27,6 +27,14 @@ import {
   Eye,
   QrCode,
   Image as ImageIcon,
+  Store,
+  Video,
+  Play,
+  Tag,
+  Truck,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { formatGHS } from "@/lib/utils";
 import { FavoriteButton } from "@/components/FavoriteButton";
@@ -45,9 +53,38 @@ export default function PublicDigitalStorefrontPage() {
 
   const [activeTab, setActiveTab] = useState<"products" | "rentals" | "services" | "posts">("products");
 
-  // Product View Detail Modal State
+  // Catalog Detail Modal States
   const [viewingProduct, setViewingProduct] = useState<any>(null);
+  const [viewingRental, setViewingRental] = useState<any>(null);
+  const [viewingService, setViewingService] = useState<any>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [viewingMediaType, setViewingMediaType] = useState<"image" | "video">("image");
+
+  // Full-Screen Image Lightbox & Zoom (Unified for Products, Rentals, and Services)
+  const [lightbox, setLightbox] = useState<{
+    isOpen: boolean;
+    title: string;
+    images: string[];
+    activeIndex: number;
+    isZoomed: boolean;
+  }>({
+    isOpen: false,
+    title: "",
+    images: [],
+    activeIndex: 0,
+    isZoomed: false,
+  });
+
+  const openLightbox = (title: string, images: string[], startIndex = 0) => {
+    if (!images || images.length === 0) return;
+    setLightbox({
+      isOpen: true,
+      title,
+      images,
+      activeIndex: startIndex,
+      isZoomed: false,
+    });
+  };
 
   // Growth Toolkit Modal States
   const [isShareDrawerOpen, setIsShareDrawerOpen] = useState(false);
@@ -63,7 +100,6 @@ export default function PublicDigitalStorefrontPage() {
   const [sendingQuote, setSendingQuote] = useState(false);
   const [quoteSuccess, setQuoteSuccess] = useState(false);
 
-
   useEffect(() => {
     if (slug) fetchStorefront();
   }, [slug]);
@@ -71,13 +107,38 @@ export default function PublicDigitalStorefrontPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setViewingProduct(null);
-        setIsQuoteModalOpen(false);
+        if (lightbox.isOpen) {
+          setLightbox((prev) => ({ ...prev, isOpen: false }));
+        } else {
+          setViewingProduct(null);
+          setViewingRental(null);
+          setViewingService(null);
+          setIsQuoteModalOpen(false);
+          setIsShareDrawerOpen(false);
+          setIsQrModalOpen(false);
+          setIsPromoFlyerOpen(false);
+        }
+      }
+      if (lightbox.isOpen && lightbox.images.length > 1) {
+        if (e.key === "ArrowLeft") {
+          setLightbox((prev) => ({
+            ...prev,
+            activeIndex: prev.activeIndex > 0 ? prev.activeIndex - 1 : prev.images.length - 1,
+            isZoomed: false,
+          }));
+        }
+        if (e.key === "ArrowRight") {
+          setLightbox((prev) => ({
+            ...prev,
+            activeIndex: prev.activeIndex < prev.images.length - 1 ? prev.activeIndex + 1 : 0,
+            isZoomed: false,
+          }));
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [lightbox]);
 
   async function fetchStorefront() {
     try {
@@ -284,33 +345,108 @@ export default function PublicDigitalStorefrontPage() {
               </p>
             )}
 
-            {/* Location & GPS Card */}
-            <div className="mt-6 p-4 bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 rounded-xl">
-                  <MapPin className="w-5 h-5" />
+            {/* Physical Workshop / Storefront Photo Showcase */}
+            {profile.storefrontPhotoUrl && (
+              <div className="mt-6 border-t border-stone-100 dark:border-stone-800 pt-6 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Store className="w-4 h-4 text-emerald-600" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-stone-700 dark:text-stone-300">
+                      Physical Storefront & Workshop Photo
+                    </h3>
+                  </div>
+                  <span className="text-[10px] px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold rounded-full border border-emerald-200 dark:border-emerald-800">
+                    Verified Location
+                  </span>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-stone-900 dark:text-white">
-                    {profile.addressDetails || profile.zone}
-                  </h4>
-                  {profile.landmark && (
-                    <p className="text-[11px] text-stone-500">Landmark: {profile.landmark}</p>
-                  )}
+                <div className="relative rounded-3xl overflow-hidden border border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-950 group h-64 sm:h-80">
+                  <img
+                    src={profile.storefrontPhotoUrl}
+                    alt={`${profile.businessName} Physical Storefront`}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-between p-4 sm:p-6">
+                    <div className="text-white">
+                      <p className="text-xs font-black drop-shadow-sm flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-400" /> {profile.addressDetails || profile.zone}
+                      </p>
+                      {profile.landmark && (
+                        <p className="text-[11px] text-stone-300">Landmark: {profile.landmark}</p>
+                      )}
+                    </div>
+                    <a
+                      href={profile.storefrontPhotoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 bg-white/90 hover:bg-white text-stone-900 text-xs font-bold rounded-xl flex items-center gap-1 shadow-lg backdrop-blur-xs transition"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> Full Photo
+                    </a>
+                  </div>
                 </div>
               </div>
+            )}
 
-              {profile.latitude && profile.longitude && (
-                <a
-                  href={`https://maps.google.com/?q=${profile.latitude},${profile.longitude}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
-                >
-                  <Navigation className="w-3.5 h-3.5" /> View on Google Maps
-                </a>
-              )}
-            </div>
+            {/* Location & Interactive Live Map */}
+            {(() => {
+              const lat = profile.latitude ? Number(profile.latitude) : 9.4074;
+              const lng = profile.longitude ? Number(profile.longitude) : -0.8416;
+              const googleMapsUrl = profile.latitude && profile.longitude
+                ? `https://www.google.com/maps/dir/?api=1&destination=${profile.latitude},${profile.longitude}`
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((profile.addressDetails || profile.zone || "Tamale") + " Ghana")}`;
+
+              return (
+                <div className="mt-6 border-t border-stone-100 dark:border-stone-800 pt-6 space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-2xl">
+                        <MapPin className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-stone-900 dark:text-white flex items-center gap-2">
+                          <span>{profile.addressDetails || profile.zone}</span>
+                          <span className="text-[10px] px-2 py-0.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-full font-mono">
+                            {profile.latitude && profile.longitude ? `${Number(profile.latitude).toFixed(4)}° N, ${Number(profile.longitude).toFixed(4)}° W` : "Tamale, Ghana"}
+                          </span>
+                        </h4>
+                        {profile.landmark && (
+                          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                            Landmark: <strong>{profile.landmark}</strong>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <a
+                      href={googleMapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-2xl flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition cursor-pointer"
+                    >
+                      <Navigation className="w-4 h-4" /> Open in Google Maps (Live Directions) 🚗
+                    </a>
+                  </div>
+
+                  {/* Interactive Live Map Iframe Embed */}
+                  <div className="relative rounded-3xl overflow-hidden border border-stone-200 dark:border-stone-800 shadow-inner h-56 sm:h-64 bg-stone-100 dark:bg-stone-950">
+                    <iframe
+                      title="Storefront Location Live Map"
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.008}%2C${lat - 0.005}%2C${lng + 0.008}%2C${lat + 0.005}&layer=mapnik&marker=${lat}%2C${lng}`}
+                      className="w-full h-full border-0"
+                      loading="lazy"
+                    />
+                    <a
+                      href={googleMapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="absolute bottom-3 right-3 px-3 py-1.5 bg-stone-900/90 hover:bg-stone-900 text-white rounded-xl text-[11px] font-extrabold flex items-center gap-1.5 backdrop-blur-md shadow-lg transition"
+                    >
+                      <Navigation className="w-3.5 h-3.5 text-emerald-400" /> Navigate to Store ↗
+                    </a>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -355,7 +491,23 @@ export default function PublicDigitalStorefrontPage() {
           {activeTab === "products" && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((p: any) => {
-                const pImages: string[] = Array.isArray(p.images) ? p.images : [];
+                const pImages: string[] = Array.isArray(p.images)
+                  ? p.images
+                  : typeof p.images === "string"
+                  ? (() => {
+                      try {
+                        const parsed = JSON.parse(p.images);
+                        return Array.isArray(parsed) ? parsed : [p.images];
+                      } catch {
+                        return p.images ? [p.images] : [];
+                      }
+                    })()
+                  : [];
+
+                const hasDiscount = p.originalPrice && Number(p.originalPrice) > Number(p.price);
+                const discountPercent = hasDiscount
+                  ? Math.round(((Number(p.originalPrice) - Number(p.price)) / Number(p.originalPrice)) * 100)
+                  : 0;
 
                 return (
                   <div
@@ -365,46 +517,81 @@ export default function PublicDigitalStorefrontPage() {
                     <div>
                       <div
                         onClick={() => {
-                          setViewingProduct(p);
+                          setViewingProduct({ ...p, images: pImages });
                           setActiveImageIndex(0);
+                          setViewingMediaType(p.videoUrl && pImages.length === 0 ? "video" : "image");
                         }}
-                        className="cursor-pointer relative aspect-video w-full rounded-2xl bg-stone-100 dark:bg-stone-800 overflow-hidden mb-3"
+                        className="cursor-pointer relative aspect-video w-full rounded-2xl bg-stone-100 dark:bg-stone-800 overflow-hidden mb-3 group/img"
                       >
                         {pImages[0] ? (
-                          <img src={pImages[0]} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <img
+                            src={pImages[0]}
+                            alt={p.title}
+                            className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-stone-400">
                             <Package className="w-8 h-8 opacity-40" />
                           </div>
                         )}
+
+                        <div className="absolute top-2 left-2 flex items-center gap-1.5 flex-wrap">
+                          {p.videoUrl && (
+                            <span className="px-2.5 py-1 bg-purple-600/90 text-white text-[10px] font-black rounded-lg backdrop-blur-sm flex items-center gap-1 shadow-sm">
+                              <Play className="w-2.5 h-2.5 fill-white" /> 30s Video
+                            </span>
+                          )}
+                          {hasDiscount && (
+                            <span className="px-2 py-0.5 bg-rose-600 text-white text-[10px] font-black rounded-lg shadow-sm">
+                              {discountPercent}% OFF
+                            </span>
+                          )}
+                        </div>
+
                         <span className="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm flex items-center gap-1">
-                          <Eye className="w-3 h-3" /> View {pImages.length || 1} Photos
+                          <Eye className="w-3 h-3" /> {pImages.length} Photo{pImages.length !== 1 ? "s" : ""}
                         </span>
                       </div>
 
-                      {/* Display thumbnail row of all uploaded images up to 5 */}
+                      {/* Display thumbnail row of ALL uploaded images */}
                       {pImages.length > 1 && (
                         <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
-                          {pImages.slice(0, 5).map((imgUrl, idx) => (
+                          {pImages.map((imgUrl, idx) => (
                             <img
                               key={idx}
                               src={imgUrl}
                               alt={`${p.title} photo ${idx + 1}`}
                               onClick={() => {
-                                setViewingProduct(p);
+                                setViewingProduct({ ...p, images: pImages });
                                 setActiveImageIndex(idx);
+                                setViewingMediaType("image");
                               }}
-                              className="w-10 h-10 rounded-xl object-cover border border-stone-200 cursor-pointer hover:border-emerald-500 transition-all shrink-0"
+                              className="w-10 h-10 rounded-xl object-cover border border-stone-200 cursor-pointer hover:border-emerald-500 transition-all shrink-0 hover:scale-105"
                             />
                           ))}
                         </div>
                       )}
 
-                      <span className="text-[10px] font-bold text-emerald-600 uppercase">{p.category}</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{p.category}</span>
+                        {p.stockQuantity !== undefined && (
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              p.stockQuantity > 0
+                                ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+                                : "bg-rose-50 dark:bg-rose-950 text-rose-600"
+                            }`}
+                          >
+                            {p.stockQuantity > 0 ? `In Stock: ${p.stockQuantity}` : "Out of Stock"}
+                          </span>
+                        )}
+                      </div>
+
                       <h4
                         onClick={() => {
-                          setViewingProduct(p);
+                          setViewingProduct({ ...p, images: pImages });
                           setActiveImageIndex(0);
+                          setViewingMediaType(p.videoUrl && pImages.length === 0 ? "video" : "image");
                         }}
                         className="text-base font-bold text-stone-900 dark:text-white mt-1 cursor-pointer hover:text-emerald-600"
                       >
@@ -414,14 +601,21 @@ export default function PublicDigitalStorefrontPage() {
                     </div>
 
                     <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
-                      <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
-                        {formatGHS(p.price)}
-                      </span>
+                      <div>
+                        <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
+                          {formatGHS(p.price)}
+                        </span>
+                        {hasDiscount && (
+                          <span className="block text-[11px] text-stone-400 line-through">
+                            {formatGHS(p.originalPrice)}
+                          </span>
+                        )}
+                      </div>
                       <button
                         onClick={() => handleWhatsAppClick(p.title)}
-                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition-all"
+                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5"
                       >
-                        Inquire on WhatsApp
+                        <MessageSquare className="w-3.5 h-3.5" /> Inquire
                       </button>
                     </div>
                   </div>
@@ -439,37 +633,92 @@ export default function PublicDigitalStorefrontPage() {
           {activeTab === "rentals" && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {rentals.map((r: any) => {
-                const rImages: string[] = Array.isArray(r.images) ? r.images : [];
+                const rImages: string[] = Array.isArray(r.images)
+                  ? r.images
+                  : typeof r.images === "string"
+                  ? (() => {
+                      try {
+                        return JSON.parse(r.images);
+                      } catch {
+                        return r.images ? [r.images] : [];
+                      }
+                    })()
+                  : [];
 
                 return (
                   <div
                     key={r.id}
-                    className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-sm space-y-4 flex flex-col justify-between"
+                    className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-all group"
                   >
                     <div>
-                      <div className="aspect-video w-full rounded-2xl bg-amber-50 dark:bg-amber-950/40 overflow-hidden mb-3">
+                      <div
+                        onClick={() => openLightbox(r.title, rImages, 0)}
+                        className="cursor-zoom-in group/img aspect-video w-full rounded-2xl bg-amber-50 dark:bg-amber-950/40 overflow-hidden mb-3 relative"
+                      >
                         {rImages[0] ? (
-                          <img src={rImages[0]} alt={r.title} className="w-full h-full object-cover" />
+                          <img
+                            src={rImages[0]}
+                            alt={r.title}
+                            className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-amber-500">
                             <Wrench className="w-8 h-8 opacity-40" />
                           </div>
                         )}
+
+                        {rImages.length > 0 && (
+                          <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
+                            <span className="opacity-0 group-hover/img:opacity-100 transition-opacity px-2.5 py-1 bg-black/80 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow">
+                              <Maximize2 className="w-3 h-3" /> View Full Size
+                            </span>
+                          </div>
+                        )}
+
+                        {rImages.length > 1 && (
+                          <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm flex items-center gap-1">
+                            <Eye className="w-3 h-3" /> {rImages.length} Photos
+                          </span>
+                        )}
                       </div>
+
+                      {/* Thumbnail strip */}
                       {rImages.length > 1 && (
                         <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
-                          {rImages.slice(0, 5).map((imgUrl, idx) => (
-                            <img
+                          {rImages.map((imgUrl: string, idx: number) => (
+                            <button
                               key={idx}
-                              src={imgUrl}
-                              alt={`${r.title} ${idx + 1}`}
-                              className="w-10 h-10 rounded-xl object-cover border border-amber-200 shrink-0"
-                            />
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openLightbox(r.title, rImages, idx);
+                              }}
+                              className="w-10 h-10 rounded-xl overflow-hidden border border-amber-200 dark:border-amber-900 shrink-0 hover:scale-105 transition-transform cursor-pointer"
+                            >
+                              <img src={imgUrl} alt={`${r.title} ${idx + 1}`} className="w-full h-full object-cover" />
+                            </button>
                           ))}
                         </div>
                       )}
-                      <span className="text-[10px] font-bold text-amber-600 uppercase">{r.category}</span>
-                      <h4 className="text-base font-bold text-stone-900 dark:text-white mt-1">{r.title}</h4>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold text-amber-600 uppercase">{r.category}</span>
+                        {r.operatorIncluded && (
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
+                            + Operator Included
+                          </span>
+                        )}
+                      </div>
+
+                      <h4
+                        onClick={() => {
+                          setViewingRental({ ...r, images: rImages });
+                          setActiveImageIndex(0);
+                        }}
+                        className="text-base font-bold text-stone-900 dark:text-white mt-1 cursor-pointer hover:text-amber-600 transition"
+                      >
+                        {r.title}
+                      </h4>
                       <p className="text-xs text-stone-500 line-clamp-2 mt-1">{r.description}</p>
                     </div>
 
@@ -478,12 +727,17 @@ export default function PublicDigitalStorefrontPage() {
                         <span className="text-base font-black text-amber-600 dark:text-amber-400">
                           {formatGHS(r.dailyRate)} / day
                         </span>
+                        {r.weeklyRate && (
+                          <span className="block text-[10px] text-stone-400">
+                            {formatGHS(r.weeklyRate)} / week
+                          </span>
+                        )}
                       </div>
                       <button
                         onClick={() => handleWhatsAppClick(`Rental: ${r.title}`)}
-                        className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow"
+                        className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition-all cursor-pointer"
                       >
-                        Book Rental
+                        <MessageSquare className="w-3.5 h-3.5" /> Book Rental
                       </button>
                     </div>
                   </div>
@@ -500,29 +754,106 @@ export default function PublicDigitalStorefrontPage() {
           {/* SERVICES SHOWCASE */}
           {activeTab === "services" && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.map((s: any) => (
-                <div
-                  key={s.id}
-                  className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-sm space-y-4 flex flex-col justify-between"
-                >
-                  <div>
-                    <h4 className="text-base font-bold text-stone-900 dark:text-white">{s.serviceName}</h4>
-                    <p className="text-xs text-stone-500 line-clamp-3 mt-2">{s.description}</p>
-                  </div>
+              {services.map((s: any) => {
+                const sPhotos: string[] = Array.isArray(s.portfolioPhotos)
+                  ? s.portfolioPhotos
+                  : typeof s.portfolioPhotos === "string"
+                  ? (() => {
+                      try {
+                        return JSON.parse(s.portfolioPhotos);
+                      } catch {
+                        return s.portfolioPhotos ? [s.portfolioPhotos] : [];
+                      }
+                    })()
+                  : [];
 
-                  <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
-                    <span className="text-base font-black text-blue-600 dark:text-blue-400">
-                      {s.startingPrice ? formatGHS(s.startingPrice) : "On Quote"}
-                    </span>
-                    <button
-                      onClick={() => setIsQuoteModalOpen(true)}
-                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow"
-                    >
-                      Get Price Estimate
-                    </button>
+                return (
+                  <div
+                    key={s.id}
+                    className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-all group"
+                  >
+                    <div>
+                      {/* Portfolio Photo Banner */}
+                      {sPhotos.length > 0 ? (
+                        <div
+                          onClick={() => openLightbox(s.serviceName, sPhotos, 0)}
+                          className="cursor-zoom-in group/img aspect-video w-full rounded-2xl bg-blue-50 dark:bg-blue-950/40 overflow-hidden mb-3 relative"
+                        >
+                          <img
+                            src={sPhotos[0]}
+                            alt={s.serviceName}
+                            className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
+                            <span className="opacity-0 group-hover/img:opacity-100 transition-opacity px-2.5 py-1 bg-black/80 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow">
+                              <Maximize2 className="w-3 h-3" /> View Full Size
+                            </span>
+                          </div>
+                          {sPhotos.length > 1 && (
+                            <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm flex items-center gap-1">
+                              <Eye className="w-3 h-3" /> {sPhotos.length} Photos
+                            </span>
+                          )}
+                        </div>
+                      ) : null}
+
+                      {/* Thumbnail strip */}
+                      {sPhotos.length > 1 && (
+                        <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
+                          {sPhotos.map((imgUrl: string, idx: number) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openLightbox(s.serviceName, sPhotos, idx);
+                              }}
+                              className="w-10 h-10 rounded-xl overflow-hidden border border-blue-200 dark:border-blue-900 shrink-0 hover:scale-105 transition-transform cursor-pointer"
+                            >
+                              <img src={imgUrl} alt={`${s.serviceName} ${idx + 1}`} className="w-full h-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold text-blue-600 uppercase">Service Menu</span>
+                        {s.estimatedDuration && (
+                          <span className="text-[10px] text-stone-400 flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {s.estimatedDuration}
+                          </span>
+                        )}
+                      </div>
+
+                      <h4
+                        onClick={() => {
+                          setViewingService({ ...s, photos: sPhotos });
+                          setActiveImageIndex(0);
+                        }}
+                        className="text-base font-bold text-stone-900 dark:text-white cursor-pointer hover:text-blue-600 transition"
+                      >
+                        {s.serviceName}
+                      </h4>
+                      <p className="text-xs text-stone-500 line-clamp-3 mt-2">{s.description}</p>
+                    </div>
+
+                    <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
+                      <span className="text-base font-black text-blue-600 dark:text-blue-400">
+                        {s.startingPrice ? formatGHS(s.startingPrice) : "On Quote"}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setCustNotes(`Interested in service: "${s.serviceName}"`);
+                          setIsQuoteModalOpen(true);
+                        }}
+                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Get Estimate
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {services.length === 0 && (
                 <div className="col-span-full py-16 text-center text-stone-400 text-xs">
                   No custom service options listed yet.
@@ -533,7 +864,7 @@ export default function PublicDigitalStorefrontPage() {
         </div>
       </div>
 
-      {/* FULL PRODUCT MULTI-IMAGE GALLERY MODAL */}
+      {/* FULL PRODUCT MULTI-IMAGE & 30s VIDEO GALLERY MODAL */}
       {viewingProduct && (
         <div
           onClick={() => setViewingProduct(null)}
@@ -541,7 +872,7 @@ export default function PublicDigitalStorefrontPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 relative my-auto cursor-default"
+            className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 relative my-auto cursor-default max-h-[90vh] overflow-y-auto"
           >
             {/* Modal Header with Close X */}
             <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
@@ -553,105 +884,587 @@ export default function PublicDigitalStorefrontPage() {
                 <ArrowLeft className="w-4 h-4" /> Back to Storefront
               </button>
 
+              {/* Toggle Photos / Video tab if product has video */}
+              {viewingProduct.videoUrl && (
+                <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setViewingMediaType("image")}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                      viewingMediaType === "image"
+                        ? "bg-white dark:bg-stone-900 text-emerald-600 shadow-sm"
+                        : "text-stone-500"
+                    }`}
+                  >
+                    📸 Photos ({viewingProduct.images?.length || 0})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewingMediaType("video")}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${
+                      viewingMediaType === "video"
+                        ? "bg-purple-600 text-white shadow-sm"
+                        : "text-purple-600"
+                    }`}
+                  >
+                    <Play className="w-3 h-3 fill-current" /> 30s Video
+                  </button>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => setViewingProduct(null)}
-                className="p-2 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-full hover:bg-rose-100 hover:text-rose-600 transition-all"
+                className="p-2 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-full hover:bg-rose-100 hover:text-rose-600 transition-all cursor-pointer"
                 title="Close modal (Esc)"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Main Image View */}
-            <div className="relative aspect-video w-full rounded-2xl bg-stone-950 overflow-hidden shadow-inner">
-              {viewingProduct.images && viewingProduct.images[activeImageIndex] ? (
-                <img
-                  src={viewingProduct.images[activeImageIndex]}
-                  alt={viewingProduct.title}
+            {/* Media Player / Image Viewer */}
+            {viewingMediaType === "video" && viewingProduct.videoUrl ? (
+              <div className="relative aspect-video w-full rounded-2xl bg-black overflow-hidden shadow-inner flex items-center justify-center">
+                <video
+                  src={viewingProduct.videoUrl}
+                  controls
+                  autoPlay
+                  playsInline
                   className="w-full h-full object-contain"
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-stone-400">
-                  <Package className="w-12 h-12" />
+              </div>
+            ) : (
+              <div>
+                {/* Main Image View */}
+                <div
+                  onClick={() => openLightbox(viewingProduct.title, viewingProduct.images || [], activeImageIndex)}
+                  className="cursor-zoom-in group/mainimg relative aspect-video w-full rounded-2xl bg-stone-950 overflow-hidden shadow-inner mb-3"
+                >
+                  {viewingProduct.images && viewingProduct.images[activeImageIndex] ? (
+                    <img
+                      src={viewingProduct.images[activeImageIndex]}
+                      alt={viewingProduct.title}
+                      className="w-full h-full object-contain group-hover/mainimg:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-stone-400">
+                      <Package className="w-12 h-12" />
+                    </div>
+                  )}
+
+                  <div className="absolute inset-0 bg-black/0 group-hover/mainimg:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
+                    <span className="opacity-0 group-hover/mainimg:opacity-100 transition-opacity px-3 py-1.5 bg-black/80 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                      <Maximize2 className="w-3.5 h-3.5" /> View Full Size
+                    </span>
+                  </div>
+
+                  {/* Prev / Next controls */}
+                  {viewingProduct.images && viewingProduct.images.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : viewingProduct.images.length - 1));
+                        }}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 bg-black/70 text-white rounded-full hover:bg-black transition-all shadow-lg hover:scale-110"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveImageIndex((prev) => (prev < viewingProduct.images.length - 1 ? prev + 1 : 0));
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 bg-black/70 text-white rounded-full hover:bg-black transition-all shadow-lg hover:scale-110"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </>
+                  )}
                 </div>
-              )}
 
-              {/* Prev / Next controls */}
-              {viewingProduct.images && viewingProduct.images.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : viewingProduct.images.length - 1))
-                    }
-                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 bg-black/70 text-white rounded-full hover:bg-black transition-all shadow-lg"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setActiveImageIndex((prev) => (prev < viewingProduct.images.length - 1 ? prev + 1 : 0))
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 bg-black/70 text-white rounded-full hover:bg-black transition-all shadow-lg"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Thumbnail Strip */}
-            {viewingProduct.images && viewingProduct.images.length > 1 && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                {viewingProduct.images.map((imgUrl: string, idx: number) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setActiveImageIndex(idx)}
-                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${
-                      activeImageIndex === idx ? "border-emerald-600 scale-105 shadow-md" : "border-stone-200 dark:border-stone-700 opacity-60 hover:opacity-100"
-                    }`}
-                  >
-                    <img src={imgUrl} alt="Thumbnail" className="w-full h-full object-cover" />
-                  </button>
-                ))}
+                {/* Thumbnail Strip: Shows ALL images */}
+                {viewingProduct.images && viewingProduct.images.length > 1 && (
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                    {viewingProduct.images.map((imgUrl: string, idx: number) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setActiveImageIndex(idx);
+                          setViewingMediaType("image");
+                        }}
+                        className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                          activeImageIndex === idx && viewingMediaType === "image"
+                            ? "border-emerald-600 scale-105 shadow-md"
+                            : "border-stone-200 dark:border-stone-700 opacity-60 hover:opacity-100"
+                        }`}
+                      >
+                        <img src={imgUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
-            <div>
-              <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">{viewingProduct.category}</span>
-              <h3 className="text-2xl font-black text-stone-900 dark:text-white mt-1">{viewingProduct.title}</h3>
-              <p className="text-xs text-stone-500 mt-2 leading-relaxed">{viewingProduct.description}</p>
+            {/* Product Specifications & Details */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">{viewingProduct.category}</span>
+                <div className="flex items-center gap-2">
+                  {viewingProduct.stockQuantity !== undefined && (
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                      {viewingProduct.stockQuantity > 0 ? `✓ ${viewingProduct.stockQuantity} in Stock` : "Out of Stock"}
+                    </span>
+                  )}
+                  {viewingProduct.condition && (
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
+                      Condition: {viewingProduct.condition.replace("_", " ")}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <h3 className="text-2xl font-black text-stone-900 dark:text-white">{viewingProduct.title}</h3>
+              <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-line">
+                {viewingProduct.description}
+              </p>
+
+              {/* Price & Discount breakdown */}
+              <div className="p-4 bg-stone-50 dark:bg-stone-800/60 rounded-2xl flex items-center justify-between border border-stone-200 dark:border-stone-700">
+                <div>
+                  <span className="text-xs text-stone-400 font-bold block">Selling Price:</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                      {formatGHS(viewingProduct.price)}
+                    </span>
+                    {viewingProduct.originalPrice && Number(viewingProduct.originalPrice) > Number(viewingProduct.price) && (
+                      <span className="text-xs text-stone-400 line-through">
+                        {formatGHS(viewingProduct.originalPrice)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {viewingProduct.originalPrice && Number(viewingProduct.originalPrice) > Number(viewingProduct.price) && (
+                  <div className="text-right">
+                    <span className="text-[10px] px-2.5 py-1 bg-rose-500 text-white font-black rounded-lg">
+                      Save GH₵ {(Number(viewingProduct.originalPrice) - Number(viewingProduct.price)).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-stone-100 dark:border-stone-800 gap-3 flex-wrap">
-              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                {formatGHS(viewingProduct.price)}
-              </span>
+              <button
+                type="button"
+                onClick={() => setViewingProduct(null)}
+                className="px-4 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-bold rounded-2xl text-xs transition-all cursor-pointer"
+              >
+                Close Modal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const title = viewingProduct.title;
+                  setViewingProduct(null);
+                  handleWhatsAppClick(title);
+                }}
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <MessageSquare className="w-4 h-4" /> Order / Inquire on WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* FULL RENTAL DETAIL MODAL */}
+      {viewingRental && (
+        <div
+          onClick={() => setViewingRental(null)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer overflow-y-auto"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 relative my-auto cursor-default max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
+              <button
+                type="button"
+                onClick={() => setViewingRental(null)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-xl text-xs font-bold transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Storefront
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewingRental(null)}
+                className="p-2 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-full hover:bg-rose-100 hover:text-rose-600 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Rental Images Viewer */}
+            <div>
+              <div
+                onClick={() => openLightbox(viewingRental.title, viewingRental.images || [], activeImageIndex)}
+                className="cursor-zoom-in group/mainimg relative aspect-video w-full rounded-2xl bg-amber-50 dark:bg-amber-950/40 overflow-hidden shadow-inner mb-3"
+              >
+                {viewingRental.images && viewingRental.images[activeImageIndex] ? (
+                  <img
+                    src={viewingRental.images[activeImageIndex]}
+                    alt={viewingRental.title}
+                    className="w-full h-full object-contain group-hover/mainimg:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-amber-500">
+                    <Wrench className="w-12 h-12 opacity-50" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/0 group-hover/mainimg:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
+                  <span className="opacity-0 group-hover/mainimg:opacity-100 transition-opacity px-3 py-1.5 bg-black/80 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                    <Maximize2 className="w-3.5 h-3.5" /> View Full Size
+                  </span>
+                </div>
+              </div>
+
+              {viewingRental.images && viewingRental.images.length > 1 && (
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {viewingRental.images.map((imgUrl: string, idx: number) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                        activeImageIndex === idx
+                          ? "border-amber-600 scale-105 shadow-md"
+                          : "border-stone-200 dark:border-stone-700 opacity-60 hover:opacity-100"
+                      }`}
+                    >
+                      <img src={imgUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Rental Details */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-xs font-bold text-amber-600 uppercase tracking-wider">{viewingRental.category}</span>
+                {viewingRental.operatorIncluded && (
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                    ✓ Includes Certified Operator
+                  </span>
+                )}
+              </div>
+
+              <h3 className="text-2xl font-black text-stone-900 dark:text-white">{viewingRental.title}</h3>
+              <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-line">
+                {viewingRental.description}
+              </p>
+
+              <div className="p-4 bg-stone-50 dark:bg-stone-800/60 rounded-2xl border border-stone-200 dark:border-stone-700 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-stone-400 font-bold block">Rental Rates:</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-amber-600 dark:text-amber-400">
+                      {formatGHS(viewingRental.dailyRate)} / day
+                    </span>
+                    {viewingRental.weeklyRate && (
+                      <span className="text-xs text-stone-500 font-bold">
+                        ({formatGHS(viewingRental.weeklyRate)} / week)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {viewingRental.securityDeposit && (
+                  <div className="text-right">
+                    <span className="text-xs text-stone-400 block font-bold">Deposit:</span>
+                    <span className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                      {formatGHS(viewingRental.securityDeposit)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-stone-100 dark:border-stone-800 gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setViewingRental(null)}
+                className="px-4 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-bold rounded-2xl text-xs transition-all cursor-pointer"
+              >
+                Close Modal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const title = viewingRental.title;
+                  setViewingRental(null);
+                  handleWhatsAppClick(`Rental Equipment: ${title}`);
+                }}
+                className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-2xl text-xs shadow-lg shadow-amber-600/30 flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <MessageSquare className="w-4 h-4" /> Book via WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FULL SERVICE DETAIL MODAL */}
+      {viewingService && (
+        <div
+          onClick={() => setViewingService(null)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer overflow-y-auto"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 relative my-auto cursor-default max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
+              <button
+                type="button"
+                onClick={() => setViewingService(null)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-xl text-xs font-bold transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Storefront
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewingService(null)}
+                className="p-2 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-full hover:bg-rose-100 hover:text-rose-600 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Service Portfolio Photos */}
+            {viewingService.photos && viewingService.photos.length > 0 && (
+              <div>
+                <div
+                  onClick={() => openLightbox(viewingService.serviceName, viewingService.photos, activeImageIndex)}
+                  className="cursor-zoom-in group/mainimg relative aspect-video w-full rounded-2xl bg-blue-50 dark:bg-blue-950/40 overflow-hidden shadow-inner mb-3"
+                >
+                  <img
+                    src={viewingService.photos[activeImageIndex]}
+                    alt={viewingService.serviceName}
+                    className="w-full h-full object-contain group-hover/mainimg:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover/mainimg:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
+                    <span className="opacity-0 group-hover/mainimg:opacity-100 transition-opacity px-3 py-1.5 bg-black/80 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                      <Maximize2 className="w-3.5 h-3.5" /> View Full Size
+                    </span>
+                  </div>
+                </div>
+
+                {viewingService.photos.length > 1 && (
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                    {viewingService.photos.map((imgUrl: string, idx: number) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setActiveImageIndex(idx)}
+                        className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                          activeImageIndex === idx
+                            ? "border-blue-600 scale-105 shadow-md"
+                            : "border-stone-200 dark:border-stone-700 opacity-60 hover:opacity-100"
+                        }`}
+                      >
+                        <img src={imgUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Service Details */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Service Offering</span>
+                {viewingService.estimatedDuration && (
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> {viewingService.estimatedDuration}
+                  </span>
+                )}
+              </div>
+
+              <h3 className="text-2xl font-black text-stone-900 dark:text-white">{viewingService.serviceName}</h3>
+              <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-line">
+                {viewingService.description}
+              </p>
+
+              <div className="p-4 bg-stone-50 dark:bg-stone-800/60 rounded-2xl border border-stone-200 dark:border-stone-700 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-stone-400 font-bold block">Estimated Pricing:</span>
+                  <span className="text-2xl font-black text-blue-600 dark:text-blue-400">
+                    {viewingService.startingPrice ? formatGHS(viewingService.startingPrice) : "On Custom Quote"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-stone-100 dark:border-stone-800 gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setViewingService(null)}
+                className="px-4 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-bold rounded-2xl text-xs transition-all cursor-pointer"
+              >
+                Close Modal
+              </button>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setViewingProduct(null)}
-                  className="px-4 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-bold rounded-2xl text-xs transition-all"
+                  onClick={() => {
+                    setViewingService(null);
+                    setCustNotes(`Interested in service: "${viewingService.serviceName}"`);
+                    setIsQuoteModalOpen(true);
+                  }}
+                  className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl text-xs shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all cursor-pointer"
                 >
-                  Close Modal
+                  <MessageSquare className="w-4 h-4" /> Request Quote
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const title = viewingProduct.title;
-                    setViewingProduct(null);
-                    handleWhatsAppClick(title);
+                    const title = viewingService.serviceName;
+                    setViewingService(null);
+                    handleWhatsAppClick(`Service Inquire: ${title}`);
                   }}
-                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition-all"
+                  className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition-all cursor-pointer"
                 >
-                  <MessageSquare className="w-4 h-4" /> Inquire on WhatsApp
+                  <MessageSquare className="w-4 h-4" /> WhatsApp
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* UNIFIED FULLSCREEN HIGH-RES LIGHTBOX MODAL */}
+      {lightbox.isOpen && (
+        <div
+          onClick={() => setLightbox((prev) => ({ ...prev, isOpen: false }))}
+          className="fixed inset-0 z-60 bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-6 select-none cursor-pointer"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center justify-between gap-4 text-white z-10 cursor-default"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="font-black text-sm sm:text-base truncate max-w-xs sm:max-w-md">
+                {lightbox.title}
+              </span>
+              <span className="px-2.5 py-0.5 bg-white/10 rounded-full text-xs font-bold text-stone-300">
+                {lightbox.activeIndex + 1} / {lightbox.images.length}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setLightbox((prev) => ({ ...prev, isZoomed: !prev.isZoomed }))}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                title={lightbox.isZoomed ? "Zoom Out" : "Zoom In"}
+              >
+                {lightbox.isZoomed ? <ZoomOut className="w-4 h-4" /> : <ZoomIn className="w-4 h-4" />}
+                <span className="hidden sm:inline">{lightbox.isZoomed ? "Fit Screen" : "Zoom 1.5x"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLightbox((prev) => ({ ...prev, isOpen: false }))}
+                className="p-2 bg-white/10 hover:bg-rose-600 rounded-full text-white transition-all cursor-pointer"
+                title="Close (Esc)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Lightbox Center Image Stage */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative flex-1 flex items-center justify-center my-4 overflow-hidden cursor-default"
+          >
+            <img
+              src={lightbox.images[lightbox.activeIndex]}
+              alt={`${lightbox.title} full size`}
+              className={`max-h-[75vh] max-w-full object-contain rounded-xl transition-all duration-300 ${
+                lightbox.isZoomed ? "scale-150 cursor-grab" : "scale-100 cursor-zoom-in"
+              }`}
+              onClick={() => setLightbox((prev) => ({ ...prev, isZoomed: !prev.isZoomed }))}
+            />
+
+            {/* Prev / Next Controls */}
+            {lightbox.images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLightbox((prev) => ({
+                      ...prev,
+                      activeIndex: prev.activeIndex > 0 ? prev.activeIndex - 1 : prev.images.length - 1,
+                      isZoomed: false,
+                    }))
+                  }
+                  className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 text-white rounded-full transition-all backdrop-blur-sm shadow-xl hover:scale-110 cursor-pointer"
+                  title="Previous photo (Left arrow)"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLightbox((prev) => ({
+                      ...prev,
+                      activeIndex: prev.activeIndex < prev.images.length - 1 ? prev.activeIndex + 1 : 0,
+                      isZoomed: false,
+                    }))
+                  }
+                  className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 text-white rounded-full transition-all backdrop-blur-sm shadow-xl hover:scale-110 cursor-pointer"
+                  title="Next photo (Right arrow)"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Lightbox Bottom Thumbnail Row */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center justify-center gap-2 overflow-x-auto py-2 z-10 cursor-default"
+          >
+            {lightbox.images.map((imgUrl: string, idx: number) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => {
+                  setLightbox((prev) => ({
+                    ...prev,
+                    activeIndex: idx,
+                    isZoomed: false,
+                  }));
+                }}
+                className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                  lightbox.activeIndex === idx
+                    ? "border-emerald-500 scale-110 shadow-lg shadow-emerald-500/30"
+                    : "border-white/20 opacity-50 hover:opacity-100"
+                }`}
+              >
+                <img src={imgUrl} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+              </button>
+            ))}
           </div>
         </div>
       )}

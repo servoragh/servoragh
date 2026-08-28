@@ -41,6 +41,51 @@ export async function GET(
       },
     });
 
+    if (profile) {
+      // Merge any additional product listings or legacy products linked to this business owner
+      const extraListings = await prisma.productListing.findMany({
+        where: {
+          sellerId: profile.userId,
+          businessId: { not: profile.id },
+          status: { in: ["ACTIVE", "PENDING_APPROVAL"] },
+        },
+      });
+
+      const legacyProducts = await prisma.product.findMany({
+        where: {
+          provider: {
+            OR: [
+              { userId: profile.userId },
+              { slug: profile.slug },
+            ],
+          },
+          isAvailable: true,
+        },
+      });
+
+      const formattedLegacy = legacyProducts.map((lp) => ({
+        id: lp.id,
+        title: lp.title,
+        slug: lp.slug,
+        description: lp.description,
+        price: lp.price,
+        originalPrice: lp.originalPrice,
+        stockQuantity: lp.stockQuantity,
+        category: lp.category,
+        images: lp.images,
+        status: "ACTIVE",
+        createdAt: lp.createdAt,
+      }));
+
+      const pSlugs = new Set((profile.products || []).map((p: any) => p.slug));
+      for (const item of [...extraListings, ...formattedLegacy]) {
+        if (!pSlugs.has(item.slug)) {
+          pSlugs.add(item.slug);
+          profile.products.push(item as any);
+        }
+      }
+    }
+
     // Fallback 1: Check ProviderProfile by slug
     if (!profile) {
       const provider = await prisma.providerProfile.findUnique({
@@ -54,43 +99,89 @@ export async function GET(
       });
 
       if (provider) {
+        const extraListings = await prisma.productListing.findMany({
+          where: {
+            OR: [
+              { sellerId: provider.userId },
+              { business: { slug } },
+            ],
+            status: { in: ["ACTIVE", "PENDING_APPROVAL"] },
+          },
+        });
+
+        const bizServices = await prisma.businessService.findMany({
+          where: {
+            OR: [
+              { business: { userId: provider.userId } },
+              { business: { slug } },
+            ],
+            isActive: true,
+          },
+        });
+
+        const bizRentals = await prisma.toolRentalListing.findMany({
+          where: {
+            OR: [
+              { business: { userId: provider.userId } },
+              { business: { slug } },
+            ],
+            isAvailable: true,
+          },
+        });
+
         profile = {
           id: provider.id,
           userId: provider.userId,
           businessName: provider.businessName,
           slug: provider.slug,
-          tagline: provider.bio,
-          description: provider.bio,
+          tagline: provider.bio || "Verified Merchant",
+          description: provider.bio || "",
           zone: provider.serviceArea,
           addressDetails: provider.serviceArea,
-          landmark: "Tamale, Northern Ghana",
-          phone: provider.user?.phone || "+233245556677",
-          whatsappNumber: provider.user?.phone || "+233245556677",
-          email: provider.user?.name || "merchant@servora.gh",
-          logoUrl: provider.logoUrl,
-          bannerUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&auto=format&fit=crop&q=80",
+          landmark: provider.serviceArea || "Tamale",
+          phone: provider.user?.phone || "",
+          whatsappNumber: provider.user?.phone || "",
+          email: provider.user?.name || "",
+          logoUrl: provider.logoUrl || provider.user?.avatarUrl || null,
+          bannerUrl: null,
+          storefrontPhotoUrl: (provider as any).storefrontPhotoUrl || null,
           verificationStatus: provider.verificationStatus,
           isFeatured: provider.isPromoted,
-          ratingAverage: provider.ratingAverage || 5.0,
-          reviewsCount: provider.reviewCount || 10,
-          profileViews: 145,
-          whatsappClicks: 12,
+          ratingAverage: provider.ratingAverage || 0,
+          reviewsCount: provider.reviewCount || 0,
+          profileViews: 0,
+          whatsappClicks: 0,
           user: provider.user,
-          products: provider.products.map((p) => ({
-            id: p.id,
-            title: p.title,
-            slug: p.slug,
-            description: p.description,
-            price: p.price,
-            originalPrice: p.originalPrice,
-            stockQuantity: p.stockQuantity,
-            category: p.category,
-            images: p.images,
-            status: p.isAvailable ? "ACTIVE" : "SUSPENDED",
-            createdAt: p.createdAt,
-          })),
-          services: [],
-          rentals: [],
+          products: [
+            ...provider.products.map((p) => ({
+              id: p.id,
+              title: p.title,
+              slug: p.slug,
+              description: p.description,
+              price: p.price,
+              originalPrice: p.originalPrice,
+              stockQuantity: p.stockQuantity,
+              category: p.category,
+              images: p.images,
+              status: p.isAvailable ? "ACTIVE" : "SUSPENDED",
+              createdAt: p.createdAt,
+            })),
+            ...extraListings.map((p) => ({
+              id: p.id,
+              title: p.title,
+              slug: p.slug,
+              description: p.description,
+              price: p.price,
+              originalPrice: p.originalPrice,
+              stockQuantity: p.stockQuantity,
+              category: p.category,
+              images: p.images,
+              status: "ACTIVE",
+              createdAt: p.createdAt,
+            })),
+          ],
+          services: bizServices,
+          rentals: bizRentals,
         } as any;
       }
     }
@@ -117,21 +208,21 @@ export async function GET(
           businessName: user.name,
           slug: slug,
           tagline: `Verified ${user.role} Member Profile`,
-          description: `Servora Ghana platform member (${user.role}). Verified member operating in Northern Ghana.`,
-          zone: "Tamale, Northern Region",
-          addressDetails: "Tamale, Northern Ghana",
-          landmark: "Tamale Central",
+          description: `Servora Ghana platform member (${user.role}).`,
+          zone: "Tamale",
+          addressDetails: "Tamale",
+          landmark: "Tamale",
           phone: user.phone,
           whatsappNumber: user.phone,
           email: user.email,
-          logoUrl: user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
-          bannerUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&auto=format&fit=crop&q=80",
+          logoUrl: user.avatarUrl,
+          bannerUrl: null,
           verificationStatus: user.isPhoneVerified ? "TIER_2_VERIFIED_ARTISAN" : "TIER_1_BASIC",
-          isFeatured: true,
-          ratingAverage: 5.0,
-          reviewsCount: 5,
-          profileViews: 98,
-          whatsappClicks: 5,
+          isFeatured: false,
+          ratingAverage: 0,
+          reviewsCount: 0,
+          profileViews: 0,
+          whatsappClicks: 0,
           user: {
             name: user.name,
             avatarUrl: user.avatarUrl,
@@ -157,52 +248,58 @@ export async function GET(
         },
       });
 
-      const formattedName = listing?.guestName || slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-      const sellerPhone = listing?.guestPhone || listing?.guestWhatsApp || "+233240000000";
+      if (listing) {
+        const formattedName = listing.guestName || slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        const sellerPhone = listing.guestPhone || listing.guestWhatsApp || "";
 
-      profile = {
-        id: `seller-${slug}`,
-        userId: listing?.sellerId || `guest-${slug}`,
-        businessName: formattedName,
-        slug: slug,
-        tagline: "Verified Merchant & Vendor Profile",
-        description: `Official Servora marketplace storefront for ${formattedName}. Providing authentic goods and local services across Northern Ghana.`,
-        zone: listing?.area || "Tamale Central, Northern Region",
-        addressDetails: listing?.area || "Tamale, Northern Ghana",
-        landmark: "Tamale Central Market",
-        phone: sellerPhone,
-        whatsappNumber: sellerPhone,
-        email: listing?.guestEmail || `${slug}@servora.gh`,
-        logoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
-        bannerUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&auto=format&fit=crop&q=80",
-        verificationStatus: "TIER_2_VERIFIED_ARTISAN",
-        isFeatured: true,
-        ratingAverage: 5.0,
-        reviewsCount: 8,
-        profileViews: 182,
-        whatsappClicks: 14,
-        user: {
-          name: formattedName,
-          avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
-          isPhoneVerified: true,
-          createdAt: new Date().toISOString(),
-        },
-        products: listing ? [{
-          id: listing.id,
-          title: listing.title,
-          slug: listing.slug,
-          description: listing.description,
-          price: Number(listing.price),
-          originalPrice: listing.originalPrice ? Number(listing.originalPrice) : null,
-          stockQuantity: 10,
-          category: listing.category,
-          images: listing.images,
-          status: "ACTIVE",
-          createdAt: listing.createdAt,
-        }] : [],
-        services: [],
-        rentals: [],
-      } as any;
+        profile = {
+          id: `seller-${slug}`,
+          userId: listing.sellerId || `guest-${slug}`,
+          businessName: formattedName,
+          slug: slug,
+          tagline: "Marketplace Vendor Profile",
+          description: `Marketplace storefront for ${formattedName}.`,
+          zone: listing.area || "Tamale",
+          addressDetails: listing.area || "Tamale",
+          landmark: "Tamale",
+          phone: sellerPhone,
+          whatsappNumber: sellerPhone,
+          email: listing.guestEmail || "",
+          logoUrl: null,
+          bannerUrl: null,
+          verificationStatus: "TIER_1_BASIC",
+          isFeatured: false,
+          ratingAverage: 0,
+          reviewsCount: 0,
+          profileViews: 0,
+          whatsappClicks: 0,
+          user: {
+            name: formattedName,
+            avatarUrl: null,
+            isPhoneVerified: true,
+            createdAt: new Date().toISOString(),
+          },
+          products: [{
+            id: listing.id,
+            title: listing.title,
+            slug: listing.slug,
+            description: listing.description,
+            price: Number(listing.price),
+            originalPrice: listing.originalPrice ? Number(listing.originalPrice) : null,
+            stockQuantity: 1,
+            category: listing.category,
+            images: listing.images,
+            status: "ACTIVE",
+            createdAt: listing.createdAt,
+          }],
+          services: [],
+          rentals: [],
+        } as any;
+      }
+    }
+
+    if (!profile) {
+      return NextResponse.json({ error: "Business profile not found." }, { status: 404 });
     }
 
     // Record WhatsApp click if requested

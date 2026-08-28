@@ -80,47 +80,51 @@ export async function POST(request: Request) {
       });
     }
 
-    // Link selected services safely (or fallback to default services)
-    const allServices = await prisma.service.findMany({ select: { id: true } });
-    const validServiceIds = new Set(allServices.map((s) => s.id));
-
-    let toLink: string[] = [];
+    // Link selected services safely only if user actually selected services
     if (Array.isArray(serviceIds) && serviceIds.length > 0) {
-      toLink = serviceIds.filter((id: string) => validServiceIds.has(id));
-    }
+      const allServices = await prisma.service.findMany({ select: { id: true } });
+      const validServiceIds = new Set(allServices.map((s) => s.id));
+      const toLink = serviceIds.filter((id: string) => validServiceIds.has(id));
 
-    // Fallback if no valid services were provided
-    if (toLink.length === 0 && allServices.length > 0) {
-      toLink = allServices.slice(0, 2).map((s) => s.id);
-    }
-
-    for (const serviceId of toLink) {
-      try {
-        await prisma.providerService.create({
-          data: {
-            providerId: profile.id,
-            serviceId,
-          },
-        });
-      } catch (e) {
-        // Skip duplicate or missing link errors
+      for (const serviceId of toLink) {
+        try {
+          await prisma.providerService.create({
+            data: {
+              providerId: profile.id,
+              serviceId,
+            },
+          });
+        } catch (e) {
+          // Skip duplicate or missing link errors
+        }
       }
     }
 
-    // Create verification request record for admin
-    try {
-      await prisma.verificationRequest.create({
-        data: {
-          userId: session.id,
-          idType: "Ghana Card",
-          idNumber: `GHA-${Math.floor(100000000 + Math.random() * 900000000)}-1`,
-          documentUrl: "https://servora.gh/docs/sample-ghana-card.png",
-          status: "PENDING",
-        },
-      });
-    } catch (e) {
-      // Ignore if verification request already exists
-    }
+    // Upsert BusinessProfile in sync so portal workspace & digital storefront are immediately active
+    await prisma.businessProfile.upsert({
+      where: { userId: session.id },
+      create: {
+        userId: session.id,
+        businessName,
+        slug: profile.slug,
+        tagline: bio.length > 80 ? `${bio.slice(0, 77)}...` : bio,
+        description: bio,
+        zone: serviceArea,
+        phone: session.phone,
+        whatsappNumber: session.phone,
+        email: session.email || null,
+        verificationStatus: "TIER_1_BASIC",
+      },
+      update: {
+        businessName,
+        slug: profile.slug,
+        tagline: bio.length > 80 ? `${bio.slice(0, 77)}...` : bio,
+        description: bio,
+        zone: serviceArea,
+        phone: session.phone,
+        whatsappNumber: session.phone,
+      },
+    });
 
     return NextResponse.json({ success: true, profile });
   } catch (error: any) {

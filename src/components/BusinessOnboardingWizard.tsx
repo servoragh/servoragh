@@ -20,6 +20,8 @@ import {
   Image as ImageIcon,
   Loader2,
   X,
+  Camera,
+  User,
 } from "lucide-react";
 
 interface BusinessOnboardingWizardProps {
@@ -45,6 +47,7 @@ export function BusinessOnboardingWizard({ initialData, onComplete }: BusinessOn
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingId, setUploadingId] = useState(false);
+  const [uploadingSelfie, setUploadingSelfie] = useState(false);
   const [uploadingCert, setUploadingCert] = useState(false);
   const [uploadingStorefront, setUploadingStorefront] = useState(false);
 
@@ -69,10 +72,25 @@ export function BusinessOnboardingWizard({ initialData, onComplete }: BusinessOn
   // Verification & Trust KYB / KYC State
   const [idCardNumber, setIdCardNumber] = useState(initialData?.idCardNumber || "");
   const [idCardPhotoUrl, setIdCardPhotoUrl] = useState(initialData?.idCardPhotoUrl || "");
+  const [selfieUrl, setSelfieUrl] = useState(initialData?.selfieUrl || initialData?.user?.avatarUrl || "");
   const [tradeAssociation, setTradeAssociation] = useState(initialData?.tradeAssociation || "");
   const [businessCertUrl, setBusinessCertUrl] = useState(initialData?.businessCertUrl || "");
   const [tinNumber, setTinNumber] = useState(initialData?.tinNumber || "");
   const [storefrontPhotoUrl, setStorefrontPhotoUrl] = useState(initialData?.storefrontPhotoUrl || "");
+
+  const ZONE_COORDINATES: Record<string, { lat: string; lng: string }> = {
+    "Sakasaka": { lat: "9.418200", lng: "-0.840200" },
+    "Choggu": { lat: "9.441200", lng: "-0.852100" },
+    "Aboabo": { lat: "9.406300", lng: "-0.835400" },
+    "Nyohini": { lat: "9.395100", lng: "-0.849200" },
+    "Dungu": { lat: "9.362100", lng: "-0.839800" },
+    "Tamale Central": { lat: "9.407400", lng: "-0.841600" },
+    "Lamashegu": { lat: "9.389200", lng: "-0.843100" },
+    "Vittin": { lat: "9.382100", lng: "-0.812400" },
+    "Gumani": { lat: "9.435000", lng: "-0.848000" },
+    "Kalpohin": { lat: "9.429000", lng: "-0.832000" },
+    "Datoyili": { lat: "9.340000", lng: "-0.830000" },
+  };
 
   const presetZones = [
     "Sakasaka",
@@ -152,6 +170,14 @@ export function BusinessOnboardingWizard({ initialData, onComplete }: BusinessOn
     setSaving(true);
     setError(null);
     try {
+      let finalLat = latitude;
+      let finalLng = longitude;
+      if (!finalLat || !finalLng) {
+        const matched = ZONE_COORDINATES[zone] || { lat: "9.407400", lng: "-0.841600" };
+        finalLat = matched.lat;
+        finalLng = matched.lng;
+      }
+
       const payload = {
         businessName,
         slug,
@@ -163,8 +189,8 @@ export function BusinessOnboardingWizard({ initialData, onComplete }: BusinessOn
         zone,
         addressDetails,
         landmark,
-        latitude,
-        longitude,
+        latitude: finalLat,
+        longitude: finalLng,
         phone,
         whatsappNumber,
         email,
@@ -180,6 +206,7 @@ export function BusinessOnboardingWizard({ initialData, onComplete }: BusinessOn
         },
         idCardNumber,
         idCardPhotoUrl,
+        selfieUrl,
         businessCertUrl,
         tinNumber,
         tradeAssociation,
@@ -591,28 +618,66 @@ export function BusinessOnboardingWizard({ initialData, onComplete }: BusinessOn
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
-                Ghana Card / National ID Number
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center justify-between">
+                <span>Ghana Card / National ID Number</span>
+                {idCardPhotoUrl && <span className="text-[10px] text-emerald-600 font-bold">✓ Card Attached</span>}
               </label>
               <input
                 type="text"
                 value={idCardNumber}
                 onChange={(e) => setIdCardNumber(e.target.value)}
-                placeholder="GHA-000000000-0"
+                placeholder="e.g. GHA-000000000-0"
                 className="w-full px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none mb-2"
               />
-              <label className="cursor-pointer flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-dashed border-stone-300 rounded-xl text-xs font-bold text-stone-600 dark:text-stone-300 hover:border-emerald-500">
-                {uploadingId ? <Loader2 className="w-4 h-4 animate-spin text-emerald-600" /> : <Upload className="w-4 h-4 text-emerald-600" />}
-                <span>{uploadingId ? "Uploading..." : idCardPhotoUrl ? "Change ID Photo" : "Upload Ghana Card Photo"}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) handleFileUpload(e.target.files[0], setIdCardPhotoUrl, setUploadingId);
-                  }}
-                />
+              <div className="flex items-center gap-3">
+                {idCardPhotoUrl && (
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-200 shrink-0">
+                    <img src={idCardPhotoUrl} alt="Ghana Card preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-dashed border-stone-300 rounded-xl text-xs font-bold text-stone-600 dark:text-stone-300 hover:border-emerald-500">
+                  {uploadingId ? <Loader2 className="w-4 h-4 animate-spin text-emerald-600" /> : <Upload className="w-4 h-4 text-emerald-600" />}
+                  <span>{uploadingId ? "Uploading..." : idCardPhotoUrl ? "Change Ghana Card Photo" : "Upload Ghana Card Photo"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) handleFileUpload(e.target.files[0], setIdCardPhotoUrl, setUploadingId);
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center justify-between">
+                <span>Live Selfie / Facial Photo (KYC Match)</span>
+                {selfieUrl && <span className="text-[10px] text-emerald-600 font-bold">✓ Selfie Attached</span>}
               </label>
+              <div className="flex items-center gap-3 pt-1">
+                {selfieUrl && (
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-200 shrink-0">
+                    <img src={selfieUrl} alt="Selfie preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-dashed border-stone-300 rounded-xl text-xs font-bold text-stone-600 dark:text-stone-300 hover:border-emerald-500">
+                  {uploadingSelfie ? <Loader2 className="w-4 h-4 animate-spin text-emerald-600" /> : <Camera className="w-4 h-4 text-emerald-600" />}
+                  <span>{uploadingSelfie ? "Uploading..." : selfieUrl ? "Change Selfie Photo" : "Upload Live Selfie Photo"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) handleFileUpload(e.target.files[0], setSelfieUrl, setUploadingSelfie);
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-[10px] text-stone-400 mt-1.5">
+                Upload a clear front-facing selfie or headshot to match with your Ghana Card ID.
+              </p>
             </div>
 
             <div>
@@ -629,39 +694,59 @@ export function BusinessOnboardingWizard({ initialData, onComplete }: BusinessOn
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
-                Business Registration Cert (RGD/ORC) File
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center justify-between">
+                <span>Business Registration Cert (RGD/ORC) File</span>
+                {businessCertUrl && <span className="text-[10px] text-emerald-600 font-bold">✓ Cert Attached</span>}
               </label>
-              <label className="cursor-pointer flex items-center justify-center gap-2 px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-dashed border-stone-300 rounded-xl text-xs font-bold text-stone-600 dark:text-stone-300 hover:border-emerald-500">
-                {uploadingCert ? <Loader2 className="w-4 h-4 animate-spin text-emerald-600" /> : <Upload className="w-4 h-4 text-emerald-600" />}
-                <span>{uploadingCert ? "Uploading..." : businessCertUrl ? "Change Cert Document" : "Upload Business Cert Document"}</span>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) handleFileUpload(e.target.files[0], setBusinessCertUrl, setUploadingCert);
-                  }}
-                />
-              </label>
+              <div className="flex items-center gap-3">
+                {businessCertUrl && (
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-200 shrink-0 flex items-center justify-center">
+                    {businessCertUrl.endsWith(".pdf") ? (
+                      <FileCheck className="w-6 h-6 text-emerald-600" />
+                    ) : (
+                      <img src={businessCertUrl} alt="Cert preview" className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                )}
+                <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-dashed border-stone-300 rounded-xl text-xs font-bold text-stone-600 dark:text-stone-300 hover:border-emerald-500">
+                  {uploadingCert ? <Loader2 className="w-4 h-4 animate-spin text-emerald-600" /> : <Upload className="w-4 h-4 text-emerald-600" />}
+                  <span>{uploadingCert ? "Uploading..." : businessCertUrl ? "Change Cert Document" : "Upload Business Cert Document"}</span>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) handleFileUpload(e.target.files[0], setBusinessCertUrl, setUploadingCert);
+                    }}
+                  />
+                </label>
+              </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
-                Physical Storefront Photo with GPS Metadata
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center justify-between">
+                <span>Physical Storefront Photo with GPS Metadata</span>
+                {storefrontPhotoUrl && <span className="text-[10px] text-emerald-600 font-bold">✓ Storefront Attached</span>}
               </label>
-              <label className="cursor-pointer flex items-center justify-center gap-2 px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-dashed border-stone-300 rounded-xl text-xs font-bold text-stone-600 dark:text-stone-300 hover:border-emerald-500">
-                {uploadingStorefront ? <Loader2 className="w-4 h-4 animate-spin text-emerald-600" /> : <Upload className="w-4 h-4 text-emerald-600" />}
-                <span>{uploadingStorefront ? "Uploading..." : storefrontPhotoUrl ? "Change Storefront Photo" : "Upload Workshop Storefront Photo"}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) handleFileUpload(e.target.files[0], setStorefrontPhotoUrl, setUploadingStorefront);
-                  }}
-                />
-              </label>
+              <div className="flex items-center gap-3">
+                {storefrontPhotoUrl && (
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-200 shrink-0">
+                    <img src={storefrontPhotoUrl} alt="Storefront preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-dashed border-stone-300 rounded-xl text-xs font-bold text-stone-600 dark:text-stone-300 hover:border-emerald-500">
+                  {uploadingStorefront ? <Loader2 className="w-4 h-4 animate-spin text-emerald-600" /> : <Upload className="w-4 h-4 text-emerald-600" />}
+                  <span>{uploadingStorefront ? "Uploading..." : storefrontPhotoUrl ? "Change Storefront Photo" : "Upload Workshop Storefront Photo"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) handleFileUpload(e.target.files[0], setStorefrontPhotoUrl, setUploadingStorefront);
+                    }}
+                  />
+                </label>
+              </div>
             </div>
           </div>
         </div>

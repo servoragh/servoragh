@@ -69,12 +69,17 @@ export function UnifiedEcommerceSearch({
 
   const categoryOptions: CustomDropdownOption[] = [
     { value: "all", label: "All Categories" },
-    { value: "Electronics", label: "Electronics & Phones" },
-    { value: "Fashion", label: "Fashion & Fugu" },
+    { value: "Agribusiness", label: "Agribusiness & Farm" },
     { value: "Electrical", label: "Electrical & Solar" },
-    { value: "Plumbing", label: "Plumbing" },
-    { value: "Tailoring", label: "Tailoring" },
-    { value: "Tools", label: "Tools & Equipment" },
+    { value: "Electronics", label: "Phones & Tech" },
+    { value: "Fashion", label: "Fugu & Tailoring" },
+    { value: "Tools", label: "Hardware & Tools" },
+    { value: "Building", label: "Building Materials" },
+    { value: "Carpentry", label: "Carpentry & Woodwork" },
+    { value: "Welding", label: "Welding & Metal" },
+    { value: "Auto", label: "Auto Parts & Mechanics" },
+    { value: "Food", label: "Food & Agro-Goods" },
+    { value: "Rentals", label: "Tool & Heavy Rentals" },
   ];
 
   const areaOptions: CustomDropdownOption[] = [

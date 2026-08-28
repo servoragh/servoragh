@@ -54,6 +54,7 @@ export async function POST(req: Request) {
       businessHours,
       idCardNumber,
       idCardPhotoUrl,
+      selfieUrl,
       businessCertUrl,
       tinNumber,
       tradeAssociation,
@@ -67,6 +68,13 @@ export async function POST(req: Request) {
         { error: "Business name, phone, and WhatsApp numbers are required." },
         { status: 400 }
       );
+    }
+
+    if (selfieUrl) {
+      await prisma.user.update({
+        where: { id: session.id },
+        data: { avatarUrl: selfieUrl },
+      }).catch(() => null);
     }
 
     // Generate or format slug
@@ -90,10 +98,8 @@ export async function POST(req: Request) {
     // Determine verification status based on submitted documents
     let verificationStatus: "UNVERIFIED" | "TIER_1_BASIC" | "TIER_2_VERIFIED_ARTISAN" | "TIER_3_REGISTERED_ENTERPRISE" | "PENDING_REVIEW" = "TIER_1_BASIC";
 
-    if (businessCertUrl || tinNumber) {
-      verificationStatus = "TIER_3_REGISTERED_ENTERPRISE";
-    } else if (idCardNumber || idCardPhotoUrl || tradeAssociation) {
-      verificationStatus = "TIER_2_VERIFIED_ARTISAN";
+    if (idCardNumber || idCardPhotoUrl || businessCertUrl || tinNumber) {
+      verificationStatus = "PENDING_REVIEW";
     }
 
     const profile = await prisma.businessProfile.upsert({
@@ -154,6 +160,34 @@ export async function POST(req: Request) {
         facebookUrl: facebookUrl || null,
       },
     });
+
+    // Also sync verification request record
+    if (idCardNumber || idCardPhotoUrl || businessCertUrl) {
+      const existingReq = await prisma.verificationRequest.findFirst({
+        where: { userId: session.id },
+      });
+      if (existingReq) {
+        await prisma.verificationRequest.update({
+          where: { id: existingReq.id },
+          data: {
+            idType: businessCertUrl ? "Business Cert (RGD/ORC)" : "Ghana Card",
+            idNumber: idCardNumber || tinNumber || "Submitted",
+            documentUrl: idCardPhotoUrl || businessCertUrl || existingReq.documentUrl || "",
+            status: "PENDING",
+          },
+        });
+      } else {
+        await prisma.verificationRequest.create({
+          data: {
+            userId: session.id,
+            idType: businessCertUrl ? "Business Cert (RGD/ORC)" : "Ghana Card",
+            idNumber: idCardNumber || tinNumber || "Submitted",
+            documentUrl: idCardPhotoUrl || businessCertUrl || "",
+            status: "PENDING",
+          },
+        });
+      }
+    }
 
     return NextResponse.json({ success: true, profile });
   } catch (error: any) {

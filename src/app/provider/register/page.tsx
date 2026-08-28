@@ -28,9 +28,9 @@ export default function ProviderRegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [bio, setBio] = useState("");
-  const [yearsExperience, setYearsExperience] = useState("3");
-  const [serviceArea, setServiceArea] = useState("Sakasaka, Tamale Central");
-  const [pricingHourly, setPricingHourly] = useState("40");
+  const [yearsExperience, setYearsExperience] = useState("");
+  const [serviceArea, setServiceArea] = useState("");
+  const [pricingHourly, setPricingHourly] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -68,6 +68,16 @@ export default function ProviderRegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (step < 3) {
+      handleNextStep();
+      return;
+    }
+
+    if (!serviceArea.trim()) {
+      setError("Please specify your service area or neighborhood in Tamale.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setIsExistingAccount(false);
@@ -88,16 +98,16 @@ export default function ProviderRegisterPage() {
         throw new Error(regData.error || "Account registration failed.");
       }
 
-      // 2. Onboard Provider Profile
+      // 2. Onboard Provider Profile & Business Profile
       const onRes = await fetch("/api/providers/onboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           businessName,
           bio,
-          yearsExperience,
+          yearsExperience: yearsExperience ? Number(yearsExperience) : 1,
           serviceArea,
-          pricingHourly,
+          pricingHourly: pricingHourly ? Number(pricingHourly) : null,
           websiteUrl,
           serviceIds: [],
         }),
@@ -106,7 +116,7 @@ export default function ProviderRegisterPage() {
       const onData = await onRes.json();
       if (!onRes.ok) throw new Error(onData.error || "Provider profile creation failed.");
 
-      window.location.href = `/provider/${onData.profile.slug}`;
+      window.location.href = "/business/portal";
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -184,9 +194,15 @@ export default function ProviderRegisterPage() {
                     <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Your Full Name</label>
                     <input
                       type="text"
-                      placeholder="ABDUL HANAN ABDULAI"
+                      placeholder="e.g. Abdul Hanan Abdulai"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleNextStep();
+                        }
+                      }}
                       className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-400 outline-none font-medium"
                       required
                     />
@@ -195,9 +211,15 @@ export default function ProviderRegisterPage() {
                     <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Phone (WhatsApp)</label>
                     <input
                       type="text"
-                      placeholder="+233500710610"
+                      placeholder="e.g. +233500710610"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleNextStep();
+                        }
+                      }}
                       className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-400 outline-none font-mono font-medium"
                       required
                     />
@@ -212,6 +234,12 @@ export default function ProviderRegisterPage() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleNextStep();
+                        }
+                      }}
                       className="w-full p-3 pr-11 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-400 outline-none font-medium"
                       required
                     />
@@ -246,9 +274,15 @@ export default function ProviderRegisterPage() {
                   <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Business / Brand Name</label>
                   <input
                     type="text"
-                    placeholder="Goodie Electronics & Services"
+                    placeholder="e.g. Goodie Electronics & Services"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleNextStep();
+                      }
+                    }}
                     className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-emerald-700 dark:text-emerald-400 outline-none font-bold text-sm"
                     required
                   />
@@ -263,6 +297,12 @@ export default function ProviderRegisterPage() {
                       placeholder="https://mybusiness.com (Optional)"
                       value={websiteUrl}
                       onChange={(e) => setWebsiteUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleNextStep();
+                        }
+                      }}
                       className="w-full py-2 bg-transparent text-stone-900 dark:text-white placeholder-stone-400 outline-none font-medium"
                     />
                   </div>
@@ -299,15 +339,17 @@ export default function ProviderRegisterPage() {
                     <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Years Experience</label>
                     <input
                       type="number"
+                      placeholder="e.g. 3"
                       value={yearsExperience}
                       onChange={(e) => setYearsExperience(e.target.value)}
                       className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-white outline-none font-bold"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Hourly Rate (GH₵)</label>
+                    <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Hourly Rate (GH₵) (Optional)</label>
                     <input
                       type="number"
+                      placeholder="e.g. 50"
                       value={pricingHourly}
                       onChange={(e) => setPricingHourly(e.target.value)}
                       className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-emerald-600 dark:text-emerald-400 outline-none font-bold"
@@ -316,10 +358,10 @@ export default function ProviderRegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Service Area in Tamale</label>
+                  <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1">Service Area / Neighborhood in Tamale *</label>
                   <input
                     type="text"
-                    placeholder="Chanshegu, Sakasaka, Nyohini"
+                    placeholder="e.g. Sakasaka, Choggu, Nyohini, All Tamale"
                     value={serviceArea}
                     onChange={(e) => setServiceArea(e.target.value)}
                     className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-400 outline-none font-medium"

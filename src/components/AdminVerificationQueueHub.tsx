@@ -14,6 +14,7 @@ import {
   User,
   Truck,
   Building2,
+  Store,
   RefreshCw,
   ExternalLink,
   Lock,
@@ -32,6 +33,7 @@ interface VerificationItem {
   documentUrl?: string | null;
   selfieUrl?: string | null;
   businessCertUrl?: string | null;
+  storefrontPhotoUrl?: string | null;
   area: string;
   status: "PENDING" | "VERIFIED" | "REJECTED" | "UNVERIFIED";
   createdAt: string;
@@ -56,64 +58,16 @@ export function AdminVerificationQueueHub({ isDark }: { isDark?: boolean }) {
   async function fetchVerificationQueue() {
     try {
       setLoading(true);
-      const res = await fetch("/api/admin/stats");
+      const res = await fetch("/api/admin/verify");
       const data = await res.json();
-
-      const queue: VerificationItem[] = [];
-
-      // 1. Map Provider Profiles (Artisans)
-      if (data.providers && Array.isArray(data.providers)) {
-        for (const p of data.providers) {
-          queue.push({
-            id: p.id,
-            targetType: "PROVIDER",
-            name: p.businessName || p.user?.name || "Artisan",
-            phone: p.user?.phone || "+233240000000",
-            idType: "Ghana Card (Artisan)",
-            idNumber: "GHA-72109845-2",
-            documentUrl: p.idDocumentUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80",
-            selfieUrl: p.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
-            businessCertUrl: p.businessCertUrl || null,
-            area: p.serviceArea || "Tamale",
-            status: (p.verificationStatus as any) || "PENDING",
-            createdAt: p.createdAt || new Date().toISOString(),
-          });
-        }
+      if (data.queue && Array.isArray(data.queue)) {
+        setItems(data.queue);
+      } else {
+        setItems([]);
       }
-
-      // 2. Add Delivery Fleet Verification Entries
-      queue.push({
-        id: "del-rider-101",
-        targetType: "DELIVERY",
-        name: "Baba Salifu (Motorcycle Courier)",
-        phone: "+233245678901",
-        idType: "Ghana Card & Driver License",
-        idNumber: "GHA-88234109-7",
-        documentUrl: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80",
-        selfieUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80",
-        area: "Central Market, Tamale",
-        status: "PENDING",
-        createdAt: new Date().toISOString(),
-      });
-
-      // 3. Add Business Storefront Entries
-      queue.push({
-        id: "biz-profile-102",
-        targetType: "BUSINESS",
-        name: "Northern Authentic Fugu & Smocks Store",
-        phone: "+233501234567",
-        idType: "Ghana Card & GRA TIN Cert",
-        idNumber: "GHA-33109284-1",
-        documentUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80",
-        selfieUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500&auto=format&fit=crop&q=80",
-        area: "Nyohini, Tamale",
-        status: "VERIFIED",
-        createdAt: new Date().toISOString(),
-      });
-
-      setItems(queue);
     } catch {
       console.warn("Failed to load verification queue.");
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -180,7 +134,7 @@ export function AdminVerificationQueueHub({ isDark }: { isDark?: boolean }) {
             <ShieldCheck className="w-5 h-5 text-amber-500" /> ID & Ghana Card Verification Command Center
           </h2>
           <p className="text-xs text-stone-500 dark:text-stone-400">
-            Audit national ID cards, driver licenses, selfies, and business certificates across all 4 user tiers.
+            Audit national ID cards, driver licenses, selfies, and business certificates across all user tiers.
           </p>
         </div>
 
@@ -202,9 +156,9 @@ export function AdminVerificationQueueHub({ isDark }: { isDark?: boolean }) {
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold">
           {[
             { id: "ALL", label: "All Verifications 📋", count: items.length },
+            { id: "BUSINESS", label: "Merchant Storefronts 🏬", count: items.filter((i) => i.targetType === "BUSINESS").length },
             { id: "PROVIDER", label: "Artisans & Technicians 🛠️", count: items.filter((i) => i.targetType === "PROVIDER").length },
             { id: "DELIVERY", label: "Delivery Fleet Riders 🛵", count: items.filter((i) => i.targetType === "DELIVERY").length },
-            { id: "BUSINESS", label: "Merchant Storefronts 🏬", count: items.filter((i) => i.targetType === "BUSINESS").length },
             { id: "REQUEST", label: "General User Requests 👤", count: items.filter((i) => i.targetType === "REQUEST").length },
           ].map((tab) => (
             <button
@@ -254,12 +208,18 @@ export function AdminVerificationQueueHub({ isDark }: { isDark?: boolean }) {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shrink-0">
-                    <img
-                      src={item.selfieUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80"}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-12 h-12 rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shrink-0 flex items-center justify-center">
+                    {item.selfieUrl ? (
+                      <img
+                        src={item.selfieUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-black text-base">
+                        {item.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-0.5">
@@ -278,7 +238,7 @@ export function AdminVerificationQueueHub({ isDark }: { isDark?: boolean }) {
                       </span>
                     </div>
                     <div className="text-[11px] text-stone-500 font-mono">
-                      Phone: {item.phone} • 📍 {item.area}
+                      Phone: {item.phone || "N/A"} • 📍 {item.area}
                     </div>
                   </div>
                 </div>
@@ -343,21 +303,29 @@ export function AdminVerificationQueueHub({ isDark }: { isDark?: boolean }) {
                 <span className="text-[10px] font-mono text-stone-400 uppercase font-bold block">
                   Ghana Card / ID Document Photo:
                 </span>
-                <div className="w-full h-48 rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 relative group">
-                  <img
-                    src={inspectingItem.documentUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80"}
-                    alt="ID Document"
-                    className="w-full h-full object-cover"
-                  />
-                  <a
-                    href={inspectingItem.documentUrl || "#"}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="absolute bottom-2 right-2 px-2.5 py-1 bg-stone-900/80 hover:bg-stone-900 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 backdrop-blur-xs"
-                  >
-                    <ExternalLink className="w-3 h-3" /> Zoom Document ↗
-                  </a>
-                </div>
+                {inspectingItem.documentUrl ? (
+                  <div className="w-full h-48 rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 relative group">
+                    <img
+                      src={inspectingItem.documentUrl}
+                      alt="ID Document"
+                      className="w-full h-full object-contain bg-black/40"
+                    />
+                    <a
+                      href={inspectingItem.documentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="absolute bottom-2 right-2 px-2.5 py-1 bg-stone-900/80 hover:bg-stone-900 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 backdrop-blur-xs"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Zoom Document ↗
+                    </a>
+                  </div>
+                ) : (
+                  <div className="w-full h-48 rounded-2xl bg-stone-100 dark:bg-stone-950 border border-dashed border-stone-300 dark:border-stone-800 flex flex-col items-center justify-center text-stone-400 p-4 text-center">
+                    <FileText className="w-8 h-8 mb-2 opacity-50" />
+                    <span className="text-xs font-bold text-stone-600 dark:text-stone-300">No Document File Uploaded</span>
+                    <span className="text-[10px] text-stone-400 mt-1">Applicant submitted ID number without a file attachment</span>
+                  </div>
+                )}
               </div>
 
               {/* Applicant Selfie */}
@@ -365,15 +333,66 @@ export function AdminVerificationQueueHub({ isDark }: { isDark?: boolean }) {
                 <span className="text-[10px] font-mono text-stone-400 uppercase font-bold block">
                   Live Selfie / Facial Comparison Photo:
                 </span>
-                <div className="w-full h-48 rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 relative">
-                  <img
-                    src={inspectingItem.selfieUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80"}
-                    alt="Selfie Photo"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                {inspectingItem.selfieUrl ? (
+                  <div className="w-full h-48 rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 relative">
+                    <img
+                      src={inspectingItem.selfieUrl}
+                      alt="Selfie Photo"
+                      className="w-full h-full object-contain bg-black/40"
+                    />
+                    <a
+                      href={inspectingItem.selfieUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="absolute bottom-2 right-2 px-2.5 py-1 bg-stone-900/80 hover:bg-stone-900 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 backdrop-blur-xs"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Zoom Selfie ↗
+                    </a>
+                  </div>
+                ) : (
+                  <div className="w-full h-48 rounded-2xl bg-stone-100 dark:bg-stone-950 border border-dashed border-stone-300 dark:border-stone-800 flex flex-col items-center justify-center text-stone-400 p-4 text-center">
+                    <User className="w-8 h-8 mb-2 opacity-50" />
+                    <span className="text-xs font-bold text-stone-600 dark:text-stone-300">No Selfie Photo Uploaded</span>
+                    <span className="text-[10px] text-stone-400 mt-1">No avatar or live selfie uploaded</span>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Additional Business Documents if available */}
+            {inspectingItem.businessCertUrl && (
+              <div className="p-3 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-stone-800 dark:text-stone-200">
+                  <Building2 className="w-4 h-4 text-emerald-600" />
+                  <span>Business Registration Certificate (RGD/ORC) Attached</span>
+                </div>
+                <a
+                  href={inspectingItem.businessCertUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3 h-3" /> View Certificate
+                </a>
+              </div>
+            )}
+
+            {inspectingItem.storefrontPhotoUrl && (
+              <div className="p-3 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-stone-800 dark:text-stone-200">
+                  <Store className="w-4 h-4 text-emerald-600" />
+                  <span>Physical Storefront Photo with GPS Attached</span>
+                </div>
+                <a
+                  href={inspectingItem.storefrontPhotoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3 h-3" /> View Storefront
+                </a>
+              </div>
+            )}
 
             {/* Rejection Form Input */}
             {showRejectForm ? (

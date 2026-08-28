@@ -90,6 +90,7 @@ export async function POST(req: Request) {
         sku,
         deliveryOptions,
         images,
+        videoUrl,
         isNegotiable,
       } = body;
 
@@ -113,6 +114,7 @@ export async function POST(req: Request) {
           sku: sku || null,
           deliveryOptions: deliveryOptions || ["PICKUP", "LOCAL_DELIVERY"],
           images: images || [],
+          videoUrl: videoUrl || null,
           isNegotiable: isNegotiable || false,
           area: profile.zone,
           sellerType: "REGISTERED_USER",

@@ -15,7 +15,12 @@ export async function GET(request: Request) {
     const productWhere: any = {};
     if (!includeInactive) productWhere.isAvailable = true;
     if (category && category !== "all") productWhere.category = category;
-    if (providerSlug) productWhere.provider = { slug: providerSlug };
+    if (providerSlug) {
+      productWhere.OR = [
+        { provider: { slug: providerSlug } },
+        { provider: { user: { businessProfile: { slug: providerSlug } } } },
+      ];
+    }
     if (area && area !== "all") {
       productWhere.provider = {
         ...(productWhere.provider || {}),
@@ -59,6 +64,13 @@ export async function GET(request: Request) {
     const listingWhere: any = {};
     if (!includeInactive) {
       listingWhere.status = { in: ["ACTIVE", "PENDING_APPROVAL"] };
+    }
+    if (providerSlug) {
+      listingWhere.OR = [
+        { business: { slug: providerSlug } },
+        { seller: { businessProfile: { slug: providerSlug } } },
+        { seller: { providerProfile: { slug: providerSlug } } },
+      ];
     }
     if (category && category !== "all") {
       listingWhere.category = { contains: category, mode: "insensitive" };
