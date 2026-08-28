@@ -918,7 +918,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                 sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.60,
+                    childAspectRatio: 0.74,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),

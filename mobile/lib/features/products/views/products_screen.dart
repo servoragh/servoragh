@@ -267,62 +267,69 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ],
                     ),
                   )
-                : GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.62,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final p = filtered[index];
-                      final imageUrl = p['image'] as String?;
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final double itemWidth = (constraints.maxWidth - 44) / 2;
+                      final double dynamicAspectRatio = (itemWidth / 246.0).clamp(0.68, 0.78);
+                      final double imgHeight = (itemWidth * 0.62).clamp(96.0, 114.0);
 
-                      final double price = (p['price'] is num) ? (p['price'] as num).toDouble() : 0.0;
-                      final double? originalPrice = (p['originalPrice'] is num) ? (p['originalPrice'] as num).toDouble() : null;
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: dynamicAspectRatio,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final p = filtered[index];
+                          final imageUrl = p['image'] as String?;
 
-                      final hasDiscount = originalPrice != null && originalPrice > price;
-                      final discountPct = hasDiscount ? (((originalPrice - price) / originalPrice) * 100).round() : 0;
+                          final double price = (p['price'] is num) ? (p['price'] as num).toDouble() : 0.0;
+                          final double? originalPrice = (p['originalPrice'] is num) ? (p['originalPrice'] as num).toDouble() : null;
 
-                      return GestureDetector(
-                        onTap: () => context.push('/products/detail', extra: p),
-                        child: ServoraCard(
-                          padding: EdgeInsets.zero,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Stack(
+                          final hasDiscount = originalPrice != null && originalPrice > price;
+                          final discountPct = hasDiscount ? (((originalPrice - price) / originalPrice) * 100).round() : 0;
+
+                          return GestureDetector(
+                            onTap: () => context.push('/products/detail', extra: p),
+                            child: ServoraCard(
+                              padding: EdgeInsets.zero,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                    child: imageUrl != null && imageUrl.isNotEmpty
-                                        ? CachedNetworkImage(
-                                            imageUrl: imageUrl,
-                                            height: 110,
-                                            width: double.infinity,
-                                            fit: BoxFit.cover,
-                                            placeholder: (_, __) => const ServoraShimmerSkeleton(
-                                                width: double.infinity, height: 110, borderRadius: 0),
-                                            errorWidget: (_, __, ___) => Container(
-                                              height: 110,
-                                              color: ServoraColors.emerald600.withOpacity(0.1),
-                                              child: const Center(
-                                                child: Icon(Icons.inventory_2_rounded,
-                                                    size: 32, color: ServoraColors.emerald600),
+                                  Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                        child: imageUrl != null && imageUrl.isNotEmpty
+                                            ? CachedNetworkImage(
+                                                imageUrl: imageUrl,
+                                                height: imgHeight,
+                                                width: double.infinity,
+                                                fit: BoxFit.cover,
+                                                placeholder: (_, __) => ServoraShimmerSkeleton(
+                                                    width: double.infinity, height: imgHeight, borderRadius: 0),
+                                                errorWidget: (_, __, ___) => Container(
+                                                  height: imgHeight,
+                                                  color: ServoraColors.emerald600.withOpacity(0.1),
+                                                  child: const Center(
+                                                    child: Icon(Icons.inventory_2_rounded,
+                                                        size: 32, color: ServoraColors.emerald600),
+                                                  ),
+                                                ),
+                                              )
+                                            : Container(
+                                                height: imgHeight,
+                                                color: ServoraColors.emerald600.withOpacity(0.1),
+                                                child: const Center(
+                                                  child: Icon(Icons.inventory_2_rounded,
+                                                      size: 32, color: ServoraColors.emerald600),
+                                                ),
                                               ),
-                                            ),
-                                          )
-                                        : Container(
-                                            height: 110,
-                                            color: ServoraColors.emerald600.withOpacity(0.1),
-                                            child: const Center(
-                                              child: Icon(Icons.inventory_2_rounded,
-                                                  size: 32, color: ServoraColors.emerald600),
-                                            ),
-                                          ),
-                                  ),
+                                      ),
 
                                   if (hasDiscount)
                                     Positioned(
@@ -448,7 +455,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         ),
                       );
                     },
-                  ),
+                  );
+                },
+              ),
           ),
         ],
       ),

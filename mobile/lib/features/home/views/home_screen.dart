@@ -703,64 +703,71 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const Gap(12),
 
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.62,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemCount: _liveProducts.isNotEmpty ? _liveProducts.length : _fallbackProducts.length,
-                        itemBuilder: (context, index) {
-                          final p = _liveProducts.isNotEmpty ? _liveProducts[index] : _fallbackProducts[index];
-                          final imageUrl = p['image'] as String?;
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final double itemWidth = (constraints.maxWidth - 12) / 2;
+                          final double dynamicAspectRatio = (itemWidth / 246.0).clamp(0.68, 0.78);
+                          final double imgHeight = (itemWidth * 0.62).clamp(96.0, 114.0);
 
-                          final double price = (p['price'] is num) ? (p['price'] as num).toDouble() : 0.0;
-                          final double? originalPrice = (p['originalPrice'] is num) ? (p['originalPrice'] as num).toDouble() : null;
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: dynamicAspectRatio,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                            itemCount: _liveProducts.isNotEmpty ? _liveProducts.length : _fallbackProducts.length,
+                            itemBuilder: (context, index) {
+                              final p = _liveProducts.isNotEmpty ? _liveProducts[index] : _fallbackProducts[index];
+                              final imageUrl = p['image'] as String?;
 
-                          final hasDiscount = originalPrice != null && originalPrice > price;
-                          final discountPct = hasDiscount ? (((originalPrice - price) / originalPrice) * 100).round() : 0;
+                              final double price = (p['price'] is num) ? (p['price'] as num).toDouble() : 0.0;
+                              final double? originalPrice = (p['originalPrice'] is num) ? (p['originalPrice'] as num).toDouble() : null;
 
-                          return GestureDetector(
-                            onTap: () => context.push('/products/detail', extra: p),
-                            child: ServoraCard(
-                              padding: EdgeInsets.zero,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Product Cover Image + Discount Tag Badge
-                                  Stack(
+                              final hasDiscount = originalPrice != null && originalPrice > price;
+                              final discountPct = hasDiscount ? (((originalPrice - price) / originalPrice) * 100).round() : 0;
+
+                              return GestureDetector(
+                                onTap: () => context.push('/products/detail', extra: p),
+                                child: ServoraCard(
+                                  padding: EdgeInsets.zero,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      ClipRRect(
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                        child: imageUrl != null && imageUrl.isNotEmpty
-                                            ? CachedNetworkImage(
-                                                imageUrl: imageUrl,
-                                                height: 110,
-                                                width: double.infinity,
-                                                fit: BoxFit.cover,
-                                                placeholder: (_, __) => const ServoraShimmerSkeleton(
-                                                    width: double.infinity, height: 110, borderRadius: 0),
-                                                errorWidget: (_, __, ___) => Container(
-                                                  height: 110,
-                                                  color: ServoraColors.emerald600.withOpacity(0.1),
-                                                  child: const Center(
-                                                    child: Icon(Icons.inventory_2_rounded,
-                                                        size: 32, color: ServoraColors.emerald600),
+                                      // Product Cover Image + Discount Tag Badge
+                                      Stack(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                            child: imageUrl != null && imageUrl.isNotEmpty
+                                                ? CachedNetworkImage(
+                                                    imageUrl: imageUrl,
+                                                    height: imgHeight,
+                                                    width: double.infinity,
+                                                    fit: BoxFit.cover,
+                                                    placeholder: (_, __) => ServoraShimmerSkeleton(
+                                                        width: double.infinity, height: imgHeight, borderRadius: 0),
+                                                    errorWidget: (_, __, ___) => Container(
+                                                      height: imgHeight,
+                                                      color: ServoraColors.emerald600.withOpacity(0.1),
+                                                      child: const Center(
+                                                        child: Icon(Icons.inventory_2_rounded,
+                                                            size: 32, color: ServoraColors.emerald600),
+                                                      ),
+                                                    ),
+                                                  )
+                                                : Container(
+                                                    height: imgHeight,
+                                                    color: ServoraColors.emerald600.withOpacity(0.1),
+                                                    child: const Center(
+                                                      child: Icon(Icons.inventory_2_rounded,
+                                                          size: 32, color: ServoraColors.emerald600),
+                                                    ),
                                                   ),
-                                                ),
-                                              )
-                                            : Container(
-                                                height: 110,
-                                                color: ServoraColors.emerald600.withOpacity(0.1),
-                                                child: const Center(
-                                                  child: Icon(Icons.inventory_2_rounded,
-                                                      size: 32, color: ServoraColors.emerald600),
-                                                ),
-                                              ),
-                                      ),
+                                          ),
 
                                       // Yellow Discount Badge
                                       if (hasDiscount)
@@ -852,8 +859,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        const Gap(8),
-
                                         Row(
                                           children: [
                                             Expanded(
@@ -901,10 +906,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           );
                         },
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                ),
+                ],
+              ),
+            ),
                 const Gap(30),
               ],
             ),
