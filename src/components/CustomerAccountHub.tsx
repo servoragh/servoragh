@@ -24,6 +24,7 @@ import {
   Gavel,
   Settings,
   MapPin,
+  Navigation,
   Smartphone,
   Bell,
   Lock,
@@ -104,6 +105,9 @@ export default function CustomerAccountHub() {
   const [addressZone, setAddressZone] = useState("Sakasaka");
   const [addressStreet, setAddressStreet] = useState("");
   const [addressLandmark, setAddressLandmark] = useState("");
+  const [addressLatitude, setAddressLatitude] = useState("");
+  const [addressLongitude, setAddressLongitude] = useState("");
+  const [fetchingGps, setFetchingGps] = useState(false);
   const [addressDefault, setAddressDefault] = useState(false);
   const [savingAddress, setSavingAddress] = useState(false);
 
@@ -231,6 +235,8 @@ export default function CustomerAccountHub() {
           zone: addressZone,
           streetDetails: addressStreet,
           landmark: addressLandmark,
+          latitude: addressLatitude ? parseFloat(addressLatitude) : null,
+          longitude: addressLongitude ? parseFloat(addressLongitude) : null,
           isDefault: addressDefault,
         }),
       });
@@ -238,6 +244,8 @@ export default function CustomerAccountHub() {
         setShowAddAddressModal(false);
         setAddressStreet("");
         setAddressLandmark("");
+        setAddressLatitude("");
+        setAddressLongitude("");
         fetchCustomerHubData();
       }
     } catch (err) {
@@ -1152,8 +1160,27 @@ export default function CustomerAccountHub() {
                         </div>
                         <div className="text-xs text-stone-600 dark:text-stone-300 font-medium">{addr.zone}</div>
                         {addr.landmark && <div className="text-[11px] text-stone-400">Landmark: {addr.landmark}</div>}
+                        {addr.latitude && addr.longitude ? (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${addr.latitude},${addr.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10.5px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline mt-1"
+                          >
+                            <ExternalLink className="w-3 h-3" /> Open in Google Maps ({Number(addr.latitude).toFixed(4)}, {Number(addr.longitude).toFixed(4)}) ↗
+                          </a>
+                        ) : (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr.zone + ", Tamale, Ghana")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10.5px] text-stone-400 hover:text-emerald-600 font-medium hover:underline mt-1"
+                          >
+                            <ExternalLink className="w-3 h-3" /> View Area on Google Maps ↗
+                          </a>
+                        )}
                       </div>
-                      <button onClick={() => handleDeleteAddress(addr.id)} className="text-stone-400 hover:text-red-500 transition p-1">
+                      <button onClick={() => handleDeleteAddress(addr.id)} className="text-stone-400 hover:text-red-500 transition p-1 cursor-pointer">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -1260,6 +1287,79 @@ export default function CustomerAccountHub() {
                 onChange={(e) => setAddressLandmark(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-transparent text-xs"
               />
+            </div>
+
+            {/* GPS & Google Maps Pinpoint Coordinates */}
+            <div className="bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="font-bold text-xs text-emerald-900 dark:text-emerald-300">Google Map GPS Coordinates</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== "undefined" && "geolocation" in navigator) {
+                      setFetchingGps(true);
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                          setAddressLatitude(pos.coords.latitude.toFixed(6));
+                          setAddressLongitude(pos.coords.longitude.toFixed(6));
+                          setFetchingGps(false);
+                        },
+                        (_) => {
+                          setFetchingGps(false);
+                          setAddressLatitude("9.407200");
+                          setAddressLongitude("-0.835100");
+                        },
+                        { timeout: 5000 }
+                      );
+                    } else {
+                      setAddressLatitude("9.407200");
+                      setAddressLongitude("-0.835100");
+                    }
+                  }}
+                  disabled={fetchingGps}
+                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10px] flex items-center gap-1 transition cursor-pointer"
+                >
+                  {fetchingGps ? <RefreshCw className="w-2.5 h-2.5 animate-spin" /> : <Navigation className="w-2.5 h-2.5" />}
+                  {fetchingGps ? "Detecting..." : "Use Current GPS 📍"}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Latitude</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 9.407200"
+                    value={addressLatitude}
+                    onChange={(e) => setAddressLatitude(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Longitude</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. -0.835100"
+                    value={addressLongitude}
+                    onChange={(e) => setAddressLongitude(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              {addressLatitude && addressLongitude && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${addressLatitude},${addressLongitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10.5px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3 h-3" /> Preview Pin on Google Maps ({addressLatitude}, {addressLongitude}) ↗
+                </a>
+              )}
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer pt-1">

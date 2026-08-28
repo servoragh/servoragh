@@ -6,6 +6,7 @@ import '../../../core/constants/constants.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_card.dart';
 import '../../../core/utils/whatsapp_helper.dart';
+import '../../../core/utils/location_helper.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class CustomerPortalView extends StatefulWidget {
@@ -928,40 +929,83 @@ class _CustomerPortalViewState extends State<CustomerPortalView> {
     final labelCtrl = TextEditingController(text: 'Home');
     final zoneCtrl = TextEditingController(text: 'Sakasaka');
     final landmarkCtrl = TextEditingController();
+    final latCtrl = TextEditingController();
+    final lngCtrl = TextEditingController();
+    bool fetchingGps = false;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Add Saved Address', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: labelCtrl, decoration: const InputDecoration(labelText: 'Label (e.g. Home, Workshop)')),
-            TextField(controller: zoneCtrl, decoration: const InputDecoration(labelText: 'Zone (e.g. Sakasaka, Nyohini)')),
-            TextField(controller: landmarkCtrl, decoration: const InputDecoration(labelText: 'Prominent Landmark')),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Add Saved Address & GPS Pin', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: labelCtrl, decoration: const InputDecoration(labelText: 'Label (e.g. Home, Workshop)')),
+                TextField(controller: zoneCtrl, decoration: const InputDecoration(labelText: 'Zone (e.g. Sakasaka, Nyohini)')),
+                TextField(controller: landmarkCtrl, decoration: const InputDecoration(labelText: 'Prominent Landmark')),
+                const Gap(10),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: fetchingGps
+                      ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.my_location_rounded, size: 14, color: ServoraColors.emerald600),
+                  label: Text(fetchingGps ? 'Detecting...' : 'Use Current Device GPS 📍', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                  onPressed: () async {
+                    setModalState(() => fetchingGps = true);
+                    try {
+                      final pos = await LocationHelper.getCurrentPosition();
+                      if (pos != null) {
+                        setModalState(() {
+                          latCtrl.text = pos.latitude.toStringAsFixed(6);
+                          lngCtrl.text = pos.longitude.toStringAsFixed(6);
+                          fetchingGps = false;
+                        });
+                      }
+                    } catch (_) {
+                      setModalState(() => fetchingGps = false);
+                    }
+                  },
+                ),
+                const Gap(8),
+                Row(
+                  children: [
+                    Expanded(child: TextField(controller: latCtrl, decoration: const InputDecoration(labelText: 'Latitude', hintText: '9.4072'))),
+                    const Gap(8),
+                    Expanded(child: TextField(controller: lngCtrl, decoration: const InputDecoration(labelText: 'Longitude', hintText: '-0.8351'))),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: ServoraColors.emerald600, foregroundColor: Colors.white),
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                try {
+                  final token = await authNotifier.storage.getToken();
+                  await _dio.post('/account/address', data: {
+                    'label': labelCtrl.text,
+                    'zone': zoneCtrl.text,
+                    'landmark': landmarkCtrl.text,
+                    'latitude': latCtrl.text.isNotEmpty ? double.tryParse(latCtrl.text) : null,
+                    'longitude': lngCtrl.text.isNotEmpty ? double.tryParse(lngCtrl.text) : null,
+                    'isDefault': true,
+                  }, options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}));
+                  _fetchLiveCustomerData();
+                } catch (_) {}
+              },
+              child: const Text('Save Address'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: ServoraColors.emerald600, foregroundColor: Colors.white),
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              try {
-                final token = await authNotifier.storage.getToken();
-                await _dio.post('/account/address', data: {
-                  'label': labelCtrl.text,
-                  'zone': zoneCtrl.text,
-                  'landmark': landmarkCtrl.text,
-                  'isDefault': true,
-                }, options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}));
-                _fetchLiveCustomerData();
-              } catch (_) {}
-            },
-            child: const Text('Save Address'),
-          ),
-        ],
       ),
     );
   }

@@ -18,14 +18,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Label and zone are required." }, { status: 400 });
     }
 
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [{ id: session.id }, { phone: session.phone }],
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     let profile = await prisma.customerProfile.findUnique({
-      where: { userId: session.id },
+      where: { userId: user.id },
     });
 
     if (!profile) {
       profile = await prisma.customerProfile.create({
         data: {
-          userId: session.id,
+          userId: user.id,
           defaultZone: zone,
         },
       });
