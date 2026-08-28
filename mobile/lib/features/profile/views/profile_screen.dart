@@ -9,6 +9,7 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../main.dart';
 import '../../business_portal/views/business_portal_screen.dart';
+import '../../admin/views/admin_portal_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -438,110 +439,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 4. MASTER ADMIN PORTAL VIEW
   // ==========================================
   Widget _buildAdminPortalView(BuildContext context, user, bool isDark) {
-    final String name = user?.name ?? 'Master Admin';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Admin Header Card
-        ServoraCard(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.redAccent, width: 1.5),
-                ),
-                child: const Center(
-                  child: Text('👑', style: TextStyle(fontSize: 28)),
-                ),
-              ),
-              const Gap(14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            name,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Gap(6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'MASTER ADMIN',
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Gap(2),
-                    Text('admin@servora.gh • Tamale Headquarters', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                    const Gap(4),
-                    const Text('Platform Supervisor Access', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(duration: 200.ms),
-        const Gap(14),
+        AdminPortalView(
+          onSwitchToCustomer: () => setState(() => _isMerchantMode = false),
+        ),
+        const Gap(20),
 
-        // Admin Platform Stats
-        Row(
-          children: [
-            _buildMetricCard(context, count: '11 Live', label: 'Verified Stores', icon: Icons.storefront_rounded),
-            const Gap(8),
-            _buildMetricCard(context, count: '18 Items', label: 'Listed Products', icon: Icons.shopping_bag_rounded),
-            const Gap(8),
-            _buildMetricCard(context, count: '99.9%', label: 'System Health', icon: Icons.health_and_safety_rounded),
-          ],
-        ),
-        const Gap(14),
-
-        // Admin Management Actions
-        const Text('Master Supervisor Control Tools:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.verified_rounded,
-          title: 'Verify Business Profiles & KYC',
-          subtitle: 'Review Ghana Card uploads & approve pending storefronts',
-          onTap: () => context.go('/businesses'),
-        ),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.inventory_2_rounded,
-          title: 'Moderate Marketplace Listings',
-          subtitle: 'Inspect products, prices, and categories',
-          onTap: () => context.go('/products'),
-        ),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.campaign_rounded,
-          title: 'Notice Board Community Moderation',
-          subtitle: 'Review trade broadcasts and community posts',
-          onTap: () => context.go('/community'),
-        ),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.shield_rounded,
-          title: 'Escrow Vault Supervision',
-          subtitle: 'Oversee held Mobile Money funds and dispute resolutions',
-          onTap: () => context.push('/escrow'),
+        // Mode Switcher Banner
+        _buildModeSwitcher(
+          isMerchant: false,
+          onToggle: () => setState(() => _isMerchantMode = false),
         ),
         const Gap(16),
 
