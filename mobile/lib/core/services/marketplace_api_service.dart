@@ -100,14 +100,26 @@ class MarketplaceApiService {
     }
   }
 
-  /// Fetch user saved favorite business IDs from backend API
+  /// Fetch user saved favorite business IDs and slugs from backend API
   static Future<Set<String>> fetchUserFavoriteIds() async {
     try {
       final response = await _dio.get('/favorites');
       if (response.statusCode == 200 && response.data != null) {
         if (response.data['favorites'] is List) {
           final list = response.data['favorites'] as List;
-          return list.map((f) => (f['businessId'] ?? f['id']).toString()).toSet();
+          final set = <String>{};
+          for (final f in list) {
+            if (f is Map) {
+              if (f['businessId'] != null) set.add(f['businessId'].toString());
+              if (f['id'] != null) set.add(f['id'].toString());
+              if (f['business'] is Map) {
+                final b = f['business'] as Map;
+                if (b['id'] != null) set.add(b['id'].toString());
+                if (b['slug'] != null) set.add(b['slug'].toString());
+              }
+            }
+          }
+          return set;
         }
       }
     } catch (_) {}

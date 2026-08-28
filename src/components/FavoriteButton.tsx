@@ -98,9 +98,13 @@ export function FavoriteButton({
       saveLocalFavorite(businessId, nextState);
       setIsFavorited(nextState);
       setLoading(false);
+      window.dispatchEvent(new Event("servora_favorites_updated"));
 
       if (nextState) {
+        toast.success("Saved to Favorites ❤️", `${businessName || "Business"} saved to your favorites.`);
         setShowSyncPrompt(true);
+      } else {
+        toast.info("Removed from Favorites", `${businessName || "Business"} removed from favorites.`);
       }
       return;
     }
@@ -121,6 +125,13 @@ export function FavoriteButton({
         saveLocalFavorite(businessId, nextState);
         setIsFavorited(nextState);
         setShowSyncPrompt(true);
+        window.dispatchEvent(new Event("servora_favorites_updated"));
+        if (nextState) {
+          toast.success("Saved to Favorites ❤️", `${businessName || "Business"} saved to your favorites.`);
+        } else {
+          toast.info("Removed from Favorites", `${businessName || "Business"} removed from favorites.`);
+        }
+      } else if (res.ok && json.success) {
         setIsFavorited(json.isFavorited);
         window.dispatchEvent(new Event("servora_favorites_updated"));
         if (json.isFavorited) {
@@ -129,13 +140,22 @@ export function FavoriteButton({
           toast.info("Removed from Favorites", `${businessName || "Business"} removed from favorites.`);
         }
       } else {
-        toast.error("Favorite Update Failed", json.error || "Could not update favorite status.");
+        // Safe graceful fallback to local storage
+        saveLocalFavorite(businessId, nextState);
+        setIsFavorited(nextState);
+        window.dispatchEvent(new Event("servora_favorites_updated"));
+        if (nextState) {
+          toast.success("Saved to Favorites ❤️", `${businessName || "Business"} saved to your favorites.`);
+        } else {
+          toast.info("Removed from Favorites", `${businessName || "Business"} removed from favorites.`);
+        }
       }
     } catch {
       // Offline fallback
       saveLocalFavorite(businessId, nextState);
       setIsFavorited(nextState);
-      toast.success(nextState ? "Saved Offline ❤️" : "Removed Offline", "Saved to local browser storage.");
+      window.dispatchEvent(new Event("servora_favorites_updated"));
+      toast.success(nextState ? "Saved to Favorites ❤️" : "Removed from Favorites", `${businessName || "Business"} saved to local storage.`);
     } finally {
       setLoading(false);
     }

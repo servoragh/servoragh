@@ -2,12 +2,94 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+async function resolveBusinessId(rawIdOrSlug: string): Promise<string | null> {
+  if (!rawIdOrSlug) return null;
+
+  // 1. Check if it matches a BusinessProfile id directly
+  const byId = await prisma.businessProfile.findUnique({
+    where: { id: rawIdOrSlug },
+    select: { id: true },
+  });
+  if (byId) return byId.id;
+
+  // 2. Check if it matches a BusinessProfile slug
+  const bySlug = await prisma.businessProfile.findUnique({
+    where: { slug: rawIdOrSlug },
+    select: { id: true },
+  });
+  if (bySlug) return bySlug.id;
+
+  // 3. Check if it matches a ProviderProfile id
+  const byProvId = await prisma.providerProfile.findUnique({
+    where: { id: rawIdOrSlug },
+    include: {
+      user: {
+        include: { businessProfile: true },
+      },
+    },
+  });
+  if (byProvId) {
+    if (byProvId.user.businessProfile) {
+      return byProvId.user.businessProfile.id;
+    }
+    const newBiz = await prisma.businessProfile.create({
+      data: {
+        userId: byProvId.userId,
+        businessName: byProvId.businessName,
+        slug: byProvId.slug,
+        phone: byProvId.user.phone || "+233240000000",
+        whatsappNumber: byProvId.user.phone || "+233240000000",
+        description: byProvId.bio,
+        zone: byProvId.serviceArea.split(",")[0].trim(),
+        ratingAverage: byProvId.ratingAverage,
+        reviewsCount: byProvId.reviewCount,
+        verificationStatus: byProvId.verificationStatus === "VERIFIED" ? "TIER_2_VERIFIED_ARTISAN" : "UNVERIFIED",
+        logoUrl: byProvId.logoUrl || byProvId.user.avatarUrl,
+      },
+    });
+    return newBiz.id;
+  }
+
+  // 4. Check if it matches a ProviderProfile slug
+  const byProvSlug = await prisma.providerProfile.findUnique({
+    where: { slug: rawIdOrSlug },
+    include: {
+      user: {
+        include: { businessProfile: true },
+      },
+    },
+  });
+  if (byProvSlug) {
+    if (byProvSlug.user.businessProfile) {
+      return byProvSlug.user.businessProfile.id;
+    }
+    const newBiz = await prisma.businessProfile.create({
+      data: {
+        userId: byProvSlug.userId,
+        businessName: byProvSlug.businessName,
+        slug: byProvSlug.slug,
+        phone: byProvSlug.user.phone || "+233240000000",
+        whatsappNumber: byProvSlug.user.phone || "+233240000000",
+        description: byProvSlug.bio,
+        zone: byProvSlug.serviceArea.split(",")[0].trim(),
+        ratingAverage: byProvSlug.ratingAverage,
+        reviewsCount: byProvSlug.reviewCount,
+        verificationStatus: byProvSlug.verificationStatus === "VERIFIED" ? "TIER_2_VERIFIED_ARTISAN" : "UNVERIFIED",
+        logoUrl: byProvSlug.logoUrl || byProvSlug.user.avatarUrl,
+      },
+    });
+    return newBiz.id;
+  }
+
+  return null;
+}
+
 // GET /api/favorites - Get saved favorites for current user or check specific business status
 export async function GET(req: Request) {
   try {
     const session = await getSession();
     const { searchParams } = new URL(req.url);
-    const businessId = searchParams.get("businessId");
+    const rawBusinessId = searchParams.get("businessId");
 
     if (!session) {
       return NextResponse.json({
@@ -17,12 +99,21 @@ export async function GET(req: Request) {
       });
     }
 
-    if (businessId) {
+    if (rawBusinessId) {
+      const resolvedId = await resolveBusinessId(rawBusinessId);
+      if (!resolvedId) {
+        return NextResponse.json({
+          isAuthenticated: true,
+          isFavorited: false,
+          favorite: null,
+        });
+      }
+
       const fav = await prisma.businessFavorite.findUnique({
         where: {
           userId_businessId: {
             userId: session.id,
-            businessId,
+            businessId: resolvedId,
           },
         },
       });
@@ -82,23 +173,28 @@ export async function POST(req: Request) {
     const session = await getSession();
     if (!session) {
       return NextResponse.json(
-        { error: "Unauthorized. Please log in to save favorites.", requiresAuth: true },
+        { error: "Unauthorized. Please log in to sync favorites across devices.", requiresAuth: true, isFavorited: false },
         { status: 401 }
       );
     }
 
     const body = await req.json();
-    const { businessId, action, notifyOnNewListing } = body;
+    const { businessId: rawBusinessId, action, notifyOnNewListing } = body;
 
-    if (!businessId) {
+    if (!rawBusinessId) {
       return NextResponse.json({ error: "Missing businessId parameter." }, { status: 400 });
+    }
+
+    const resolvedBusinessId = await resolveBusinessId(rawBusinessId);
+    if (!resolvedBusinessId) {
+      return NextResponse.json({ error: "Target business not found." }, { status: 404 });
     }
 
     const existing = await prisma.businessFavorite.findUnique({
       where: {
         userId_businessId: {
           userId: session.id,
-          businessId,
+          businessId: resolvedBusinessId,
         },
       },
     });
@@ -126,7 +222,7 @@ export async function POST(req: Request) {
       });
 
       await prisma.businessProfile.update({
-        where: { id: businessId },
+        where: { id: resolvedBusinessId },
         data: { favoritesCount: { decrement: 1 } },
       }).catch(() => {});
 
@@ -140,13 +236,13 @@ export async function POST(req: Request) {
       const created = await prisma.businessFavorite.create({
         data: {
           userId: session.id,
-          businessId,
+          businessId: resolvedBusinessId,
           notifyOnNewListing: notifyOnNewListing ?? true,
         },
       });
 
       await prisma.businessProfile.update({
-        where: { id: businessId },
+        where: { id: resolvedBusinessId },
         data: { favoritesCount: { increment: 1 } },
       }).catch(() => {});
 
