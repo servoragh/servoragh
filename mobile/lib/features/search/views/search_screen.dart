@@ -243,56 +243,59 @@ class _SearchScreenState extends State<SearchScreen> {
         final item = _searchResults[index];
         final provider = item['provider'] ?? {};
 
-        return ServoraCard(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: ServoraColors.emerald600.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(14),
+        return GestureDetector(
+          onTap: () => context.push('/products/detail', extra: item),
+          child: ServoraCard(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: ServoraColors.emerald600.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.inventory_2_rounded, color: ServoraColors.emerald600, size: 28),
+                  ),
                 ),
-                child: const Center(
-                  child: Icon(Icons.inventory_2_rounded, color: ServoraColors.emerald600, size: 28),
+                const Gap(14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item['title'] ?? 'Marketplace Listing',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Gap(4),
+                      Text(
+                        'GH₵ ${item['price'] ?? 0} • ${provider['businessName'] ?? 'Verified Seller'}',
+                        style: const TextStyle(fontSize: 12, color: ServoraColors.emerald600, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Gap(14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item['title'] ?? 'Marketplace Listing',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Gap(4),
-                    Text(
-                      'GH₵ ${item['price'] ?? 0} • ${provider['businessName'] ?? 'Verified Seller'}',
-                      style: const TextStyle(fontSize: 12, color: ServoraColors.emerald600, fontWeight: FontWeight.w700),
-                    ),
-                  ],
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ServoraColors.emerald600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    minimumSize: Size.zero,
+                  ),
+                  onPressed: () {
+                    WhatsAppHelper.openWhatsApp(
+                      phone: provider['user']?['phone'] ?? '+233240000000',
+                      message: 'Hello, I found your listing "${item['title']}" via Servora.gh search.',
+                    );
+                  },
+                  child: const Text('Contact', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                 ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ServoraColors.emerald600,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  minimumSize: Size.zero,
-                ),
-                onPressed: () {
-                  WhatsAppHelper.openWhatsApp(
-                    phone: provider['user']?['phone'] ?? '+233240000000',
-                    message: 'Hello, I found your listing "${item['title']}" via Servora.gh search.',
-                  );
-                },
-                child: const Text('Contact', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-              ),
-            ],
+              ],
+            ),
           ),
         ).animate().fadeIn(duration: (150 + index * 50).ms).slideY(begin: 0.1, end: 0);
       },
