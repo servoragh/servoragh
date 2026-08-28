@@ -110,7 +110,7 @@ export async function GET(req: Request) {
       cleanUserPhone,
       cleanUserPhone.replace("+233", "0"),
       cleanUserPhone.startsWith("0") ? "+233" + cleanUserPhone.slice(1) : null,
-    ].filter(Boolean);
+    ].filter(Boolean) as string[];
 
     try {
       const reqConditions: any[] = [];

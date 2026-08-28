@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       cleanPhone,
       cleanPhone.replace("+233", "0"),
       cleanPhone.startsWith("0") ? "+233" + cleanPhone.slice(1) : null,
-    ].filter(Boolean);
+    ].filter(Boolean) as string[];
 
     const orConditions: any[] = [];
     if (isValidUuid(session.id)) orConditions.push({ id: session.id });
@@ -158,15 +158,14 @@ export async function DELETE(req: Request) {
       cleanPhone,
       cleanPhone.replace("+233", "0"),
       cleanPhone.startsWith("0") ? "+233" + cleanPhone.slice(1) : null,
-    ].filter(Boolean);
+    ].filter(Boolean) as string[];
+
+    const orConditions: any[] = [];
+    if (isValidUuid(session.id)) orConditions.push({ id: session.id });
+    phoneVariants.forEach((p) => orConditions.push({ phone: p }));
 
     const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { id: session.id },
-          ...phoneVariants.map((p) => ({ phone: p })),
-        ].filter(Boolean),
-      },
+      where: orConditions.length > 0 ? { OR: orConditions } : undefined,
     });
 
     if (!user) {
