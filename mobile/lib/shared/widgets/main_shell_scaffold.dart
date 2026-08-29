@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/servora_colors.dart';
 import '../../features/auth/providers/auth_provider.dart';
 
-class MainShellScaffold extends StatelessWidget {
+class MainShellScaffold extends StatefulWidget {
   final Widget child;
 
   const MainShellScaffold({super.key, required this.child});
+
+  @override
+  State<MainShellScaffold> createState() => _MainShellScaffoldState();
+}
+
+class _MainShellScaffoldState extends State<MainShellScaffold> {
+  DateTime? _lastBackPressTime;
 
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
@@ -35,6 +43,44 @@ class MainShellScaffold extends StatelessWidget {
         context.go('/account');
         break;
     }
+  }
+
+  void _handleBackPress(BuildContext context, int selectedIndex) {
+    if (selectedIndex != 0) {
+      // Return to Home tab from any other tab
+      context.go('/home');
+      return;
+    }
+
+    final now = DateTime.now();
+    if (_lastBackPressTime == null || now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+      _lastBackPressTime = now;
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.info_outline_rounded, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Text(
+                'Press back again to exit Servora',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF1E293B),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          margin: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Double tap occurred within 2s -> Exit application safely
+    SystemNavigator.pop();
   }
 
   @override
@@ -70,14 +116,13 @@ class MainShellScaffold extends StatelessWidget {
         }
 
         return PopScope(
-          canPop: selectedIndex == 0,
+          canPop: false,
           onPopInvoked: (didPop) {
-            if (!didPop) {
-              context.go('/home');
-            }
+            if (didPop) return;
+            _handleBackPress(context, selectedIndex);
           },
           child: Scaffold(
-            body: child,
+            body: widget.child,
             bottomNavigationBar: NavigationBar(
               selectedIndex: selectedIndex,
               onDestinationSelected: (index) => _onItemTapped(index, context),

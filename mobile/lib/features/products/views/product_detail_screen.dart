@@ -576,8 +576,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final description = prod['description'] ??
         'High quality genuine product verified and sourced directly in Northern Ghana.\n\n• Condition: Brand New / Tested Working\n• Warranty: 6 Months Local Guarantee\n• Delivery: Same-Day Express Haulage Available across Tamale.';
 
-    return Scaffold(
-      body: Stack(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (Navigator.of(context).canPop()) {
+          context.pop();
+        } else {
+          context.go('/products');
+        }
+      },
+      child: Scaffold(
+        body: Stack(
         children: [
           CustomScrollView(
             slivers: [
@@ -1383,8 +1393,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildAttributeTile(IconData icon, String label, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;

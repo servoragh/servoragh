@@ -6,14 +6,33 @@ class MarketplaceApiService {
   static final Dio _dio = Dio(
     BaseOptions(
       baseUrl: ServoraConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 12),
-      receiveTimeout: const Duration(seconds: 12),
+      connectTimeout: const Duration(seconds: 5),
+      receiveTimeout: const Duration(seconds: 6),
+      sendTimeout: const Duration(seconds: 5),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Cache-Control': 'max-age=60',
       },
     ),
   );
+
+  // In-Memory Cache for 0ms Instant Page Loads
+  static List<dynamic>? _cachedProducts;
+  static DateTime? _productsCacheTime;
+
+  static List<dynamic>? _cachedBusinesses;
+  static DateTime? _businessesCacheTime;
+
+  static List<dynamic>? _cachedNotices;
+  static DateTime? _noticesCacheTime;
+
+  static List<dynamic>? _cachedTickers;
+  static DateTime? _tickersCacheTime;
+
+  static final Map<String, dynamic> _storefrontCache = {};
+
+  static const Duration _cacheTtl = Duration(minutes: 5);
 
   static Future<Options> _authOptions() async {
     try {
@@ -31,30 +50,72 @@ class MarketplaceApiService {
     }
   }
 
-  /// Fetch live marketplace products from database
-  static Future<List<dynamic>> fetchProducts() async {
+  /// Invalidate all memory caches to force fresh load on pull-to-refresh
+  static void clearCache() {
+    _cachedProducts = null;
+    _cachedBusinesses = null;
+    _cachedNotices = null;
+    _cachedTickers = null;
+    _storefrontCache.clear();
+  }
+
+  /// Fetch live marketplace products with instant in-memory cache & background revalidation
+  static Future<List<dynamic>> fetchProducts({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedProducts != null && _productsCacheTime != null) {
+      if (DateTime.now().difference(_productsCacheTime!) < _cacheTtl) {
+        // Trigger background silent revalidation
+        _revalidateProducts();
+        return _cachedProducts!;
+      }
+    }
+
     try {
       final response = await _dio.get('/products');
       if (response.statusCode == 200 && response.data != null) {
         if (response.data is Map && response.data['products'] != null) {
-          return response.data['products'] as List<dynamic>;
+          _cachedProducts = response.data['products'] as List<dynamic>;
+          _productsCacheTime = DateTime.now();
+          return _cachedProducts!;
         } else if (response.data is List) {
-          return response.data as List<dynamic>;
+          _cachedProducts = response.data as List<dynamic>;
+          _productsCacheTime = DateTime.now();
+          return _cachedProducts!;
         }
       }
-      return [];
+      return _cachedProducts ?? [];
     } catch (_) {
-      return [];
+      return _cachedProducts ?? [];
     }
   }
 
-  /// Fetch live verified artisans & businesses from database
-  static Future<List<dynamic>> fetchBusinesses() async {
+  static Future<void> _revalidateProducts() async {
+    try {
+      final response = await _dio.get('/products');
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data is Map && response.data['products'] != null) {
+          _cachedProducts = response.data['products'] as List<dynamic>;
+          _productsCacheTime = DateTime.now();
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// Fetch live verified artisans & businesses with instant memory cache
+  static Future<List<dynamic>> fetchBusinesses({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedBusinesses != null && _businessesCacheTime != null) {
+      if (DateTime.now().difference(_businessesCacheTime!) < _cacheTtl) {
+        _revalidateBusinesses();
+        return _cachedBusinesses!;
+      }
+    }
+
     try {
       final response = await _dio.get('/providers');
       if (response.statusCode == 200 && response.data != null) {
         if (response.data is Map && response.data['providers'] != null) {
-          return response.data['providers'] as List<dynamic>;
+          _cachedBusinesses = response.data['providers'] as List<dynamic>;
+          _businessesCacheTime = DateTime.now();
+          return _cachedBusinesses!;
         }
       }
     } catch (_) {}
@@ -65,28 +126,48 @@ class MarketplaceApiService {
         if (response.data is Map &&
             response.data['results'] != null &&
             response.data['results']['providers'] != null) {
-          return response.data['results']['providers'] as List<dynamic>;
+          _cachedBusinesses = response.data['results']['providers'] as List<dynamic>;
+          _businessesCacheTime = DateTime.now();
+          return _cachedBusinesses!;
         }
       }
     } catch (_) {}
 
-    return [];
+    return _cachedBusinesses ?? [];
   }
 
-  /// Fetch live community trade board notices from database
-  static Future<List<dynamic>> fetchCommunityNotices() async {
+  static Future<void> _revalidateBusinesses() async {
+    try {
+      final response = await _dio.get('/providers');
+      if (response.statusCode == 200 && response.data != null && response.data['providers'] != null) {
+        _cachedBusinesses = response.data['providers'] as List<dynamic>;
+        _businessesCacheTime = DateTime.now();
+      }
+    } catch (_) {}
+  }
+
+  /// Fetch live community trade board notices from database with memory cache
+  static Future<List<dynamic>> fetchCommunityNotices({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedNotices != null && _noticesCacheTime != null) {
+      if (DateTime.now().difference(_noticesCacheTime!) < _cacheTtl) {
+        return _cachedNotices!;
+      }
+    }
+
     try {
       final response = await _dio.get('/search', queryParameters: {'scope': 'community'});
       if (response.statusCode == 200 && response.data != null) {
         if (response.data is Map &&
             response.data['results'] != null &&
             response.data['results']['community'] != null) {
-          return response.data['results']['community'] as List<dynamic>;
+          _cachedNotices = response.data['results']['community'] as List<dynamic>;
+          _noticesCacheTime = DateTime.now();
+          return _cachedNotices!;
         }
       }
-      return [];
+      return _cachedNotices ?? [];
     } catch (_) {
-      return [];
+      return _cachedNotices ?? [];
     }
   }
 
@@ -101,19 +182,29 @@ class MarketplaceApiService {
   }
 
   /// Fetch live top announcement tickers from database
-  static Future<List<dynamic>> fetchTickers() async {
+  static Future<List<dynamic>> fetchTickers({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedTickers != null && _tickersCacheTime != null) {
+      if (DateTime.now().difference(_tickersCacheTime!) < _cacheTtl) {
+        return _cachedTickers!;
+      }
+    }
+
     try {
       final response = await _dio.get('/tickers');
       if (response.statusCode == 200 && response.data != null) {
         if (response.data is Map && response.data['tickers'] != null) {
-          return response.data['tickers'] as List<dynamic>;
+          _cachedTickers = response.data['tickers'] as List<dynamic>;
+          _tickersCacheTime = DateTime.now();
+          return _cachedTickers!;
         } else if (response.data is List) {
-          return response.data as List<dynamic>;
+          _cachedTickers = response.data as List<dynamic>;
+          _tickersCacheTime = DateTime.now();
+          return _cachedTickers!;
         }
       }
-      return [];
+      return _cachedTickers ?? [];
     } catch (_) {
-      return [];
+      return _cachedTickers ?? [];
     }
   }
 
@@ -157,18 +248,26 @@ class MarketplaceApiService {
   }
 
   /// Fetch public provider storefront data by slug (/api/biz/:slug)
-  static Future<Map<String, dynamic>?> fetchPublicProviderBySlug(String slug) async {
+  static Future<Map<String, dynamic>?> fetchPublicProviderBySlug(String slug, {bool forceRefresh = false}) async {
+    if (!forceRefresh && _storefrontCache.containsKey(slug)) {
+      return _storefrontCache[slug];
+    }
+
     try {
       final response = await _dio.get('/biz/$slug');
       if (response.statusCode == 200 && response.data != null && response.data['profile'] != null) {
-        return Map<String, dynamic>.from(response.data['profile'] as Map);
+        final profile = Map<String, dynamic>.from(response.data['profile'] as Map);
+        _storefrontCache[slug] = profile;
+        return profile;
       }
     } catch (_) {}
 
     try {
       final response = await _dio.get('/public/provider/$slug');
       if (response.statusCode == 200 && response.data != null && response.data is Map) {
-        return Map<String, dynamic>.from(response.data as Map);
+        final profile = Map<String, dynamic>.from(response.data as Map);
+        _storefrontCache[slug] = profile;
+        return profile;
       }
     } catch (_) {}
 
@@ -233,4 +332,3 @@ class MarketplaceApiService {
     return [];
   }
 }
-

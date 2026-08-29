@@ -250,18 +250,38 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
       return matchesQuery;
     }).toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Text(
-              'Servora',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: isDark ? Colors.white : const Color(0xFF18181B),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (Navigator.of(context).canPop()) {
+          context.pop();
+        } else {
+          context.go('/home');
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            },
+          ),
+          title: Row(
+            children: [
+              Text(
+                'Servora',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : const Color(0xFF18181B),
+                ),
               ),
-            ),
             const Text(
               '.gh',
               style: TextStyle(
@@ -446,6 +466,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

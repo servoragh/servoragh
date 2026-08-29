@@ -137,26 +137,42 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? ServoraColors.darkBackground : const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: isDark ? ServoraColors.darkSurface : Colors.white,
-        elevation: 0,
-        titleSpacing: 12,
-        title: Row(
-          children: [
-            GestureDetector(
-              onTap: () => context.pop(),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white10 : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (Navigator.of(context).canPop()) {
+          context.pop();
+        } else {
+          context.go('/home');
+        }
+      },
+      child: Scaffold(
+        backgroundColor: isDark ? ServoraColors.darkBackground : const Color(0xFFF8FAFC),
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: isDark ? ServoraColors.darkSurface : Colors.white,
+          elevation: 0,
+          titleSpacing: 12,
+          title: Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (Navigator.of(context).canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white10 : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
                 ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
               ),
-            ),
             const Gap(8),
             Expanded(
               child: Container(
@@ -222,8 +238,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCategoryTabs(bool isDark) {
     final tabs = [

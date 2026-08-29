@@ -167,8 +167,18 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (context, _) {
         final authState = authNotifier.state;
 
-        return Scaffold(
-          appBar: AppBar(
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) {
+            if (didPop) return;
+            if (Navigator.of(context).canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+          child: Scaffold(
+            appBar: AppBar(
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_rounded),
               onPressed: () {
@@ -614,10 +624,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildLabel(String text) {
     return Padding(

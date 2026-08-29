@@ -467,46 +467,70 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
     final String bannerUrl = rawBanner.isNotEmpty ? rawBanner : _defaultBannerUrl;
     final String storefrontPhotoUrl = data['storefrontPhotoUrl'] ?? '';
 
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              context.pop();
-            } else {
-              context.go('/businesses');
-            }
-          },
-        ),
-        title: Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-        actions: [
-          ServoraFavoriteButton(businessId: widget.slug, businessName: name),
-          IconButton(
-            icon: const Icon(Icons.share_rounded, size: 20),
-            onPressed: () => _shareStorefront(name, widget.slug),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (Navigator.of(context).canPop()) {
+          context.pop();
+        } else {
+          context.go('/businesses');
+        }
+      },
+      child: Scaffold(
+        backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                context.pop();
+              } else {
+                context.go('/businesses');
+              }
+            },
           ),
-          const Gap(6),
-        ],
-      ),
-      body: CustomScrollView(
-        slivers: [
-          // 1. Top Cover Banner Image (with default picture fallback)
-          SliverToBoxAdapter(
-            child: GestureDetector(
-              onTap: () => ServoraImageLightbox.show(context, title: name, images: [bannerUrl]),
-              child: Stack(
-                children: [
-                  SizedBox(
-                    height: 160,
-                    width: double.infinity,
-                    child: Image.network(
-                      bannerUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.network(_defaultBannerUrl, fit: BoxFit.cover),
+          title: Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+          actions: [
+            ServoraFavoriteButton(businessId: widget.slug, businessName: name),
+            IconButton(
+              icon: const Icon(Icons.share_rounded, size: 20),
+              onPressed: () => _shareStorefront(name, widget.slug),
+            ),
+            const Gap(6),
+          ],
+        ),
+        body: CustomScrollView(
+          slivers: [
+            // 1. Top Cover Banner Image (with default picture fallback)
+            SliverToBoxAdapter(
+              child: GestureDetector(
+                onTap: () => ServoraImageLightbox.show(context, title: name, images: [bannerUrl]),
+                child: Stack(
+                  children: [
+                    SizedBox(
+                      height: 160,
+                      width: double.infinity,
+                      child: CachedNetworkImage(
+                        imageUrl: bannerUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: isDark ? Colors.grey[900] : Colors.grey[200],
+                          child: const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: ServoraColors.emerald600),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (_, __, ___) => CachedNetworkImage(
+                          imageUrl: _defaultBannerUrl,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => Container(color: Colors.grey[800]),
+                        ),
+                      ),
                     ),
-                  ),
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
@@ -1268,8 +1292,9 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildRentalCard(dynamic r, bool isDark, String name, String whatsapp) {
     final rImages = _parseImagesList(r['images']);

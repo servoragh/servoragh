@@ -124,27 +124,42 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Post Service Request (Step $_currentStep/4)'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () {
-            if (_currentStep > 1) {
-              setState(() => _currentStep -= 1);
-            } else {
-              if (Navigator.of(context).canPop()) {
-                context.pop();
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (_currentStep > 1) {
+          setState(() => _currentStep -= 1);
+        } else {
+          if (Navigator.of(context).canPop()) {
+            context.pop();
+          } else {
+            context.go('/home');
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Post Service Request (Step $_currentStep/4)'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () {
+              if (_currentStep > 1) {
+                setState(() => _currentStep -= 1);
               } else {
-                context.go('/home');
+                if (Navigator.of(context).canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/home');
+                }
               }
-            }
-          },
+            },
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: _requestComplete ? _buildSuccessView() : _buildStepContent(),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: _requestComplete ? _buildSuccessView() : _buildStepContent(),
+        ),
       ),
     );
   }

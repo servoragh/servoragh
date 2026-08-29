@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../../../core/constants/constants.dart';
 import '../../../app/theme/servora_colors.dart';
@@ -173,11 +174,25 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
-      drawer: _buildLeftSliderDrawer(context, isDark),
-      body: SafeArea(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (_activeView != 'overview') {
+          setState(() => _activeView = 'overview');
+        } else if (widget.onSwitchToCustomer != null) {
+          widget.onSwitchToCustomer!();
+        } else if (Navigator.of(context).canPop()) {
+          context.pop();
+        } else {
+          context.go('/home');
+        }
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
+        drawer: _buildLeftSliderDrawer(context, isDark),
+        body: SafeArea(
         child: Column(
           children: [
             // Edge-to-Edge Topbar
@@ -243,8 +258,9 @@ class _AdminPortalViewState extends State<AdminPortalView> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCurrentViewContent() {
     switch (_activeView) {
@@ -397,6 +413,21 @@ class _AdminPortalViewState extends State<AdminPortalView> {
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, size: 22),
+            tooltip: 'Exit to Home',
+            onPressed: () {
+              if (_activeView != 'overview') {
+                setState(() => _activeView = 'overview');
+              } else if (widget.onSwitchToCustomer != null) {
+                widget.onSwitchToCustomer!();
+              } else if (Navigator.of(context).canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.menu_rounded, size: 22),
             tooltip: 'Open Admin Menu',

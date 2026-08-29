@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/servora_button.dart';
 import '../../../shared/widgets/servora_text_field.dart';
@@ -20,20 +21,30 @@ class _EscrowDealScreenState extends State<EscrowDealScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Safe MoMo Escrow Protection 🛡️'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else {
-              Navigator.of(context).pushReplacementNamed('/home');
-            }
-          },
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (Navigator.of(context).canPop()) {
+          context.pop();
+        } else {
+          context.go('/home');
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Safe MoMo Escrow Protection 🛡️'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            },
+          ),
         ),
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -128,6 +139,7 @@ class _EscrowDealScreenState extends State<EscrowDealScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
