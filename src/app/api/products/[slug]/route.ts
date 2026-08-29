@@ -9,48 +9,61 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = await params;
-    const session = await getSession(request);
+    const rawParams = await params;
+    const rawSlug = rawParams?.slug || "";
+    const slug = decodeURIComponent(rawSlug).trim();
+
+    let session: any = null;
+    try {
+      session = await getSession(request);
+    } catch {
+      session = null;
+    }
     const userId = session?.id;
 
     // 1. Try finding in ProductListing (Primary Classifieds & Marketplace Model)
-    let listing: any = await prisma.productListing.findFirst({
-      where: {
-        OR: [
-          { slug },
-          { id: slug },
-        ],
-      },
-      include: {
-        seller: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            email: true,
-            avatarUrl: true,
-            role: true,
-            createdAt: true,
+    let listing: any = null;
+    try {
+      listing = await prisma.productListing.findFirst({
+        where: {
+          OR: [
+            { slug },
+            { id: slug },
+          ],
+        },
+        include: {
+          seller: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              email: true,
+              avatarUrl: true,
+              role: true,
+              createdAt: true,
+            },
+          },
+          business: {
+            select: {
+              id: true,
+              businessName: true,
+              slug: true,
+              logoUrl: true,
+              tagline: true,
+              description: true,
+              zone: true,
+              ratingAverage: true,
+              reviewsCount: true,
+              verificationStatus: true,
+              phone: true,
+              createdAt: true,
+            },
           },
         },
-        business: {
-          select: {
-            id: true,
-            businessName: true,
-            slug: true,
-            logoUrl: true,
-            tagline: true,
-            description: true,
-            zone: true,
-            ratingAverage: true,
-            reviewsCount: true,
-            verificationStatus: true,
-            phone: true,
-            createdAt: true,
-          },
-        },
-      },
-    });
+      });
+    } catch (e: any) {
+      console.warn("ProductListing lookup fallback:", e?.message);
+    }
 
     let productPayload: any = null;
     let productIdForRelations: string | null = null;
@@ -80,7 +93,7 @@ export async function GET(
       const sellerName = sellerBusiness?.businessName || sellerUser?.name || listing.guestName || "Verified Local Enterprise";
       const sellerSlug = sellerBusiness?.slug || "royals-motors";
       const sellerPhone = sellerBusiness?.phone || sellerUser?.phone || listing.guestPhone || "+233240000000";
-      const sellerWhatsApp = sellerBusiness?.whatsapp || sellerUser?.phone || listing.guestWhatsApp || sellerPhone;
+      const sellerWhatsApp = sellerBusiness?.phone || sellerUser?.phone || listing.guestWhatsApp || sellerPhone;
       const sellerZone = sellerBusiness?.zone || listing.area || "Lamashegu, Tamale";
       const sellerRating = sellerBusiness?.ratingAverage || 5.0;
       const sellerReviewCount = sellerBusiness?.reviewsCount || 18;
@@ -141,21 +154,26 @@ export async function GET(
       ).catch(() => null);
     } else {
       // Fallback to legacy Product model
-      const legacyProd: any = await prisma.product.findFirst({
-        where: {
-          OR: [
-            { slug },
-            { id: slug },
-          ],
-        },
-        include: {
-          provider: {
-            include: {
-              user: true,
+      let legacyProd: any = null;
+      try {
+        legacyProd = await prisma.product.findFirst({
+          where: {
+            OR: [
+              { slug },
+              { id: slug },
+            ],
+          },
+          include: {
+            provider: {
+              include: {
+                user: true,
+              },
             },
           },
-        },
-      });
+        });
+      } catch (e: any) {
+        console.warn("Legacy product lookup fallback:", e?.message);
+      }
 
       if (legacyProd) {
         productIdForRelations = legacyProd.id;
@@ -225,85 +243,99 @@ export async function GET(
     // 2. Fetch User's Like State
     let isLiked = false;
     if (userId) {
-      const likeRows = (await prisma.$queryRawUnsafe(
-        `SELECT id FROM "ProductLike" WHERE "productId" = $1 AND "userId" = $2 LIMIT 1`,
-        productIdForRelations,
-        userId
-      ).catch(() => [])) as any[];
-      isLiked = Array.isArray(likeRows) && likeRows.length > 0;
+      try {
+        const likeRows = (await prisma.$queryRawUnsafe(
+          `SELECT id FROM "ProductLike" WHERE "productId" = $1 AND "userId" = $2 LIMIT 1`,
+          productIdForRelations,
+          userId
+        ).catch(() => [])) as any[];
+        isLiked = Array.isArray(likeRows) && likeRows.length > 0;
+      } catch {
+        isLiked = false;
+      }
     }
 
     // 3. Fetch Questions & Answers (Threaded Community Q&A)
-    const rawQuestions = (await prisma.$queryRawUnsafe(`
-      SELECT 
-        q.id,
-        q."productId",
-        q."userId",
-        q.question,
-        q.answer,
-        q."answeredBy",
-        q."answeredAt",
-        q."createdAt",
-        u.name as "askerName",
-        u."avatarUrl" as "askerAvatar",
-        u.role as "askerRole"
-      FROM "ProductQuestion" q
-      LEFT JOIN "User" u ON q."userId" = u.id
-      WHERE q."productId" = $1
-      ORDER BY q."createdAt" DESC
-    `, productIdForRelations).catch(() => [])) as any[];
+    let questions: any[] = [];
+    try {
+      const rawQuestions = (await prisma.$queryRawUnsafe(`
+        SELECT 
+          q.id,
+          q."productId",
+          q."userId",
+          q.question,
+          q.answer,
+          q."answeredBy",
+          q."answeredAt",
+          q."createdAt",
+          u.name as "askerName",
+          u."avatarUrl" as "askerAvatar",
+          u.role as "askerRole"
+        FROM "ProductQuestion" q
+        LEFT JOIN "User" u ON q."userId" = u.id
+        WHERE q."productId" = $1
+        ORDER BY q."createdAt" DESC
+      `, productIdForRelations).catch(() => [])) as any[];
 
-    const questions = rawQuestions.map(q => ({
-      id: q.id,
-      productId: q.productId,
-      userId: q.userId,
-      question: q.question,
-      answer: q.answer,
-      answeredBy: q.answeredBy || (q.answer ? "Verified Seller" : null),
-      answeredAt: q.answeredAt,
-      createdAt: q.createdAt,
-      asker: {
-        name: q.askerName || "Verified Member",
-        avatarUrl: q.askerAvatar || null,
-        role: q.askerRole || "CUSTOMER",
-      },
-    }));
+      questions = rawQuestions.map(q => ({
+        id: q.id,
+        productId: q.productId,
+        userId: q.userId,
+        question: q.question,
+        answer: q.answer,
+        answeredBy: q.answeredBy || (q.answer ? "Verified Seller" : null),
+        answeredAt: q.answeredAt,
+        createdAt: q.createdAt,
+        asker: {
+          name: q.askerName || "Verified Member",
+          avatarUrl: q.askerAvatar || null,
+          role: q.askerRole || "CUSTOMER",
+        },
+      }));
+    } catch {
+      questions = [];
+    }
 
     // 4. Fetch Verified Reviews & Star Ratings
-    const rawReviews = (await prisma.$queryRawUnsafe(`
-      SELECT 
-        r.id,
-        r."productId",
-        r."userId",
-        r.rating,
-        r.title,
-        r.comment,
-        r.photos,
-        r."isVerified",
-        r."createdAt",
-        u.name as "authorName",
-        u."avatarUrl" as "authorAvatar"
-      FROM "ProductReview" r
-      LEFT JOIN "User" u ON r."userId" = u.id
-      WHERE r."productId" = $1
-      ORDER BY r."createdAt" DESC
-    `, productIdForRelations).catch(() => [])) as any[];
+    let reviews: any[] = [];
+    try {
+      const rawReviews = (await prisma.$queryRawUnsafe(`
+        SELECT 
+          r.id,
+          r."productId",
+          r."userId",
+          r.rating,
+          r.title,
+          r.comment,
+          r.photos,
+          r."isVerified",
+          r."createdAt",
+          u.name as "authorName",
+          u."avatarUrl" as "authorAvatar"
+        FROM "ProductReview" r
+        LEFT JOIN "User" u ON r."userId" = u.id
+        WHERE r."productId" = $1
+        ORDER BY r."createdAt" DESC
+      `, productIdForRelations).catch(() => [])) as any[];
 
-    const reviews = rawReviews.map(r => ({
-      id: r.id,
-      productId: r.productId,
-      userId: r.userId,
-      rating: Number(r.rating) || 5,
-      title: r.title || "Verified Purchase Review",
-      comment: r.comment,
-      photos: Array.isArray(r.photos) ? r.photos : [],
-      isVerified: Boolean(r.isVerified),
-      createdAt: r.createdAt,
-      author: {
-        name: r.authorName || "Servora Customer",
-        avatarUrl: r.authorAvatar || null,
-      },
-    }));
+      reviews = rawReviews.map(r => ({
+        id: r.id,
+        productId: r.productId,
+        userId: r.userId,
+        rating: Number(r.rating) || 5,
+        title: r.title || "Verified Purchase Review",
+        comment: r.comment,
+        photos: Array.isArray(r.photos) ? r.photos : [],
+        isVerified: Boolean(r.isVerified),
+        createdAt: r.createdAt,
+        author: {
+          name: r.authorName || "Servora Customer",
+          avatarUrl: r.authorAvatar || null,
+        },
+      }));
+    } catch {
+      reviews = [];
+    }
 
     // Calculate Review Breakdown & Aggregate Rating Summary
     const totalReviews = reviews.length;
@@ -333,69 +365,70 @@ export async function GET(
     };
 
     // 5. Smart Dynamic Recommendations ("You May Also Like")
-    // Algorithm Logic:
-    // 1. Same category items in the same neighborhood/zone
-    // 2. More from the same seller
-    // 3. Trending items across marketplace
-    const category = productPayload.category;
-    const area = productPayload.area;
-    const sellerId = listing?.sellerId || listing?.businessId;
+    let recommendations: any[] = [];
+    try {
+      const category = productPayload.category;
+      const area = productPayload.area;
+      const sellerId = listing?.sellerId || listing?.businessId;
 
-    const rawRecs = (await prisma.$queryRawUnsafe(`
-      SELECT 
-        l.id,
-        l.title,
-        l.slug,
-        l.price,
-        l."originalPrice",
-        l."discountPercent",
-        l.category,
-        l.area,
-        l.images,
-        l.condition,
-        l."likesCount",
-        b."businessName",
-        b.slug as "businessSlug",
-        b."logoUrl" as "businessLogo",
-        b."ratingAverage" as "businessRating"
-      FROM "ProductListing" l
-      LEFT JOIN "BusinessProfile" b ON l."businessId" = b.id
-      WHERE l.id != $1
-      ORDER BY 
-        CASE 
-          WHEN l.category = $2 AND l.area = $3 THEN 1
-          WHEN l.category = $2 THEN 2
-          WHEN l."businessId" = $4 THEN 3
-          ELSE 4
-        END,
-        l."viewsCount" DESC,
-        l."createdAt" DESC
-      LIMIT 8
-    `, productIdForRelations, category, area, sellerId || "none").catch(() => [])) as any[];
+      const rawRecs = (await prisma.$queryRawUnsafe(`
+        SELECT 
+          l.id,
+          l.title,
+          l.slug,
+          l.price,
+          l."originalPrice",
+          l."discountPercent",
+          l.category,
+          l.area,
+          l.images,
+          l.condition,
+          l."likesCount",
+          b."businessName",
+          b.slug as "businessSlug",
+          b."logoUrl" as "businessLogo",
+          b."ratingAverage" as "businessRating"
+        FROM "ProductListing" l
+        LEFT JOIN "BusinessProfile" b ON l."businessId" = b.id
+        WHERE l.id != $1
+        ORDER BY 
+          CASE 
+            WHEN l.category = $2 AND l.area = $3 THEN 1
+            WHEN l.category = $2 THEN 2
+            WHEN l."businessId" = $4 THEN 3
+            ELSE 4
+          END,
+          l."viewsCount" DESC,
+          l."createdAt" DESC
+        LIMIT 8
+      `, productIdForRelations, category, area || "Tamale", sellerId || "none").catch(() => [])) as any[];
 
-    const recommendations = rawRecs.map(rec => {
-      const parsedImgs = Array.isArray(rec.images) ? rec.images : (typeof rec.images === "string" ? JSON.parse(rec.images || "[]") : []);
-      const priceVal = Number(rec.price);
-      const origPriceVal = rec.originalPrice ? Number(rec.originalPrice) : (priceVal * 1.15);
-      return {
-        id: rec.id,
-        title: rec.title,
-        slug: rec.slug,
-        price: priceVal,
-        originalPrice: origPriceVal,
-        discountPercent: rec.discountPercent || Math.round(((origPriceVal - priceVal) / origPriceVal) * 100),
-        category: rec.category,
-        area: rec.area || "Tamale",
-        condition: rec.condition || "USED_GOOD",
-        image: parsedImgs[0] || "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80",
-        images: parsedImgs,
-        likesCount: rec.likesCount || 5,
-        seller: rec.businessName || "Verified Merchant",
-        sellerSlug: rec.businessSlug || "royals-motors",
-        sellerLogo: rec.businessLogo || null,
-        sellerRating: rec.businessRating || 5.0,
-      };
-    });
+      recommendations = rawRecs.map(rec => {
+        const parsedImgs = Array.isArray(rec.images) ? rec.images : (typeof rec.images === "string" ? JSON.parse(rec.images || "[]") : []);
+        const priceVal = Number(rec.price);
+        const origPriceVal = rec.originalPrice ? Number(rec.originalPrice) : (priceVal * 1.15);
+        return {
+          id: rec.id,
+          title: rec.title,
+          slug: rec.slug,
+          price: priceVal,
+          originalPrice: origPriceVal,
+          discountPercent: rec.discountPercent || Math.round(((origPriceVal - priceVal) / origPriceVal) * 100),
+          category: rec.category,
+          area: rec.area || "Tamale",
+          condition: rec.condition || "USED_GOOD",
+          image: parsedImgs[0] || "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80",
+          images: parsedImgs,
+          likesCount: rec.likesCount || 5,
+          seller: rec.businessName || "Verified Merchant",
+          sellerSlug: rec.businessSlug || "royals-motors",
+          sellerLogo: rec.businessLogo || null,
+          sellerRating: rec.businessRating || 5.0,
+        };
+      });
+    } catch {
+      recommendations = [];
+    }
 
     return NextResponse.json({
       success: true,
@@ -409,6 +442,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error("Get Product Details Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to load product details." }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Failed to load product details." }, { status: 500 });
   }
 }
