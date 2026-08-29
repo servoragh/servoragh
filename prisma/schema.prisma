@@ -813,12 +813,14 @@ model ProductReview {
   product    ProductListing @relation(fields: [productId], references: [id], onDelete: Cascade)
   userId     String
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rating     Int            // 1 to 5
-  title      String?
-  comment    String         @db.Text
-  photos     String[]
-  isVerified Boolean        @default(false) // Verified Buyer badge
-  createdAt  DateTime       @default(now())
+  rating          Int            // 1 to 5
+  title           String?
+  comment         String         @db.Text
+  photos          String[]
+  isVerified      Boolean        @default(false) // Verified Buyer badge
+  sellerReply     String?        @db.Text
+  sellerRepliedAt DateTime?
+  createdAt       DateTime       @default(now())
 
   @@index([productId])
 }

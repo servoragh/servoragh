@@ -877,6 +877,26 @@ export default function ProductDetailPage() {
                       ))}
                     </div>
                   )}
+
+                  {/* Verified Merchant Response */}
+                  {rev.sellerReply && (
+                    <div className="mt-3 p-3.5 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/40 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-extrabold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Official Merchant Response</span>
+                        </span>
+                        {rev.sellerRepliedAt && (
+                          <span className="text-[10px] text-stone-400">
+                            {new Date(rev.sellerRepliedAt).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-stone-700 dark:text-stone-300 italic">
+                        &quot;{rev.sellerReply}&quot;
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))
             )}

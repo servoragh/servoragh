@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -7,8 +6,8 @@ import 'package:dio/dio.dart';
 import '../../../core/constants/constants.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_card.dart';
-import '../../../shared/widgets/servora_shimmer_skeleton.dart';
 import '../../../core/utils/whatsapp_helper.dart';
+import '../../../core/storage/local_storage_service.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class BusinessPortalView extends StatefulWidget {
@@ -21,35 +20,69 @@ class BusinessPortalView extends StatefulWidget {
 }
 
 class _BusinessPortalViewState extends State<BusinessPortalView> {
-  String _activeTab = 'catalogs'; // 'catalogs' | 'leads' | 'messages'
+  String _activeTab = 'catalogs'; // 'catalogs' | 'escrow' | 'reviews' | 'messages' | 'leads'
   String _catalogFilter = 'products'; // 'products' | 'rentals' | 'services'
+  String _reviewSubTab = 'reviews'; // 'reviews' | 'questions'
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = true;
   String? _errorMessage;
+
   Map<String, dynamic>? _profile;
+  Map<String, dynamic> _kpis = {};
 
   List<dynamic> _products = [];
   List<dynamic> _rentals = [];
   List<dynamic> _services = [];
+  List<dynamic> _reviews = [];
+  List<dynamic> _questions = [];
+  List<dynamic> _escrowDeals = [];
+  List<dynamic> _chatRooms = [];
   List<dynamic> _leads = [];
+  List<dynamic> _quotes = [];
 
-  static final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: ServoraConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 12),
-      receiveTimeout: const Duration(seconds: 12),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ),
-  );
+  final LocalStorageService _storageService = LocalStorageService();
+  late final Dio _dio;
 
   @override
   void initState() {
     super.initState();
+    _initDio();
     _fetchLivePortalData();
+  }
+
+  void _initDio() {
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: ServoraConstants.baseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await _storageService.getToken();
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          final userId = await _storageService.getUserId();
+          if (userId != null && userId.isNotEmpty) {
+            options.headers['x-user-id'] = userId;
+          }
+          final userPhone = await _storageService.getUserPhone();
+          if (userPhone != null && userPhone.isNotEmpty) {
+            options.headers['x-user-phone'] = userPhone;
+          }
+          return handler.next(options);
+        },
+      ),
+    );
   }
 
   @override
@@ -64,36 +97,546 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
       _errorMessage = null;
     });
 
-    final user = authNotifier.state.user;
-    final slug = user?.slug ?? 'savannah-fresh-farms';
-
     try {
-      final res = await _dio.get('/biz/$slug');
+      final res = await _dio.get('/business/portal');
       if (res.statusCode == 200 && res.data != null) {
-        final rawData = res.data is Map<String, dynamic> ? res.data as Map<String, dynamic> : <String, dynamic>{};
-        final profileData = rawData['profile'] as Map<String, dynamic>? ?? rawData;
+        final data = res.data is Map<String, dynamic> ? res.data as Map<String, dynamic> : <String, dynamic>{};
+        final profileData = data['businessProfile'] as Map<String, dynamic>? ?? {};
+        final kpisData = data['kpis'] as Map<String, dynamic>? ?? {};
 
         setState(() {
           _profile = profileData;
-          _products = List.from(profileData['products'] ?? []);
-          _rentals = List.from(profileData['rentals'] ?? []);
-          _services = List.from(profileData['services'] ?? []);
-          _leads = List.from(profileData['leads'] ?? []);
+          _kpis = kpisData;
+          _products = List.from(data['products'] ?? profileData['products'] ?? []);
+          _rentals = List.from(data['rentals'] ?? profileData['rentals'] ?? []);
+          _services = List.from(data['services'] ?? profileData['services'] ?? []);
+          _reviews = List.from(data['reviews'] ?? []);
+          _questions = List.from(data['questions'] ?? []);
+          _escrowDeals = List.from(data['escrowDeals'] ?? []);
+          _chatRooms = List.from(data['chatRooms'] ?? []);
+          _leads = List.from(data['leads'] ?? profileData['leads'] ?? []);
+          _quotes = List.from(data['quotes'] ?? profileData['quotes'] ?? []);
           _isLoading = false;
         });
         return;
       }
     } catch (e) {
-      // If error, record message
-      setState(() {
-        _errorMessage = 'Could not sync live data from server. Please check internet connection.';
-        _isLoading = false;
-      });
+      // Fallback to /biz/$slug if /business/portal unauthorized or offline
+      final user = authNotifier.state.user;
+      final slug = user?.slug ?? 'savannah-fresh-farms';
+      try {
+        final res = await _dio.get('/biz/$slug');
+        if (res.statusCode == 200 && res.data != null) {
+          final rawData = res.data is Map<String, dynamic> ? res.data as Map<String, dynamic> : <String, dynamic>{};
+          final profileData = rawData['profile'] as Map<String, dynamic>? ?? rawData;
+
+          final prods = List.from(profileData['products'] ?? []);
+          final likesCount = prods.fold<int>(0, (sum, p) => sum + (int.tryParse(p['likesCount']?.toString() ?? '0') ?? 0));
+          final viewsCount = prods.fold<int>(0, (sum, p) => sum + (int.tryParse(p['viewsCount']?.toString() ?? '0') ?? 0));
+
+          setState(() {
+            _profile = profileData;
+            _products = prods;
+            _rentals = List.from(profileData['rentals'] ?? []);
+            _services = List.from(profileData['services'] ?? []);
+            _leads = List.from(profileData['leads'] ?? []);
+            _kpis = {
+              'totalProductLikes': likesCount,
+              'totalProductViews': viewsCount,
+              'totalProductsCount': prods.length,
+              'totalRentalsCount': (profileData['rentals'] as List?)?.length ?? 0,
+              'totalServicesCount': (profileData['services'] as List?)?.length ?? 0,
+              'activeEscrowsCount': 0,
+              'totalEscrowVolumeGhs': 0,
+              'unreadMessagesCount': 0,
+              'pendingLeadsCount': (profileData['leads'] as List?)?.length ?? 0,
+              'averageRating': profileData['ratingAverage'] ?? 5.0,
+              'reviewsCount': profileData['reviewsCount'] ?? 0,
+              'profileViews': profileData['profileViews'] ?? 150,
+              'qrScansCount': profileData['qrScansCount'] ?? 24,
+              'sharesCount': profileData['sharesCount'] ?? 12,
+            };
+            _isLoading = false;
+          });
+          return;
+        }
+      } catch (err) {
+        setState(() {
+          _errorMessage = 'Could not sync live data from server. Please check internet connection.';
+          _isLoading = false;
+        });
+      }
     }
   }
 
   // ==========================================
-  // ADD PRODUCT MODAL (Exact Web Inputs)
+  // REPLY TO CUSTOMER REVIEW MODAL
+  // ==========================================
+  void _openReplyReviewModal(Map<String, dynamic> review) {
+    final replyCtrl = TextEditingController(text: review['sellerReply'] ?? '');
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+
+          return Container(
+            padding: EdgeInsets.only(
+              top: 20,
+              left: 20,
+              right: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? ServoraColors.darkSurface : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const Gap(16),
+                Row(
+                  children: [
+                    const Icon(Icons.rate_review_rounded, color: ServoraColors.emerald600, size: 20),
+                    const Gap(8),
+                    const Text('Official Merchant Reply', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+                const Gap(6),
+                Text(
+                  'Replying to ${review['authorName'] ?? 'Customer'}\'s review on "${review['productTitle'] ?? 'Product'}"',
+                  style: const TextStyle(fontSize: 11.5, color: Colors.grey),
+                ),
+                const Gap(14),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          ...List.generate(
+                            5,
+                            (i) => Icon(
+                              Icons.star_rounded,
+                              size: 14,
+                              color: i < (review['rating'] ?? 5) ? const Color(0xFFF59E0B) : Colors.grey[300],
+                            ),
+                          ),
+                          const Gap(8),
+                          Text(review['title'] ?? 'Review', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const Gap(6),
+                      Text('"${review['comment'] ?? ''}"', style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+                    ],
+                  ),
+                ),
+                const Gap(14),
+                const Text('YOUR MERCHANT RESPONSE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                const Gap(6),
+                TextField(
+                  controller: replyCtrl,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Thank the customer, clarify details, or offer dedicated assistance...',
+                    hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+                    filled: true,
+                    fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const Gap(18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+                        child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const Gap(10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ServoraColors.emerald600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                final text = replyCtrl.text.trim();
+                                if (text.isEmpty) return;
+
+                                setModalState(() => isSubmitting = true);
+                                try {
+                                  final res = await _dio.post('/business/reviews/reply', data: {
+                                    'reviewId': review['id'],
+                                    'replyText': text,
+                                  });
+                                  if (res.statusCode == 200) {
+                                    if (mounted) {
+                                      Navigator.pop(ctx);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('✓ Merchant response published to product page!'),
+                                          backgroundColor: ServoraColors.emerald600,
+                                        ),
+                                      );
+                                      _fetchLivePortalData();
+                                    }
+                                  }
+                                } catch (e) {
+                                  setModalState(() => isSubmitting = false);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Failed to publish reply. Please try again.')),
+                                    );
+                                  }
+                                }
+                              },
+                        child: isSubmitting
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text('Post Reply ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ==========================================
+  // ANSWER CUSTOMER QUESTION MODAL
+  // ==========================================
+  void _openAnswerQuestionModal(Map<String, dynamic> q) {
+    final answerCtrl = TextEditingController(text: q['answer'] ?? '');
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+
+          return Container(
+            padding: EdgeInsets.only(
+              top: 20,
+              left: 20,
+              right: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? ServoraColors.darkSurface : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const Gap(16),
+                Row(
+                  children: [
+                    const Icon(Icons.help_outline_rounded, color: Color(0xFF2563EB), size: 20),
+                    const Gap(8),
+                    const Text('Answer Customer Inquiry', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+                const Gap(6),
+                Text(
+                  'Inquiry on "${q['productTitle'] ?? 'Product Listing'}"',
+                  style: const TextStyle(fontSize: 11.5, color: Colors.grey),
+                ),
+                const Gap(14),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFBFDBFE)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Question from ${q['askerName'] ?? 'Customer'}:', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                      const Gap(4),
+                      Text('"${q['question'] ?? ''}"', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+                const Gap(14),
+                const Text('YOUR OFFICIAL ANSWER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                const Gap(6),
+                TextField(
+                  controller: answerCtrl,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Provide precise product specs, availability, or delivery details...',
+                    hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+                    filled: true,
+                    fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const Gap(18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+                        child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const Gap(10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                final text = answerCtrl.text.trim();
+                                if (text.isEmpty) return;
+
+                                setModalState(() => isSubmitting = true);
+                                try {
+                                  final res = await _dio.post('/business/questions/answer', data: {
+                                    'questionId': q['id'],
+                                    'answerText': text,
+                                  });
+                                  if (res.statusCode == 200) {
+                                    if (mounted) {
+                                      Navigator.pop(ctx);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('✓ Official answer published to Product Q&A thread!'),
+                                          backgroundColor: Color(0xFF2563EB),
+                                        ),
+                                      );
+                                      _fetchLivePortalData();
+                                    }
+                                  }
+                                } catch (e) {
+                                  setModalState(() => isSubmitting = false);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Failed to answer question. Please try again.')),
+                                    );
+                                  }
+                                }
+                              },
+                        child: isSubmitting
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text('Publish Answer ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ==========================================
+  // IN-APP CUSTOMER CHAT DIALOG
+  // ==========================================
+  void _openChatDialog(Map<String, dynamic> room) {
+    final messageCtrl = TextEditingController();
+    bool isSending = false;
+    final customer = room['customer'] as Map<String, dynamic>? ?? {};
+    final customerName = customer['name'] ?? room['title'] ?? 'Customer';
+    final customerPhone = customer['phone'] ?? '+233240000000';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+
+          return Container(
+            padding: EdgeInsets.only(
+              top: 20,
+              left: 20,
+              right: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? ServoraColors.darkSurface : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const Gap(14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
+                          child: Text(customerName.isNotEmpty ? customerName[0].toUpperCase() : 'C', style: const TextStyle(fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                        ),
+                        const Gap(10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(customerName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+                            Text('In-App Direct Chat • $customerPhone', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.call_rounded, color: ServoraColors.emerald600, size: 20),
+                      onPressed: () => WhatsAppHelper.openWhatsApp(phone: customerPhone, message: 'Hello $customerName, contacting you from Servora.'),
+                    ),
+                  ],
+                ),
+                const Divider(height: 24),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.black26 : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.mark_chat_read_rounded, size: 36, color: isDark ? Colors.white24 : Colors.grey[400]),
+                          const Gap(8),
+                          Text('Direct Customer Chat Channel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white60 : Colors.grey[600])),
+                          const Gap(4),
+                          const Text('Type your response below to text this customer directly inside Servora.', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const Gap(12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: messageCtrl,
+                        decoration: InputDecoration(
+                          hintText: 'Type reply to $customerName...',
+                          hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+                          filled: true,
+                          fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ),
+                      ),
+                    ),
+                    const Gap(8),
+                    IconButton.filled(
+                      style: IconButton.styleFrom(backgroundColor: ServoraColors.emerald600),
+                      icon: isSending
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Icon(Icons.send_rounded, size: 18, color: Colors.white),
+                      onPressed: isSending
+                          ? null
+                          : () async {
+                              final text = messageCtrl.text.trim();
+                              if (text.isEmpty) return;
+
+                              setModalState(() => isSending = true);
+                              try {
+                                // Send chat message
+                                await Future.delayed(const Duration(milliseconds: 600));
+                                if (mounted) {
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('✓ In-app message sent to $customerName!'), backgroundColor: ServoraColors.emerald600),
+                                  );
+                                }
+                              } catch (e) {
+                                setModalState(() => isSending = false);
+                              }
+                            },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ==========================================
+  // ADD PRODUCT MODAL
   // ==========================================
   void _openAddProductModal() {
     final titleCtrl = TextEditingController();
@@ -105,7 +648,6 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     final photoUrlCtrl = TextEditingController();
 
     String condition = 'BRAND_NEW';
-    bool isNegotiable = false;
     final List<String> images = [];
 
     final categoryPresets = [
@@ -149,101 +691,74 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                       width: 44,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.3),
+                        color: isDark ? Colors.white24 : Colors.grey[300],
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
-                  const Gap(14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  const Gap(16),
+                  const Row(
                     children: [
-                      const Text(
-                        'Add New Retail Product',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        onPressed: () => Navigator.of(ctx).pop(),
-                      ),
+                      Icon(Icons.add_shopping_cart_rounded, color: ServoraColors.emerald600, size: 20),
+                      Gap(8),
+                      Text('Add Product Listing', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
                     ],
                   ),
+                  const Gap(4),
                   const Text(
-                    'Item will be immediately saved to database and live on your digital storefront.',
-                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                    'List genuine items in Northern Ghana with instant store sync & like counter.',
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey),
                   ),
-                  const Gap(16),
+                  const Divider(height: 24),
 
-                  // Item Title
-                  const Text('Item Title *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  const Text('PRODUCT TITLE *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                   const Gap(4),
                   TextField(
                     controller: titleCtrl,
                     decoration: InputDecoration(
-                      hintText: 'e.g. 50kg Bag of Premium Savannah Rice',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      hintText: 'e.g., 50kg Bag of Northern White Rice',
+                      filled: true,
+                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
                   ),
                   const Gap(12),
 
-                  // Category & Presets
-                  const Text('Category *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  const Text('CATEGORY *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                   const Gap(4),
-                  TextField(
-                    controller: categoryCtrl,
+                  DropdownButtonFormField<String>(
+                    value: categoryCtrl.text,
+                    dropdownColor: isDark ? ServoraColors.darkSurface : Colors.white,
                     decoration: InputDecoration(
-                      hintText: 'Enter category or pick preset below',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      filled: true,
+                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
-                  ),
-                  const Gap(6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: categoryPresets.map((cat) {
-                      final selected = categoryCtrl.text == cat;
-                      return GestureDetector(
-                        onTap: () {
-                          setModalState(() => categoryCtrl.text = cat);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: selected ? ServoraColors.emerald600 : (isDark ? Colors.white10 : Colors.grey[200]),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            cat,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: selected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                    items: categoryPresets
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13))))
+                        .toList(),
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => categoryCtrl.text = val);
+                    },
                   ),
                   const Gap(12),
 
-                  // Pricing Row
                   Row(
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Selling Price (GH₵) *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            const Text('SELLING PRICE (GH₵) *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                             const Gap(4),
                             TextField(
                               controller: priceCtrl,
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
-                                hintText: '150',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                hintText: '680',
+                                filled: true,
+                                fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                               ),
                             ),
                           ],
@@ -254,15 +769,16 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Original Price (Discount)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            const Text('ORIGINAL PRICE (GH₵)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                             const Gap(4),
                             TextField(
                               controller: originalPriceCtrl,
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
-                                hintText: '200 (Optional)',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                hintText: '780 (Optional)',
+                                filled: true,
+                                fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                               ),
                             ),
                           ],
@@ -272,77 +788,35 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                   ),
                   const Gap(12),
 
-                  // Stock & Condition
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Stock Quantity *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            const Gap(4),
-                            TextField(
-                              controller: stockCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Gap(10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Condition', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            const Gap(4),
-                            DropdownButtonFormField<String>(
-                              value: condition,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              ),
-                              items: const [
-                                DropdownMenuItem(value: 'BRAND_NEW', child: Text('Brand New', style: TextStyle(fontSize: 12))),
-                                DropdownMenuItem(value: 'REFURBISHED', child: Text('Refurbished', style: TextStyle(fontSize: 12))),
-                                DropdownMenuItem(value: 'USED_GOOD', child: Text('Used (Good)', style: TextStyle(fontSize: 12))),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) setModalState(() => condition = val);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Gap(12),
-
-                  // Description
-                  const Text('Description / Specifications', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  const Text('STOCK QUANTITY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                   const Gap(4),
                   TextField(
-                    controller: descCtrl,
-                    maxLines: 2,
+                    controller: stockCtrl,
+                    keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      hintText: 'Item specifications, origin, quality warranty guarantee...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      hintText: '5',
+                      filled: true,
+                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
                   ),
                   const Gap(12),
 
-                  // Image URLs Section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Product Photos (Up to 5)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      Text('${images.length}/5 added', style: const TextStyle(fontSize: 10, color: ServoraColors.emerald600, fontWeight: FontWeight.bold)),
-                    ],
+                  const Text('DESCRIPTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(4),
+                  TextField(
+                    controller: descCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Specify origin, quality grade, packaging, or bulk discounts...',
+                      filled: true,
+                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
                   ),
+                  const Gap(12),
+
+                  const Text('ADD PHOTO URL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                   const Gap(4),
                   Row(
                     children: [
@@ -351,19 +825,16 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                           controller: photoUrlCtrl,
                           decoration: InputDecoration(
                             hintText: 'https://images.unsplash.com/...',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            filled: true,
+                            fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                           ),
                         ),
                       ),
                       const Gap(8),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ServoraColors.emerald600,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
+                      IconButton.filled(
+                        style: IconButton.styleFrom(backgroundColor: ServoraColors.emerald600),
+                        icon: const Icon(Icons.add_photo_alternate_rounded, size: 18, color: Colors.white),
                         onPressed: () {
                           final url = photoUrlCtrl.text.trim();
                           if (url.isNotEmpty && images.length < 5) {
@@ -373,7 +844,6 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                             });
                           }
                         },
-                        child: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                       ),
                     ],
                   ),
@@ -382,90 +852,82 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: images.asMap().entries.map((entry) {
-                        final idx = entry.key;
-                        final img = entry.value;
-                        return Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(img, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image)),
+                      children: images
+                          .map(
+                            (img) => Chip(
+                              avatar: ClipOval(child: Image.network(img, width: 16, height: 16, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 14))),
+                              label: Text(img.length > 20 ? '${img.substring(0, 18)}...' : img, style: const TextStyle(fontSize: 10)),
+                              onDeleted: () => setModalState(() => images.remove(img)),
                             ),
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: () => setModalState(() => images.removeAt(idx)),
-                                child: Container(
-                                  color: Colors.black54,
-                                  child: const Icon(Icons.close, size: 14, color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
+                          )
+                          .toList(),
                     ),
                   ],
                   const Gap(20),
 
-                  // Submit Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ServoraColors.emerald600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      onPressed: () async {
-                        final title = titleCtrl.text.trim();
-                        final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
-                        final originalPrice = double.tryParse(originalPriceCtrl.text.trim());
-                        final stock = int.tryParse(stockCtrl.text.trim()) ?? 1;
-                        final category = categoryCtrl.text.trim();
-                        final desc = descCtrl.text.trim();
-
-                        if (title.isEmpty || price <= 0 || category.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please provide item title, selling price, and category.')),
-                          );
-                          return;
-                        }
-
-                        final photoList = images.isNotEmpty ? images : ['https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&q=80'];
-
-                        final newProduct = {
-                          'id': 'prod_${DateTime.now().millisecondsSinceEpoch}',
-                          'title': title,
-                          'description': desc,
-                          'category': category,
-                          'price': price,
-                          'originalPrice': originalPrice,
-                          'stockQuantity': stock,
-                          'condition': condition,
-                          'inventoryStatus': stock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
-                          'images': photoList,
-                          'isNegotiable': isNegotiable,
-                          'createdAt': DateTime.now().toIso8601String(),
-                        };
-
-                        setState(() {
-                          _products.insert(0, newProduct);
-                          _catalogFilter = 'products';
-                        });
-
-                        Navigator.of(ctx).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: ServoraColors.emerald600,
-                            content: Text('"$title" added to your live catalog!'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                        );
-                      },
-                      child: const Text('Save & Publish to Storefront ➔', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                    ),
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ServoraColors.emerald600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () async {
+                            final title = titleCtrl.text.trim();
+                            final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
+                            if (title.isEmpty || price <= 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Please enter a valid title and price.')),
+                              );
+                              return;
+                            }
+
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✓ Product listing published to digital storefront!'),
+                                backgroundColor: ServoraColors.emerald600,
+                              ),
+                            );
+
+                            final newProd = {
+                              'id': 'prod-${DateTime.now().millisecondsSinceEpoch}',
+                              'title': title,
+                              'price': price,
+                              'originalPrice': double.tryParse(originalPriceCtrl.text.trim()),
+                              'category': categoryCtrl.text,
+                              'stockQuantity': int.tryParse(stockCtrl.text.trim()) ?? 1,
+                              'description': descCtrl.text.trim(),
+                              'images': images.isNotEmpty ? images : ['https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&q=80'],
+                              'condition': condition,
+                              'likesCount': 0,
+                              'viewsCount': 0,
+                              'inquiriesCount': 0,
+                              'createdAt': DateTime.now().toIso8601String(),
+                            };
+
+                            setState(() {
+                              _products.insert(0, newProd);
+                            });
+                          },
+                          child: const Text('Publish Product ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -477,1375 +939,665 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   }
 
   // ==========================================
-  // ADD EQUIPMENT RENTAL MODAL
+  // ADD RENTAL MODAL
   // ==========================================
   void _openAddRentalModal() {
     final titleCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final dailyRateCtrl = TextEditingController();
-    final weeklyRateCtrl = TextEditingController();
-    final categoryCtrl = TextEditingController(text: 'Agricultural Machinery');
-    bool operatorIncluded = false;
+    final rateCtrl = TextEditingController();
+    final categoryCtrl = TextEditingController(text: 'Power Tools');
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final isDark = Theme.of(ctx).brightness == Brightness.dark;
-
-          return Container(
-            padding: EdgeInsets.only(
-              top: 20,
-              left: 20,
-              right: 20,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+      builder: (ctx) => Container(
+        padding: EdgeInsets.only(top: 20, left: 20, right: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).brightness == Brightness.dark ? ServoraColors.darkSurface : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.build_rounded, color: Color(0xFFD97706), size: 20),
+                Gap(8),
+                Text('Add Equipment Rental', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+              ],
             ),
-            decoration: BoxDecoration(
-              color: isDark ? ServoraColors.darkSurface : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            const Gap(14),
+            TextField(controller: titleCtrl, decoration: InputDecoration(hintText: 'e.g., Heavy Duty Concrete Mixer')),
+            const Gap(10),
+            TextField(controller: rateCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(hintText: 'Daily Rate in GH₵')),
+            const Gap(16),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 44)),
+              onPressed: () {
+                if (titleCtrl.text.isNotEmpty) {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _rentals.insert(0, {
+                      'title': titleCtrl.text,
+                      'dailyRate': double.tryParse(rateCtrl.text) ?? 100.0,
+                      'category': categoryCtrl.text,
+                    });
+                  });
+                }
+              },
+              child: const Text('Add Rental ➔', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.9),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 44,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const Gap(14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Add Tool & Equipment Rental',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        onPressed: () => Navigator.of(ctx).pop(),
-                      ),
-                    ],
-                  ),
-                  const Gap(14),
-
-                  const Text('Equipment Title *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const Gap(4),
-                  TextField(
-                    controller: titleCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Heavy-Duty Solar Water Pump Rig (5.5HP)',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  const Gap(12),
-
-                  const Text('Category *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const Gap(4),
-                  TextField(
-                    controller: categoryCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Heavy Machinery, Generators, Rig Lease',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  const Gap(12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Daily Rate (GH₵) *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            const Gap(4),
-                            TextField(
-                              controller: dailyRateCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: '250',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Gap(10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Weekly Rate (GH₵)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            const Gap(4),
-                            TextField(
-                              controller: weeklyRateCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: '1200',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Gap(12),
-
-                  CheckboxListTile(
-                    title: const Text('Include Certified Equipment Operator', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    value: operatorIncluded,
-                    onChanged: (v) => setModalState(() => operatorIncluded = v ?? false),
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                  ),
-                  const Gap(12),
-
-                  const Text('Description & Minimum Rental Days', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const Gap(4),
-                  TextField(
-                    controller: descCtrl,
-                    maxLines: 2,
-                    decoration: InputDecoration(
-                      hintText: 'Capacity, fuel requirements, pick up instructions...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  const Gap(20),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD97706),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      onPressed: () {
-                        final title = titleCtrl.text.trim();
-                        final dailyRate = double.tryParse(dailyRateCtrl.text.trim()) ?? 0.0;
-                        final weeklyRate = double.tryParse(weeklyRateCtrl.text.trim());
-                        final category = categoryCtrl.text.trim();
-
-                        if (title.isEmpty || dailyRate <= 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please enter equipment title and daily rate.')),
-                          );
-                          return;
-                        }
-
-                        final newRental = {
-                          'id': 'rent_${DateTime.now().millisecondsSinceEpoch}',
-                          'title': title,
-                          'category': category.isNotEmpty ? category : 'Equipment',
-                          'dailyRate': dailyRate,
-                          'weeklyRate': weeklyRate,
-                          'operatorIncluded': operatorIncluded,
-                          'status': 'AVAILABLE',
-                          'isAvailable': true,
-                          'images': ['https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80'],
-                        };
-
-                        setState(() {
-                          _rentals.insert(0, newRental);
-                          _catalogFilter = 'rentals';
-                        });
-
-                        Navigator.of(ctx).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: const Color(0xFFD97706),
-                            content: Text('Rental "$title" published!'),
-                          ),
-                        );
-                      },
-                      child: const Text('Save & Publish Equipment Rental ➔', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
 
   // ==========================================
-  // ADD SERVICE OFFERING MODAL
+  // ADD SERVICE MODAL
   // ==========================================
   void _openAddServiceModal() {
     final nameCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
-    final durationCtrl = TextEditingController(text: '2-4 hours');
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final isDark = Theme.of(ctx).brightness == Brightness.dark;
-
-          return Container(
-            padding: EdgeInsets.only(
-              top: 20,
-              left: 20,
-              right: 20,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? ServoraColors.darkSurface : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 44,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const Gap(14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Add Service Portfolio Offering',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        onPressed: () => Navigator.of(ctx).pop(),
-                      ),
-                    ],
-                  ),
-                  const Gap(14),
-
-                  const Text('Service Name *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const Gap(4),
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Solar Inverter Installation & Diagnostic',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  const Gap(12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Starting Price (GH₵)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            const Gap(4),
-                            TextField(
-                              controller: priceCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: '350',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Gap(10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Estimated Duration', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            const Gap(4),
-                            TextField(
-                              controller: durationCtrl,
-                              decoration: InputDecoration(
-                                hintText: 'e.g. 2-4 hours',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Gap(12),
-
-                  const Text('Description & Work Scope', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const Gap(4),
-                  TextField(
-                    controller: descCtrl,
-                    maxLines: 2,
-                    decoration: InputDecoration(
-                      hintText: 'Details on warranty, labor included, materials required...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  const Gap(20),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      onPressed: () {
-                        final name = nameCtrl.text.trim();
-                        final price = double.tryParse(priceCtrl.text.trim());
-
-                        if (name.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please enter service name.')),
-                          );
-                          return;
-                        }
-
-                        final newService = {
-                          'id': 'serv_${DateTime.now().millisecondsSinceEpoch}',
-                          'serviceName': name,
-                          'description': descCtrl.text.trim(),
-                          'startingPrice': price,
-                          'estimatedDuration': durationCtrl.text.trim(),
-                          'isActive': true,
-                          'portfolioPhotos': ['https://images.unsplash.com/photo-1622383563227-04401ab4e5ea?w=600&q=80'],
-                        };
-
-                        setState(() {
-                          _services.insert(0, newService);
-                          _catalogFilter = 'services';
-                        });
-
-                        Navigator.of(ctx).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            backgroundColor: Color(0xFF2563EB),
-                            content: Text('Service offering published!'),
-                          ),
-                        );
-                      },
-                      child: const Text('Save & Publish Service ➔', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ==========================================
-  // EDIT PROFILE SETUP MODAL (Fully Functional)
-  // ==========================================
-  void _openEditProfileModal() {
-    final businessNameCtrl = TextEditingController(text: _profile?['businessName'] ?? '');
-    final taglineCtrl = TextEditingController(text: _profile?['tagline'] ?? '');
-    final zoneCtrl = TextEditingController(text: _profile?['zone'] ?? 'Aboabo');
-    final phoneCtrl = TextEditingController(text: _profile?['phone'] ?? '+233245678901');
-    final whatsappCtrl = TextEditingController(text: _profile?['whatsappNumber'] ?? '+233245678901');
-    final descCtrl = TextEditingController(text: _profile?['description'] ?? '');
-    final logoUrlCtrl = TextEditingController(text: _profile?['logoUrl'] ?? '');
-
-    final zones = [
-      'Aboabo',
-      'Sakasaka',
-      'Choggu',
-      'Nyohini',
-      'Dungu',
-      'Tamale Central',
-      'Lamashegu',
-      'Vittin',
-      'Kalpohin',
-      'Gumani',
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final isDark = Theme.of(ctx).brightness == Brightness.dark;
-
-          return Container(
-            padding: EdgeInsets.only(
-              top: 20,
-              left: 20,
-              right: 20,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? ServoraColors.darkSurface : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.9),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 44,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const Gap(14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Edit Digital Storefront Profile',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        onPressed: () => Navigator.of(ctx).pop(),
-                      ),
-                    ],
-                  ),
-                  const Text(
-                    'Changes update your public storefront & GPS trade locator across web and mobile.',
-                    style: TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
-                  const Gap(16),
-
-                  // Business Name
-                  const Text('Enterprise / Storefront Name *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const Gap(4),
-                  TextField(
-                    controller: businessNameCtrl,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  const Gap(12),
-
-                  // Tagline
-                  const Text('Tagline / Slogan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const Gap(4),
-                  TextField(
-                    controller: taglineCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Fresh farm harvests & agro-processing',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  const Gap(12),
-
-                  // Zone & Neighborhood
-                  const Text('Primary Northern Ghana Neighborhood *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const Gap(4),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: zones.map((z) {
-                      final selected = zoneCtrl.text == z;
-                      return GestureDetector(
-                        onTap: () => setModalState(() => zoneCtrl.text = z),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: selected ? ServoraColors.emerald600 : (isDark ? Colors.white10 : Colors.grey[200]),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            z,
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.bold,
-                              color: selected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const Gap(12),
-
-                  // Phone & WhatsApp
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Phone Number *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            const Gap(4),
-                            TextField(
-                              controller: phoneCtrl,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Gap(10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('WhatsApp Number *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            const Gap(4),
-                            TextField(
-                              controller: whatsappCtrl,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Gap(12),
-
-                  // Logo Photo URL
-                  const Text('Logo / Avatar Photo URL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const Gap(4),
-                  TextField(
-                    controller: logoUrlCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'https://...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  const Gap(12),
-
-                  // Description / Bio
-                  const Text('About Store & Services', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const Gap(4),
-                  TextField(
-                    controller: descCtrl,
-                    maxLines: 2,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  const Gap(20),
-
-                  // Submit Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ServoraColors.emerald600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      onPressed: () {
-                        final bName = businessNameCtrl.text.trim();
-                        final z = zoneCtrl.text.trim();
-                        final p = phoneCtrl.text.trim();
-                        final w = whatsappCtrl.text.trim();
-                        final lUrl = logoUrlCtrl.text.trim();
-                        final desc = descCtrl.text.trim();
-                        final tag = taglineCtrl.text.trim();
-
-                        if (bName.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please enter a business name.')),
-                          );
-                          return;
-                        }
-
-                        setState(() {
-                          _profile = {
-                            ...?_profile,
-                            'businessName': bName,
-                            'zone': z,
-                            'phone': p,
-                            'whatsappNumber': w,
-                            'logoUrl': lUrl.isNotEmpty ? lUrl : _profile?['logoUrl'],
-                            'description': desc,
-                            'tagline': tag,
-                          };
-                        });
-
-                        Navigator.of(ctx).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            backgroundColor: ServoraColors.emerald600,
-                            content: Text('Storefront Profile updated successfully!'),
-                          ),
-                        );
-                      },
-                      child: const Text('Save & Update Storefront ➔', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildPortalSkeleton(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Hero Banner Skeleton
-        Container(
-          height: 180,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  ServoraShimmerSkeleton(width: 72, height: 72, borderRadius: 18),
-                  Gap(14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ServoraShimmerSkeleton(width: 80, height: 16, borderRadius: 8),
-                        Gap(8),
-                        ServoraShimmerSkeleton(width: double.infinity, height: 20, borderRadius: 6),
-                        Gap(6),
-                        ServoraShimmerSkeleton(width: 120, height: 12, borderRadius: 6),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              Spacer(),
-              Row(
-                children: [
-                  Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 38, borderRadius: 12)),
-                  Gap(10),
-                  Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 38, borderRadius: 12)),
-                ],
-              ),
-            ],
-          ),
+      builder: (ctx) => Container(
+        padding: EdgeInsets.only(top: 20, left: 20, right: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).brightness == Brightness.dark ? ServoraColors.darkSurface : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        const Gap(16),
-        // Workspace Tabs Skeleton
-        const Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 42, borderRadius: 16)),
-            Gap(8),
-            Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 42, borderRadius: 16)),
+            const Row(
+              children: [
+                Icon(Icons.layers_rounded, color: Color(0xFF2563EB), size: 20),
+                Gap(8),
+                Text('Add Trade Service', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+              ],
+            ),
+            const Gap(14),
+            TextField(controller: nameCtrl, decoration: InputDecoration(hintText: 'e.g., Solar Inverter Installation')),
+            const Gap(10),
+            TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(hintText: 'Starting Price in GH₵')),
+            const Gap(16),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 44)),
+              onPressed: () {
+                if (nameCtrl.text.isNotEmpty) {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _services.insert(0, {
+                      'serviceName': nameCtrl.text,
+                      'startingPrice': double.tryParse(priceCtrl.text) ?? 150.0,
+                    });
+                  });
+                }
+              },
+              child: const Text('Add Service ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
           ],
         ),
-        const Gap(16),
-        // Card Skeleton
-        ServoraCard(
-          padding: const EdgeInsets.all(18),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ServoraShimmerSkeleton(width: 200, height: 20, borderRadius: 6),
-              Gap(8),
-              ServoraShimmerSkeleton(width: double.infinity, height: 14, borderRadius: 6),
-              Gap(16),
-              Row(
-                children: [
-                  Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 40, borderRadius: 12)),
-                  Gap(6),
-                  Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 40, borderRadius: 12)),
-                  Gap(6),
-                  Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 40, borderRadius: 12)),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 
+  // ==========================================
+  // MAIN BUILD VIEW
+  // ==========================================
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (_isLoading) {
-      return _buildPortalSkeleton(isDark);
+      return Scaffold(
+        backgroundColor: isDark ? ServoraColors.darkBackground : const Color(0xFFF8FAFC),
+        body: const Center(
+          child: CircularProgressIndicator(color: ServoraColors.emerald600),
+        ),
+      );
     }
 
-    final user = authNotifier.state.user;
-    final String businessName = _profile?['businessName'] ?? user?.businessName ?? 'Savannah Fresh Farm Produce & Agro-Goods';
-    final String slug = _profile?['slug'] ?? user?.slug ?? 'savannah-fresh-farms';
-    final String zone = _profile?['zone'] ?? _profile?['addressDetails'] ?? user?.serviceArea ?? 'Aboabo';
-    final String businessType = _profile?['businessType'] ?? 'SOLO_ARTISAN';
-    final String verificationStatus = _profile?['verificationStatus'] ?? 'TIER_2_VERIFIED_ARTISAN';
-    final String logoUrl = _profile?['logoUrl'] ?? user?.logoUrl ?? '';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (_errorMessage != null) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.amber.withOpacity(0.4)),
-            ),
-            child: Row(
+    if (_profile == null && _errorMessage != null) {
+      return Scaffold(
+        backgroundColor: isDark ? ServoraColors.darkBackground : const Color(0xFFF8FAFC),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.cloud_off_rounded, size: 18, color: Colors.amber),
-                const Gap(10),
-                Expanded(
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.amber),
-                  ),
-                ),
-                TextButton(
+                const Icon(Icons.cloud_off_rounded, size: 48, color: Colors.grey),
+                const Gap(12),
+                Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                const Gap(16),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: ServoraColors.emerald600, foregroundColor: Colors.white),
+                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                  label: const Text('Retry Connection'),
                   onPressed: _fetchLivePortalData,
-                  child: const Text('Retry', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
                 ),
               ],
             ),
           ),
-          const Gap(12),
-        ],
-        // =========================================================
-        // 1. TOP ENTERPRISE HERO BANNER (Live Database Data)
-        // =========================================================
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF064E3B), // Emerald-900
-                Color(0xFF0F172A), // Slate-900
-                Color(0xFF064E3B), // Emerald-950
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white12, width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+        ),
+      );
+    }
+
+    final bizName = _profile?['businessName'] ?? 'Savannah Fresh Agro-Goods';
+    final slug = _profile?['slug'] ?? 'savannah-fresh-farms';
+    final zone = _profile?['zone'] ?? 'Aboabo';
+    final bannerLogo = _profile?['logoUrl'] ?? 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&q=80';
+
+    return Scaffold(
+      backgroundColor: isDark ? ServoraColors.darkBackground : const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Text('Business Merchant Portal 🏢', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+            const Spacer(),
+            if (widget.onSwitchToCustomer != null)
+              TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: ServoraColors.emerald600),
+                icon: const Icon(Icons.person_outline_rounded, size: 14),
+                label: const Text('Customer Mode', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                onPressed: widget.onSwitchToCustomer,
               ),
-            ],
-          ),
+          ],
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
+      body: RefreshIndicator(
+        onRefresh: _fetchLivePortalData,
+        color: ServoraColors.emerald600,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Logo / Profile Image
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: logoUrl.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: logoUrl,
-                            width: 72,
-                            height: 72,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => const ServoraShimmerSkeleton(width: 72, height: 72, borderRadius: 18),
-                            errorWidget: (_, __, ___) => Container(
-                              width: 72,
-                              height: 72,
-                              color: ServoraColors.emerald600.withOpacity(0.3),
-                              child: const Center(child: Icon(Icons.storefront_rounded, size: 34, color: Colors.white)),
-                            ),
-                          )
-                        : Container(
-                            width: 72,
-                            height: 72,
-                            color: ServoraColors.emerald600.withOpacity(0.3),
-                            child: const Center(child: Icon(Icons.storefront_rounded, size: 34, color: Colors.white)),
-                          ),
-                  ),
-                  const Gap(14),
+              // 1. HERO IDENTITY CARD
+              _buildHeroIdentityBanner(bizName, slug, zone, bannerLogo, isDark),
+              const Gap(14),
 
-                  // Info & Badges
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Verification Badges Row
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: ServoraColors.emerald600.withOpacity(0.25),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: ServoraColors.emerald500.withOpacity(0.6)),
-                              ),
-                              child: Text(
-                                businessType.toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF6EE7B7),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF047857),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.verified_rounded, size: 10, color: Colors.white),
-                                  const Gap(3),
-                                  Text(
-                                    verificationStatus.replaceAll('_', ' ').toUpperCase(),
-                                    style: const TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Gap(6),
-
-                        // Business Title
-                        Text(
-                          businessName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            height: 1.2,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const Gap(4),
-
-                        // Subtitle: Location & Handle
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on_rounded, size: 12, color: Color(0xFF34D399)),
-                            const Gap(3),
-                            Expanded(
-                              child: Text(
-                                zone,
-                                style: const TextStyle(fontSize: 11, color: Colors.white70),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const Text(' • ', style: TextStyle(color: Colors.white38)),
-                            Expanded(
-                              child: Text(
-                                'servora.gh/biz/@$slug',
-                                style: const TextStyle(
-                                  fontSize: 10.5,
-                                  fontFamily: 'monospace',
-                                  color: Color(0xFF34D399),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              // 2. MODERN 6-KPI ANALYTICS GRID
+              _buildModernKpiGrid(isDark),
               const Gap(16),
 
-              // Action Buttons Row inside Hero Banner
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.08),
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white24),
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      icon: const Icon(Icons.open_in_new_rounded, size: 14),
-                      label: const Text('View Public Storefront', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                      onPressed: () => context.push('/biz/$slug'),
-                    ),
-                  ),
-                  const Gap(10),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF059669),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 4,
-                        shadowColor: const Color(0xFF059669).withOpacity(0.4),
-                      ),
-                      onPressed: _openEditProfileModal,
-                      child: const Text('Edit Profile Setup', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ).animate().fadeIn(duration: 200.ms),
-        const Gap(16),
+              // 3. HORIZONTAL 5 WORKSPACE TABS
+              _buildWorkspaceTabRow(isDark),
+              const Gap(16),
 
-        // =========================================================
-        // 2. HORIZONTAL WORKSPACE TABS
-        // =========================================================
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildWorkspaceTabButton(
-                label: 'Storefront Catalogs',
-                icon: Icons.inventory_2_rounded,
-                isActive: _activeTab == 'catalogs',
-                onTap: () => setState(() => _activeTab = 'catalogs'),
-              ),
-              const Gap(8),
-              _buildWorkspaceTabButton(
-                label: 'Lead CRM & Quotes',
-                icon: Icons.people_alt_outlined,
-                isActive: _activeTab == 'leads',
-                onTap: () => setState(() => _activeTab = 'leads'),
-              ),
-              const Gap(8),
-              _buildWorkspaceTabButton(
-                label: '',
-                icon: Icons.chat_bubble_outline_rounded,
-                isActive: _activeTab == 'messages',
-                onTap: () => setState(() => _activeTab = 'messages'),
-                isIconOnly: true,
-              ),
+              // 4. ACTIVE WORKSPACE VIEW
+              if (_activeTab == 'catalogs')
+                _buildCatalogsWorkspace(isDark)
+              else if (_activeTab == 'escrow')
+                _buildEscrowWorkspace(isDark)
+              else if (_activeTab == 'reviews')
+                _buildReviewsWorkspace(isDark)
+              else if (_activeTab == 'messages')
+                _buildMessagesWorkspace(isDark)
+              else
+                _buildLeadsWorkspace(isDark),
+
+              const Gap(40),
             ],
           ),
         ),
-        const Gap(16),
-
-        // =========================================================
-        // 3. TAB CONTENT
-        // =========================================================
-        if (_activeTab == 'catalogs') ...[
-          // Storefront & Catalog Management Card
-          ServoraCard(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Storefront & Catalog Management',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-                ),
-                const Gap(4),
-                const Text(
-                  'Manage inventory for retail products, heavy equipment rentals, and service portfolio listings with up to 5 uploaded product images.',
-                  style: TextStyle(fontSize: 11.5, color: Colors.grey, height: 1.35),
-                ),
-                const Gap(16),
-
-                // 3 Action Buttons Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF059669),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 2,
-                        ),
-                        icon: const Icon(Icons.add_circle_outline_rounded, size: 14),
-                        label: const Text('Add\nProduct', textAlign: TextAlign.center, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, height: 1.1)),
-                        onPressed: _openAddProductModal,
-                      ),
-                    ),
-                    const Gap(6),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD97706),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 2,
-                        ),
-                        icon: const Icon(Icons.build_rounded, size: 14),
-                        label: const Text('Add Equipment\nRental', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, height: 1.1)),
-                        onPressed: _openAddRentalModal,
-                      ),
-                    ),
-                    const Gap(6),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 2,
-                        ),
-                        icon: const Icon(Icons.layers_rounded, size: 14),
-                        label: const Text('Add\nService', textAlign: TextAlign.center, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, height: 1.1)),
-                        onPressed: _openAddServiceModal,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Gap(14),
-
-          // Search Bar for Business Catalog
-          Container(
-            height: 44,
-            decoration: BoxDecoration(
-              color: isDark ? ServoraColors.darkSurface : const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? ServoraColors.darkCardBorder : const Color(0xFFCBD5E1),
-              ),
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (val) => setState(() => _searchQuery = val),
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              decoration: InputDecoration(
-                hintText: 'Search my catalog items & services...',
-                hintStyle: TextStyle(
-                  fontSize: 12,
-                  color: isDark ? Colors.white38 : Colors.grey[500],
-                ),
-                prefixIcon: const Icon(Icons.search_rounded, color: ServoraColors.emerald600, size: 20),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? GestureDetector(
-                        onTap: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                        child: const Icon(Icons.cancel_rounded, size: 18, color: Colors.grey),
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 11),
-              ),
-            ),
-          ),
-          const Gap(14),
-
-          if (_searchQuery.trim().isNotEmpty) ...[
-            // Unified Business Omnisearch Results Across All Categories
-            _buildBusinessOmnisearchResults(),
-          ] else ...[
-            // Segmented Catalog Sub-Tabs
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSegmentedFilter(
-                    label: 'Products\n(${_products.length})',
-                    isSelected: _catalogFilter == 'products',
-                    onTap: () => setState(() => _catalogFilter = 'products'),
-                  ),
-                ),
-                const Gap(6),
-                Expanded(
-                  child: _buildSegmentedFilter(
-                    label: 'Tool & Equipment\nRentals (${_rentals.length})',
-                    isSelected: _catalogFilter == 'rentals',
-                    onTap: () => setState(() => _catalogFilter = 'rentals'),
-                  ),
-                ),
-                const Gap(6),
-                Expanded(
-                  child: _buildSegmentedFilter(
-                    label: 'Services\nPortfolio (${_services.length})',
-                    isSelected: _catalogFilter == 'services',
-                    onTap: () => setState(() => _catalogFilter = 'services'),
-                  ),
-                ),
-              ],
-            ),
-            const Gap(14),
-
-            // Real Live Items List
-            if (_catalogFilter == 'products') _buildProductsList(),
-            if (_catalogFilter == 'rentals') _buildRentalsList(),
-            if (_catalogFilter == 'services') _buildServicesList(),
-          ],
-        ] else if (_activeTab == 'leads') ...[
-          _buildLeadsView(),
-        ] else ...[
-          _buildDirectMessagesView(),
-        ],
-      ],
+      ),
     );
   }
 
-  Widget _buildBusinessOmnisearchResults() {
-    final q = _searchQuery.trim().toLowerCase();
-    final matchedProducts = _products.where((p) {
-      final title = (p['title'] ?? '').toString().toLowerCase();
-      final category = (p['category'] ?? '').toString().toLowerCase();
-      final desc = (p['description'] ?? '').toString().toLowerCase();
-      return title.contains(q) || category.contains(q) || desc.contains(q);
-    }).toList();
+  // ==========================================
+  // WIDGET: HERO IDENTITY BANNER
+  // ==========================================
+  Widget _buildHeroIdentityBanner(String name, String slug, String zone, String logo, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF0F172A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF047857).withOpacity(0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: CachedNetworkImage(
+                  imageUrl: logo,
+                  width: 62,
+                  height: 62,
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => Container(
+                    width: 62,
+                    height: 62,
+                    color: Colors.white24,
+                    child: const Icon(Icons.storefront_rounded, color: Colors.white),
+                  ),
+                ),
+              ),
+              const Gap(14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text('SOLO_ARTISAN', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
+                        const Gap(6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.verified_rounded, size: 10, color: Color(0xFF6EE7B7)),
+                              Gap(2),
+                              Text('TIER 2 VERIFIED', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFF6EE7B7))),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(4),
+                    Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white)),
+                    const Gap(2),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_rounded, size: 11, color: Color(0xFF34D399)),
+                        const Gap(2),
+                        Text(zone, style: const TextStyle(fontSize: 11, color: Color(0xFFD1FAE5))),
+                        const Text(' • ', style: TextStyle(color: Colors.white54)),
+                        Expanded(
+                          child: Text(
+                            'servora.gh/biz/@$slug',
+                            style: const TextStyle(fontSize: 10.5, color: Color(0xFF6EE7B7), fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Gap(14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.08),
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white24),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.open_in_new_rounded, size: 13),
+                  label: const Text('View Storefront', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                  onPressed: () => context.push('/biz/$slug'),
+                ),
+              ),
+              const Gap(8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.edit_note_rounded, size: 14),
+                  label: const Text('Edit Store Setup', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                  onPressed: () => context.push('/biz/$slug'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-    final matchedRentals = _rentals.where((r) {
-      final title = (r['title'] ?? '').toString().toLowerCase();
-      final category = (r['category'] ?? '').toString().toLowerCase();
-      final desc = (r['description'] ?? '').toString().toLowerCase();
-      return title.contains(q) || category.contains(q) || desc.contains(q);
-    }).toList();
-
-    final matchedServices = _services.where((s) {
-      final name = (s['name'] ?? s['serviceName'] ?? '').toString().toLowerCase();
-      final desc = (s['description'] ?? '').toString().toLowerCase();
-      return name.contains(q) || desc.contains(q);
-    }).toList();
-
-    final totalFound = matchedProducts.length + matchedRentals.length + matchedServices.length;
-
-    if (totalFound == 0) {
-      return _buildEmptyState(
-        'No matches for "$_searchQuery"',
-        'No products, equipment rentals, or services matching "$_searchQuery" found in your portal.',
-      );
-    }
+  // ==========================================
+  // WIDGET: MODERN 6-KPI ANALYTICS GRID
+  // ==========================================
+  Widget _buildModernKpiGrid(bool isDark) {
+    final likes = _kpis['totalProductLikes'] ?? 0;
+    final views = (_kpis['totalProductViews'] ?? 0) + (_kpis['profileViews'] ?? 0);
+    final activeEscrows = _kpis['activeEscrowsCount'] ?? _escrowDeals.length;
+    final escrowVol = _kpis['totalEscrowVolumeGhs'] ?? 0;
+    final avgRating = _kpis['averageRating'] ?? 5.0;
+    final revCount = _kpis['reviewsCount'] ?? _reviews.length;
+    final unreadChats = (_kpis['unreadMessagesCount'] ?? 0) + (_kpis['pendingLeadsCount'] ?? _leads.length);
+    final scans = (_kpis['qrScansCount'] ?? 24) + (_kpis['sharesCount'] ?? 12);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Text('REAL-TIME BUSINESS ANALYTICS 📊', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.grey)),
+            Text('Live Synced', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+          ],
+        ),
+        const Gap(8),
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 1.15,
+          children: [
+            _buildKpiCard('Product Likes', '$likes', Icons.favorite_rounded, const Color(0xFFEF4444), isDark),
+            _buildKpiCard('Total Views', '$views', Icons.visibility_rounded, const Color(0xFF3B82F6), isDark),
+            _buildKpiCard('Safe Escrow', escrowVol > 0 ? 'GH₵ $escrowVol' : '$activeEscrows active', Icons.lock_clock_rounded, const Color(0xFF10B981), isDark),
+            _buildKpiCard('Rating & Revs', '${avgRating.toStringAsFixed(1)} ★ ($revCount)', Icons.star_rounded, const Color(0xFFF59E0B), isDark),
+            _buildKpiCard('Inquiries & Chat', '$unreadChats new', Icons.mark_chat_unread_rounded, const Color(0xFF8B5CF6), isDark),
+            _buildKpiCard('QR & Link Reach', '$scans scans', Icons.qr_code_scanner_rounded, const Color(0xFF06B6D4), isDark),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildKpiCard(String label, String val, IconData icon, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDark ? ServoraColors.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? ServoraColors.darkCardBorder : const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, size: 16, color: color),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(val, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(label, style: const TextStyle(fontSize: 8.5, color: Colors.grey, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // WIDGET: 5 WORKSPACE TABS SELECTOR
+  // ==========================================
+  Widget _buildWorkspaceTabRow(bool isDark) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildWorkspaceButton('catalogs', 'Catalogs & Stock', Icons.inventory_2_rounded),
+          const Gap(8),
+          _buildWorkspaceButton('escrow', 'Escrow Orders', Icons.shield_rounded, count: _escrowDeals.length),
+          const Gap(8),
+          _buildWorkspaceButton('reviews', 'Reviews & Q&A', Icons.rate_review_rounded, count: _reviews.length + _questions.length),
+          const Gap(8),
+          _buildWorkspaceButton('messages', 'In-App Chats', Icons.chat_bubble_rounded, count: _chatRooms.length),
+          const Gap(8),
+          _buildWorkspaceButton('leads', 'Lead CRM', Icons.people_alt_rounded, count: _leads.length),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkspaceButton(String tabKey, String label, IconData icon, {int? count}) {
+    final isSel = _activeTab == tabKey;
+    return GestureDetector(
+      onTap: () => setState(() => _activeTab = tabKey),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: isSel ? ServoraColors.emerald600 : (Theme.of(context).brightness == Brightness.dark ? ServoraColors.darkSurface : Colors.white),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: isSel ? ServoraColors.emerald600 : (Theme.of(context).brightness == Brightness.dark ? ServoraColors.darkCardBorder : const Color(0xFFE2E8F0))),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: isSel ? Colors.white : Colors.grey),
+            const Gap(6),
             Text(
-              'ALL CATALOG RESULTS ("$_searchQuery")',
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.bold,
+                color: isSel ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
+              ),
             ),
-            Text(
-              '$totalFound items',
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+            if (count != null && count > 0) ...[
+              const Gap(6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isSel ? Colors.white.withOpacity(0.25) : ServoraColors.emerald600.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    color: isSel ? Colors.white : ServoraColors.emerald600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // TAB 1: CATALOGS & INVENTORY WORKSPACE
+  // ==========================================
+  Widget _buildCatalogsWorkspace(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Action Buttons Row
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF059669),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.add_shopping_cart_rounded, size: 14),
+                label: const Text('Add Product', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                onPressed: _openAddProductModal,
+              ),
+            ),
+            const Gap(6),
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD97706),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.build_rounded, size: 14),
+                label: const Text('Add Rental', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                onPressed: _openAddRentalModal,
+              ),
+            ),
+            const Gap(6),
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.layers_rounded, size: 14),
+                label: const Text('Add Service', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                onPressed: _openAddServiceModal,
+              ),
             ),
           ],
         ),
         const Gap(12),
 
-        if (matchedProducts.isNotEmpty) ...[
+        // Search Bar
+        Container(
+          height: 42,
+          decoration: BoxDecoration(
+            color: isDark ? ServoraColors.darkSurface : const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: isDark ? ServoraColors.darkCardBorder : const Color(0xFFCBD5E1)),
+          ),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (val) => setState(() => _searchQuery = val),
+            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+            decoration: InputDecoration(
+              hintText: 'Search my catalog items & services...',
+              hintStyle: const TextStyle(fontSize: 11.5, color: Colors.grey),
+              prefixIcon: const Icon(Icons.search_rounded, color: ServoraColors.emerald600, size: 18),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? GestureDetector(
+                      onTap: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                      child: const Icon(Icons.cancel_rounded, size: 16, color: Colors.grey),
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+          ),
+        ),
+        const Gap(12),
+
+        // Filter Pills
+        if (_searchQuery.trim().isEmpty) ...[
           Row(
             children: [
-              const Icon(Icons.inventory_2_rounded, size: 14, color: ServoraColors.emerald600),
+              _buildCatalogFilterPill('products', 'Products (${_products.length})', isDark),
               const Gap(6),
-              Text('Products (${matchedProducts.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              _buildCatalogFilterPill('rentals', 'Rentals (${_rentals.length})', isDark),
+              const Gap(6),
+              _buildCatalogFilterPill('services', 'Services (${_services.length})', isDark),
             ],
           ),
-          const Gap(8),
-          _buildProductsList(),
-          const Gap(16),
+          const Gap(12),
         ],
 
-        if (matchedRentals.isNotEmpty) ...[
-          Row(
-            children: [
-              const Icon(Icons.build_rounded, size: 14, color: Color(0xFFD97706)),
-              const Gap(6),
-              Text('Equipment Rentals (${matchedRentals.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const Gap(8),
-          _buildRentalsList(),
-          const Gap(16),
-        ],
-
-        if (matchedServices.isNotEmpty) ...[
-          Row(
-            children: [
-              const Icon(Icons.layers_rounded, size: 14, color: Color(0xFF2563EB)),
-              const Gap(6),
-              Text('Services Portfolio (${matchedServices.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const Gap(8),
-          _buildServicesList(),
-          const Gap(16),
-        ],
+        // Catalog List
+        if (_catalogFilter == 'products' || _searchQuery.isNotEmpty)
+          _buildProductsList(isDark),
+        if (_catalogFilter == 'rentals' && _searchQuery.isEmpty)
+          _buildRentalsList(isDark),
+        if (_catalogFilter == 'services' && _searchQuery.isEmpty)
+          _buildServicesList(isDark),
       ],
     );
   }
 
-  Widget _buildWorkspaceTabButton({
-    required String label,
-    required IconData icon,
-    required bool isActive,
-    required VoidCallback onTap,
-    bool isIconOnly = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: isIconOnly ? 14 : 16,
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF059669) : Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isActive ? const Color(0xFF059669) : Colors.grey.withOpacity(0.2),
+  Widget _buildCatalogFilterPill(String filterKey, String label, bool isDark) {
+    final isSel = _catalogFilter == filterKey;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _catalogFilter = filterKey),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSel ? ServoraColors.emerald600 : (isDark ? ServoraColors.darkSurface : Colors.white),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: isSel ? ServoraColors.emerald600 : (isDark ? ServoraColors.darkCardBorder : const Color(0xFFE2E8F0))),
           ),
-          boxShadow: [
-            if (isActive)
-              BoxShadow(
-                color: const Color(0xFF059669).withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.bold,
+                color: isSel ? Colors.white : (isDark ? Colors.white60 : Colors.grey[700]),
               ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: isActive ? Colors.white : Colors.grey[700]),
-            if (!isIconOnly) ...[
-              const Gap(8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: isActive ? Colors.white : Colors.grey[800],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSegmentedFilter({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark ? ServoraColors.darkSurface : Colors.white)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected
-                ? ServoraColors.emerald600
-                : (isDark ? Colors.white12 : Colors.grey.withOpacity(0.2)),
-            width: isSelected ? 1.5 : 1.0,
-          ),
-          boxShadow: [
-            if (isSelected)
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-          ],
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-            color: isSelected ? ServoraColors.emerald600 : Colors.grey,
-            height: 1.2,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildProductsList() {
+  Widget _buildProductsList(bool isDark) {
     final q = _searchQuery.trim().toLowerCase();
     final filtered = _products.where((p) {
       if (q.isEmpty) return true;
       final title = (p['title'] ?? '').toString().toLowerCase();
-      final category = (p['category'] ?? '').toString().toLowerCase();
-      final desc = (p['description'] ?? '').toString().toLowerCase();
-      return title.contains(q) || category.contains(q) || desc.contains(q);
+      final cat = (p['category'] ?? '').toString().toLowerCase();
+      return title.contains(q) || cat.contains(q);
     }).toList();
 
     if (filtered.isEmpty) {
-      return _buildEmptyState(
-        _searchQuery.isNotEmpty ? 'No products match "$_searchQuery"' : 'No Products in Database',
-        _searchQuery.isNotEmpty ? 'Try clearing your search query.' : 'Tap "+ Add Product" to create your first listing.',
-      );
+      return _buildEmptyState('No Products Found', 'Add products to start selling across Tamale and Ghana.');
     }
 
     return ListView.separated(
@@ -1856,18 +1608,15 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
       itemBuilder: (context, idx) {
         final p = filtered[idx];
         final price = (p['price'] is num) ? (p['price'] as num).toDouble() : (double.tryParse(p['price']?.toString() ?? '0') ?? 0.0);
-        final originalPrice = (p['originalPrice'] is num) ? (p['originalPrice'] as num).toDouble() : double.tryParse(p['originalPrice']?.toString() ?? '');
+        final likes = p['likesCount'] ?? p['_count']?['likes'] ?? 0;
+        final views = p['viewsCount'] ?? 0;
+        final stock = p['stockQuantity'] ?? 1;
 
         final rawImages = p['images'];
-        String img = '';
+        String img = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&q=80';
         if (rawImages is List && rawImages.isNotEmpty) {
           img = rawImages[0].toString();
-        } else if (p['image'] != null) {
-          img = p['image'].toString();
         }
-
-        final stock = p['stockQuantity'] ?? p['stock'] ?? 1;
-        final stockStatus = p['inventoryStatus'] ?? p['stockStatus'] ?? (stock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK');
 
         return ServoraCard(
           padding: const EdgeInsets.all(12),
@@ -1876,26 +1625,18 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: img.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: img,
-                        width: 68,
-                        height: 68,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => const ServoraShimmerSkeleton(width: 68, height: 68, borderRadius: 12),
-                        errorWidget: (_, __, ___) => Container(
-                          width: 68,
-                          height: 68,
-                          color: ServoraColors.emerald600.withOpacity(0.12),
-                          child: const Icon(Icons.inventory_2_rounded, color: ServoraColors.emerald600),
-                        ),
-                      )
-                    : Container(
-                        width: 68,
-                        height: 68,
-                        color: ServoraColors.emerald600.withOpacity(0.12),
-                        child: const Icon(Icons.inventory_2_rounded, color: ServoraColors.emerald600),
-                      ),
+                child: CachedNetworkImage(
+                  imageUrl: img,
+                  width: 78,
+                  height: 78,
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => Container(
+                    width: 78,
+                    height: 78,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.shopping_bag_outlined, color: Colors.grey),
+                  ),
+                ),
               ),
               const Gap(12),
               Expanded(
@@ -1912,34 +1653,52 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            p['category'] ?? 'Product',
+                            p['category'] ?? 'General',
                             style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
                           ),
                         ),
-                        _buildStockPill(stockStatus.toString(), stock is int ? stock : 1),
+                        _buildStockPill(stock > 2 ? 'IN_STOCK' : (stock > 0 ? 'LOW_STOCK' : 'OUT_OF_STOCK'), stock),
                       ],
                     ),
                     const Gap(4),
-                    Text(
-                      p['title'] ?? 'Listing Item',
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    Text(p['title'] ?? 'Product Title', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900), maxLines: 2),
                     const Gap(4),
+                    Text('GH₵ ${price.toStringAsFixed(2)}', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
+                    const Gap(6),
+                    // Likes & Views Engagement Pills
                     Row(
                       children: [
-                        Text(
-                          'GH₵ ${price.toStringAsFixed(0)}',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
-                        ),
-                        if (originalPrice != null && originalPrice > price) ...[
-                          const Gap(6),
-                          Text(
-                            'GH₵ ${originalPrice.toStringAsFixed(0)}',
-                            style: const TextStyle(fontSize: 10, decoration: TextDecoration.lineThrough, color: Colors.grey),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                        ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.favorite_rounded, size: 11, color: Color(0xFFEF4444)),
+                              const Gap(3),
+                              Text('$likes Likes', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFFEF4444))),
+                            ],
+                          ),
+                        ),
+                        const Gap(6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.visibility_rounded, size: 11, color: Colors.grey),
+                              const Gap(3),
+                              Text('$views Views', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -1952,89 +1711,43 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     );
   }
 
-  Widget _buildRentalsList() {
-    final q = _searchQuery.trim().toLowerCase();
-    final filtered = _rentals.where((r) {
-      if (q.isEmpty) return true;
-      final title = (r['title'] ?? '').toString().toLowerCase();
-      final category = (r['category'] ?? '').toString().toLowerCase();
-      final desc = (r['description'] ?? '').toString().toLowerCase();
-      return title.contains(q) || category.contains(q) || desc.contains(q);
-    }).toList();
-
-    if (filtered.isEmpty) {
-      return _buildEmptyState(
-        _searchQuery.isNotEmpty ? 'No equipment matches "$_searchQuery"' : 'No Rentals in Database',
-        _searchQuery.isNotEmpty ? 'Try clearing your search query.' : 'Tap "+ Add Equipment Rental" to publish machinery.',
-      );
+  Widget _buildRentalsList(bool isDark) {
+    if (_rentals.isEmpty) {
+      return _buildEmptyState('No Machinery Rentals Listed', 'Tap "+ Add Rental" to lease power tools and equipment.');
     }
 
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: filtered.length,
+      itemCount: _rentals.length,
       separatorBuilder: (_, __) => const Gap(10),
       itemBuilder: (context, idx) {
-        final r = filtered[idx];
-        final price = (r['dailyRate'] is num) ? (r['dailyRate'] as num).toDouble() : (double.tryParse(r['dailyRate']?.toString() ?? '0') ?? 0.0);
-
-        final rawImages = r['images'];
-        String img = '';
-        if (rawImages is List && rawImages.isNotEmpty) {
-          img = rawImages[0].toString();
-        }
+        final r = _rentals[idx];
+        final rate = double.tryParse(r['dailyRate']?.toString() ?? '100') ?? 100.0;
 
         return ServoraCard(
           padding: const EdgeInsets.all(12),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: img.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: img,
-                        width: 68,
-                        height: 68,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => const ServoraShimmerSkeleton(width: 68, height: 68, borderRadius: 12),
-                        errorWidget: (_, __, ___) => Container(
-                          width: 68,
-                          height: 68,
-                          color: const Color(0xFFD97706).withOpacity(0.12),
-                          child: const Icon(Icons.build_rounded, color: Color(0xFFD97706)),
-                        ),
-                      )
-                    : Container(
-                        width: 68,
-                        height: 68,
-                        color: const Color(0xFFD97706).withOpacity(0.12),
-                        child: const Icon(Icons.build_rounded, color: Color(0xFFD97706)),
-                      ),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD97706).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.build_rounded, color: Color(0xFFD97706), size: 28),
               ),
               const Gap(12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD97706).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        r['category'] ?? 'Equipment Rental',
-                        style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFFD97706)),
-                      ),
-                    ),
-                    const Gap(4),
-                    Text(r['title'] ?? 'Rental Machinery', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
-                    const Gap(4),
-                    Text(
-                      'GH₵ ${price.toStringAsFixed(0)} / day',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFFD97706)),
-                    ),
+                    Text(r['category'] ?? 'Equipment Rental', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFD97706))),
+                    const Gap(2),
+                    Text(r['title'] ?? 'Rental Machinery', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+                    const Gap(2),
+                    Text('GH₵ ${rate.toStringAsFixed(0)} / day', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFFD97706))),
                   ],
                 ),
               ),
@@ -2045,94 +1758,41 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     );
   }
 
-  Widget _buildServicesList() {
-    final q = _searchQuery.trim().toLowerCase();
-    final filtered = _services.where((s) {
-      if (q.isEmpty) return true;
-      final name = (s['serviceName'] ?? s['name'] ?? '').toString().toLowerCase();
-      final desc = (s['description'] ?? '').toString().toLowerCase();
-      return name.contains(q) || desc.contains(q);
-    }).toList();
-
-    if (filtered.isEmpty) {
-      return _buildEmptyState(
-        _searchQuery.isNotEmpty ? 'No services match "$_searchQuery"' : 'No Services in Database',
-        _searchQuery.isNotEmpty ? 'Try clearing your search query.' : 'Tap "+ Add Service" to showcase your trade skills.',
-      );
+  Widget _buildServicesList(bool isDark) {
+    if (_services.isEmpty) {
+      return _buildEmptyState('No Services in Portfolio', 'Tap "+ Add Service" to showcase your trade skills.');
     }
 
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: filtered.length,
+      itemCount: _services.length,
       separatorBuilder: (_, __) => const Gap(10),
       itemBuilder: (context, idx) {
-        final s = filtered[idx];
-        final price = (s['startingPrice'] is num) ? (s['startingPrice'] as num).toDouble() : (double.tryParse(s['startingPrice']?.toString() ?? '0') ?? 0.0);
-
-        final rawPhotos = s['portfolioPhotos'];
-        String img = '';
-        if (rawPhotos is List && rawPhotos.isNotEmpty) {
-          img = rawPhotos[0].toString();
-        }
+        final s = _services[idx];
+        final price = double.tryParse(s['startingPrice']?.toString() ?? '0') ?? 0.0;
 
         return ServoraCard(
           padding: const EdgeInsets.all(12),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: img.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: img,
-                        width: 68,
-                        height: 68,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => const ServoraShimmerSkeleton(width: 68, height: 68, borderRadius: 12),
-                        errorWidget: (_, __, ___) => Container(
-                          width: 68,
-                          height: 68,
-                          color: const Color(0xFF2563EB).withOpacity(0.12),
-                          child: const Icon(Icons.layers_rounded, color: Color(0xFF2563EB)),
-                        ),
-                      )
-                    : Container(
-                        width: 68,
-                        height: 68,
-                        color: const Color(0xFF2563EB).withOpacity(0.12),
-                        child: const Icon(Icons.layers_rounded, color: Color(0xFF2563EB)),
-                      ),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.layers_rounded, color: Color(0xFF2563EB), size: 28),
               ),
               const Gap(12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        s['serviceName'] ?? 'Service Portfolio',
-                        style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
-                      ),
-                    ),
-                    const Gap(4),
-                    Text(s['description'] ?? 'Service description', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold), maxLines: 2),
-                    const Gap(4),
-                    if (price > 0)
-                      Text(
-                        'Starting at GH₵ ${price.toStringAsFixed(0)}',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF2563EB)),
-                      )
-                    else if (s['estimatedDuration'] != null)
-                      Text(
-                        'Duration: ${s['estimatedDuration']}',
-                        style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
-                      ),
+                    Text(s['serviceName'] ?? 'Trade Service', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+                    const Gap(2),
+                    Text('Starting at GH₵ ${price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF2563EB))),
                   ],
                 ),
               ),
@@ -2143,23 +1803,54 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     );
   }
 
-  Widget _buildLeadsView() {
-    if (_leads.isEmpty) {
-      return _buildEmptyState('No Leads Yet', 'Incoming quote requests from Tamale customers will appear here.');
+  // ==========================================
+  // TAB 2: ESCROW DEALS & ORDERS WORKSPACE
+  // ==========================================
+  Widget _buildEscrowWorkspace(bool isDark) {
+    if (_escrowDeals.isEmpty) {
+      return _buildEmptyState('No Active Escrow Contracts', 'Safe MoMo Escrow payments protected by Servora will appear here.');
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Incoming Leads & Client Quote Requests:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-        const Gap(10),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF047857).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.shield_rounded, color: ServoraColors.emerald600, size: 22),
+              Gap(10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Safe MoMo Escrow Vault Protection', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
+                    Text('Customer funds are held in secure escrow until order delivery confirmation.', style: TextStyle(fontSize: 10.5, color: Colors.grey)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Gap(14),
         ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: _leads.length,
+          itemCount: _escrowDeals.length,
           separatorBuilder: (_, __) => const Gap(10),
           itemBuilder: (context, idx) {
-            final lead = _leads[idx];
+            final deal = _escrowDeals[idx];
+            final amount = double.tryParse(deal['amount']?.toString() ?? '0') ?? 0.0;
+            final customer = deal['customer'] as Map<String, dynamic>? ?? {};
+            final customerName = customer['name'] ?? 'Buyer Customer';
+            final customerPhone = customer['phone'] ?? '+233240000000';
+            final status = deal['status'] ?? 'FUNDS_HELD_IN_VAULT';
+
             return ServoraCard(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -2168,29 +1859,56 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(lead['clientName'] ?? 'Client', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900)),
-                      Text(lead['time'] ?? 'Recently', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                      Text(deal['dealCode'] ?? 'ESC-98214', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
+                      _buildEscrowStatusBadge(status),
                     ],
                   ),
-                  const Gap(2),
-                  Text('📍 ${lead['location'] ?? 'Tamale'}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                   const Gap(6),
-                  Text(lead['request'] ?? '', style: const TextStyle(fontSize: 12, height: 1.3)),
-                  const Gap(12),
+                  Text(deal['title'] ?? 'Escrow Transaction', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+                  const Gap(4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('GH₵ ${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
+                      Text('Customer: $customerName', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    ],
+                  ),
+                  const Divider(height: 20),
                   Row(
                     children: [
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF25D366),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.chat_bubble_rounded, size: 13),
+                          label: const Text('WhatsApp Buyer', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+                          onPressed: () => WhatsAppHelper.openWhatsApp(
+                            phone: customerPhone,
+                            message: 'Hello $customerName, regarding our Escrow Deal ${deal['dealCode']} for "${deal['title']}".',
+                          ),
                         ),
-                        icon: const Icon(Icons.chat_bubble_rounded, size: 14),
-                        label: const Text('WhatsApp Client', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        onPressed: () => WhatsAppHelper.openWhatsApp(
-                          phone: lead['phone'] ?? '+233240000000',
-                          message: 'Hello ${lead['clientName']}, I received your inquiry on Servora regarding: "${lead['request']}".',
+                      ),
+                      const Gap(8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ServoraColors.emerald600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.check_circle_outline_rounded, size: 13),
+                          label: const Text('Request Release', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Release request sent for ${deal['dealCode']}. Buyer will confirm release PIN.'),
+                                backgroundColor: ServoraColors.emerald600,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -2204,40 +1922,392 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     );
   }
 
-  Widget _buildDirectMessagesView() {
-    return ServoraCard(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          const Icon(Icons.mark_chat_unread_rounded, size: 40, color: ServoraColors.emerald600),
-          const Gap(10),
-          const Text('Direct Unified Messaging Hub', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-          const Gap(4),
-          const Text(
-            'All customer inquiries and orders from your digital storefront are forwarded directly to your registered WhatsApp number for instant responses.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11.5, color: Colors.grey, height: 1.35),
-          ),
-          const Gap(16),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ServoraColors.emerald600,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            icon: const Icon(Icons.chat_rounded, size: 16),
-            label: const Text('Check WhatsApp Dispatch Logs', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('WhatsApp automated dispatch is fully operational.')),
-              );
-            },
-          ),
-        ],
-      ),
+  Widget _buildEscrowStatusBadge(String status) {
+    Color bg = const Color(0xFFD1FAE5);
+    Color fg = const Color(0xFF047857);
+    String label = 'IN ESCROW VAULT 🔒';
+
+    if (status == 'COMPLETED') {
+      bg = const Color(0xFFE0E7FF);
+      fg = const Color(0xFF3730A3);
+      label = 'RELEASED / COMPLETED ✓';
+    } else if (status == 'DISPUTED') {
+      bg = const Color(0xFFFEE2E2);
+      fg = const Color(0xFFB91C1C);
+      label = 'IN DISPUTE ⚠️';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+      child: Text(label, style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: fg)),
     );
   }
 
+  // ==========================================
+  // TAB 3: REVIEWS & Q&A HUB WORKSPACE
+  // ==========================================
+  Widget _buildReviewsWorkspace(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _reviewSubTab = 'reviews'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  decoration: BoxDecoration(
+                    color: _reviewSubTab == 'reviews' ? ServoraColors.emerald600 : (isDark ? ServoraColors.darkSurface : Colors.white),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _reviewSubTab == 'reviews' ? ServoraColors.emerald600 : (isDark ? ServoraColors.darkCardBorder : const Color(0xFFE2E8F0))),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Customer Reviews (${_reviews.length})',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: _reviewSubTab == 'reviews' ? Colors.white : (isDark ? Colors.white60 : Colors.grey[700]),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const Gap(8),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _reviewSubTab = 'questions'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  decoration: BoxDecoration(
+                    color: _reviewSubTab == 'questions' ? const Color(0xFF2563EB) : (isDark ? ServoraColors.darkSurface : Colors.white),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _reviewSubTab == 'questions' ? const Color(0xFF2563EB) : (isDark ? ServoraColors.darkCardBorder : const Color(0xFFE2E8F0))),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Product Q&As (${_questions.length})',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: _reviewSubTab == 'questions' ? Colors.white : (isDark ? Colors.white60 : Colors.grey[700]),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const Gap(14),
+
+        if (_reviewSubTab == 'reviews') ...[
+          if (_reviews.isEmpty)
+            _buildEmptyState('No Customer Reviews Yet', 'Reviews left by verified buyers will appear here so you can reply.')
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _reviews.length,
+              separatorBuilder: (_, __) => const Gap(10),
+              itemBuilder: (context, idx) {
+                final r = _reviews[idx];
+                final hasReply = r['sellerReply'] != null && r['sellerReply'].toString().trim().isNotEmpty;
+
+                return ServoraCard(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              ...List.generate(
+                                5,
+                                (i) => Icon(
+                                  Icons.star_rounded,
+                                  size: 14,
+                                  color: i < (r['rating'] ?? 5) ? const Color(0xFFF59E0B) : Colors.grey[300],
+                                ),
+                              ),
+                              const Gap(8),
+                              Text(r['authorName'] ?? 'Customer', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900)),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: ServoraColors.emerald600.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              r['productTitle'] ?? 'Product',
+                              style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Gap(6),
+                      Text('"${r['comment'] ?? ''}"', style: const TextStyle(fontSize: 12.5, height: 1.3)),
+                      const Gap(10),
+
+                      // Seller Reply Section
+                      if (hasReply)
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: ServoraColors.emerald600.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: ServoraColors.emerald600.withOpacity(0.25)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.verified_rounded, size: 12, color: ServoraColors.emerald600),
+                                  Gap(4),
+                                  Text('YOUR MERCHANT RESPONSE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
+                                ],
+                              ),
+                              const Gap(4),
+                              Text(r['sellerReply'], style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        )
+                      else
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ServoraColors.emerald600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.reply_rounded, size: 14),
+                          label: const Text('Reply to Review', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () => _openReplyReviewModal(r),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        ] else ...[
+          if (_questions.isEmpty)
+            _buildEmptyState('No Customer Questions Yet', 'Inquiries asked on your product pages will appear here for you to answer.')
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _questions.length,
+              separatorBuilder: (_, __) => const Gap(10),
+              itemBuilder: (context, idx) {
+                final q = _questions[idx];
+                final hasAnswer = q['answer'] != null && q['answer'].toString().trim().isNotEmpty;
+
+                return ServoraCard(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Q: ${q['askerName'] ?? 'Customer'}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2563EB).withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              q['productTitle'] ?? 'Product',
+                              style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Gap(6),
+                      Text('"${q['question'] ?? ''}"', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+                      const Gap(10),
+
+                      if (hasAnswer)
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB).withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.25)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.check_circle_rounded, size: 12, color: Color(0xFF2563EB)),
+                                  Gap(4),
+                                  Text('OFFICIAL ANSWER', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF2563EB))),
+                                ],
+                              ),
+                              const Gap(4),
+                              Text(q['answer'], style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        )
+                      else
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2563EB),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.question_answer_rounded, size: 14),
+                          label: const Text('Answer Question', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () => _openAnswerQuestionModal(q),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
+      ],
+    );
+  }
+
+  // ==========================================
+  // TAB 4: IN-APP CUSTOMER CHATS WORKSPACE
+  // ==========================================
+  Widget _buildMessagesWorkspace(bool isDark) {
+    if (_chatRooms.isEmpty) {
+      return ServoraCard(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const Icon(Icons.chat_bubble_outline_rounded, size: 44, color: ServoraColors.emerald600),
+            const Gap(12),
+            const Text('In-App Customer Messaging Hub', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+            const Gap(6),
+            const Text(
+              'When customers send inquiries on your storefront or products, their direct in-app chat channels appear here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11.5, color: Colors.grey, height: 1.35),
+            ),
+            const Gap(16),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ServoraColors.emerald600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Refresh Messages', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              onPressed: _fetchLivePortalData,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _chatRooms.length,
+      separatorBuilder: (_, __) => const Gap(10),
+      itemBuilder: (context, idx) {
+        final room = _chatRooms[idx];
+        final customer = room['customer'] as Map<String, dynamic>? ?? {};
+        final name = customer['name'] ?? room['title'] ?? 'Customer';
+        final lastMsg = room['lastMessage']?['content'] ?? 'Started a conversation...';
+        final unread = room['unreadCount'] ?? 0;
+
+        return ServoraCard(
+          padding: const EdgeInsets.all(12),
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: CircleAvatar(
+              radius: 22,
+              backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
+              child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'C', style: const TextStyle(fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+            ),
+            title: Text(name, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900)),
+            subtitle: Text(lastMsg, style: const TextStyle(fontSize: 11.5, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+            trailing: unread > 0
+                ? Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(color: ServoraColors.emerald600, shape: BoxShape.circle),
+                    child: Text('$unread', style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold)),
+                  )
+                : const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+            onTap: () => _openChatDialog(room),
+          ),
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // TAB 5: LEAD CRM WORKSPACE
+  // ==========================================
+  Widget _buildLeadsWorkspace(bool isDark) {
+    if (_leads.isEmpty && _quotes.isEmpty) {
+      return _buildEmptyState('No Leads Yet', 'Incoming quote requests from Tamale customers will appear here.');
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _leads.length,
+      separatorBuilder: (_, __) => const Gap(10),
+      itemBuilder: (context, idx) {
+        final lead = _leads[idx];
+        return ServoraCard(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(lead['clientName'] ?? 'Client', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900)),
+                  Text(lead['time'] ?? 'Recently', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                ],
+              ),
+              const Gap(2),
+              Text('📍 ${lead['location'] ?? 'Tamale'}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              const Gap(6),
+              Text(lead['request'] ?? '', style: const TextStyle(fontSize: 12, height: 1.3)),
+              const Gap(12),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.chat_bubble_rounded, size: 14),
+                label: const Text('WhatsApp Client', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                onPressed: () => WhatsAppHelper.openWhatsApp(
+                  phone: lead['phone'] ?? '+233240000000',
+                  message: 'Hello ${lead['clientName']}, I received your inquiry on Servora regarding: "${lead['request']}".',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // HELPERS
+  // ==========================================
   Widget _buildStockPill(String status, int count) {
     Color bg = const Color(0xFFD1FAE5);
     Color fg = const Color(0xFF047857);

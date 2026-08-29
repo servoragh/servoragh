@@ -454,6 +454,8 @@ export async function GET(
           r.comment,
           r.photos,
           r."isVerified",
+          r."sellerReply",
+          r."sellerRepliedAt",
           r."createdAt",
           u.name as "authorName",
           u."avatarUrl" as "authorAvatar"
@@ -472,6 +474,8 @@ export async function GET(
         comment: r.comment,
         photos: Array.isArray(r.photos) ? r.photos : [],
         isVerified: Boolean(r.isVerified),
+        sellerReply: r.sellerReply || null,
+        sellerRepliedAt: r.sellerRepliedAt || null,
         createdAt: r.createdAt,
         author: {
           name: r.authorName || "Servora Customer",
