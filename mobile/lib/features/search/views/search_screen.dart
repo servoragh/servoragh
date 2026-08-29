@@ -310,8 +310,15 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       currentList = _communityHits;
     }
 
+    // Sort by relevance score descending (most accurate at the top)
+    final sortedList = List<dynamic>.from(currentList)..sort((a, b) {
+      final scoreA = (a is Map && a['score'] is num) ? (a['score'] as num).toDouble() : 0.0;
+      final scoreB = (b is Map && b['score'] is num) ? (b['score'] as num).toDouble() : 0.0;
+      return scoreB.compareTo(scoreA);
+    });
+
     // Zero-Match Demand Fallback Card
-    if (currentList.isEmpty) {
+    if (sortedList.isEmpty) {
       return Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -365,10 +372,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       );
     }
 
-    // Tab is Products or Rentals: Render dynamic 2-column masonry
+    // Dynamic 2-Column Masonry for Products or Rentals
     if (_activeTab == 'products' || _activeTab == 'rentals') {
       return SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -376,11 +383,11 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (int i = 0; i < currentList.length; i += 2)
+                  for (int i = 0; i < sortedList.length; i += 2)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: ServoraProductCard(
-                        product: Map<String, dynamic>.from(currentList[i] as Map),
+                        product: Map<String, dynamic>.from(sortedList[i] as Map),
                       ),
                     ),
                 ],
@@ -391,11 +398,11 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (int i = 1; i < currentList.length; i += 2)
+                  for (int i = 1; i < sortedList.length; i += 2)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: ServoraProductCard(
-                        product: Map<String, dynamic>.from(currentList[i] as Map),
+                        product: Map<String, dynamic>.from(sortedList[i] as Map),
                       ),
                     ),
                 ],
@@ -406,18 +413,33 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       );
     }
 
-    // Default: Multi-Entity List View
+    // Multi-Entity Feed View (All Tab, Artisans Tab, Community Tab)
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: currentList.length,
-      separatorBuilder: (_, __) => const Gap(10),
+      padding: const EdgeInsets.all(14),
+      itemCount: sortedList.length,
+      separatorBuilder: (_, __) => const Gap(12),
       itemBuilder: (context, index) {
-        final item = currentList[index] as Map;
+        final item = sortedList[index] as Map;
         final entityType = item['entityType']?.toString() ?? 'product';
-        final title = item['title']?.toString() ?? 'Marketplace Item';
-        final subtitle = item['subtitle']?.toString() ?? '';
+        final rawTitle = item['title']?.toString() ?? 'Marketplace Item';
+        final cleanTitle = rawTitle.replaceAll(RegExp(r'<[^>]*>'), '');
+        final rawSubtitle = item['subtitle']?.toString() ?? '';
+        final cleanSubtitle = rawSubtitle.replaceAll(RegExp(r'<[^>]*>'), '');
         final priceDisplay = item['priceDisplay']?.toString() ?? '';
-        final imageUrl = item['image']?.toString();
+        final category = item['category']?.toString() ?? 'General';
+        final zone = item['zone']?.toString() ?? 'Tamale';
+        final isVerified = item['isVerified'] == true;
+
+        String? imageUrl;
+        final rawImg = item['image'];
+        if (rawImg is String && rawImg.isNotEmpty) {
+          imageUrl = rawImg;
+        } else if (rawImg is List && rawImg.isNotEmpty) {
+          imageUrl = rawImg[0]?.toString();
+        } else if (item['images'] is List && (item['images'] as List).isNotEmpty) {
+          imageUrl = (item['images'] as List)[0]?.toString();
+        }
+
         final slug = item['slug']?.toString() ?? item['id']?.toString() ?? '';
 
         return GestureDetector(
@@ -434,92 +456,147 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isDark ? ServoraColors.darkSurface : Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Image Thumbnail
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   child: imageUrl != null && imageUrl.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: imageUrl,
-                          width: 56,
-                          height: 56,
+                          width: 72,
+                          height: 72,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) => const ServoraShimmerSkeleton(
-                            width: 56,
-                            height: 56,
-                            borderRadius: 0,
+                          placeholder: (_, __) => Container(
+                            width: 72,
+                            height: 72,
+                            color: isDark ? Colors.white10 : Colors.grey[200],
                           ),
                           errorWidget: (_, __, ___) => _buildFallbackIcon(entityType),
                         )
                       : _buildFallbackIcon(entityType),
                 ),
                 const Gap(12),
+
+                // Content Details
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Badge Row
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: ServoraColors.emerald600.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(5),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               entityType.toUpperCase(),
                               style: const TextStyle(
-                                fontSize: 8,
+                                fontSize: 8.5,
                                 fontWeight: FontWeight.w900,
                                 color: ServoraColors.emerald600,
                               ),
                             ),
                           ),
+                          const Gap(6),
+                          Expanded(
+                            child: Text(
+                              '$category • $zone',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white54 : Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isVerified)
+                            const Icon(Icons.verified_rounded, size: 14, color: ServoraColors.emerald600),
                         ],
                       ),
-                      const Gap(2),
+                      const Gap(4),
+
+                      // Title
                       Text(
-                        title,
-                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                        cleanTitle,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, height: 1.2),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const Gap(2),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          color: isDark ? Colors.white54 : Colors.grey[600],
+                      const Gap(4),
+
+                      // Subtitle
+                      if (cleanSubtitle.isNotEmpty)
+                        Text(
+                          cleanSubtitle,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: isDark ? Colors.white60 : Colors.grey[700],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+
+                      const Gap(6),
+
+                      // Price & Action
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (priceDisplay.isNotEmpty)
+                            Text(
+                              priceDisplay,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                                color: ServoraColors.emerald600,
+                              ),
+                            )
+                          else
+                            Text(
+                              'View Details',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white54 : Colors.grey[500],
+                              ),
+                            ),
+                          const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'View',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: ServoraColors.emerald600,
+                                ),
+                              ),
+                              Icon(Icons.chevron_right_rounded, size: 16, color: ServoraColors.emerald600),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                if (priceDisplay.isNotEmpty) ...[
-                  const Gap(8),
-                  Text(
-                    priceDisplay,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      color: ServoraColors.emerald600,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),

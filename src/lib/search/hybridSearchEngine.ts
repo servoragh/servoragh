@@ -410,9 +410,15 @@ async function queryProductsIndex(
     legacyProducts.forEach((p: any) => {
       let parsedImages: string[] = [];
       try {
-        parsedImages = p.imageUrls ? JSON.parse(p.imageUrls) : [];
+        if (Array.isArray(p.images)) {
+          parsedImages = p.images;
+        } else if (typeof p.images === "string" && p.images.startsWith("[")) {
+          parsedImages = JSON.parse(p.images);
+        } else if (p.images) {
+          parsedImages = [p.images];
+        }
       } catch {
-        parsedImages = p.imageUrls ? [p.imageUrls] : [];
+        parsedImages = p.images ? [p.images] : [];
       }
 
       const imageUrl = parsedImages.length > 0 ? parsedImages[0] : "";

@@ -49,6 +49,7 @@ class ServoraShimmerSkeleton extends StatelessWidget {
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           ServoraShimmerSkeleton(width: 80, height: 16, borderRadius: 6),
           SizedBox(height: 12),
@@ -57,7 +58,7 @@ class ServoraShimmerSkeleton extends StatelessWidget {
           ServoraShimmerSkeleton(width: 120, height: 14),
           SizedBox(height: 16),
           ServoraShimmerSkeleton(width: 90, height: 20),
-          Spacer(),
+          SizedBox(height: 12),
           ServoraShimmerSkeleton(width: double.infinity, height: 36, borderRadius: 12),
         ],
       ),
