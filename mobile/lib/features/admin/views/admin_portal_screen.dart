@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../../../core/constants/constants.dart';
 import '../../../app/theme/servora_colors.dart';
+import '../../../main.dart';
 import '../../auth/providers/auth_provider.dart';
 
 // Modular Admin Views
@@ -263,6 +264,10 @@ class _AdminPortalViewState extends State<AdminPortalView> {
 }
 
   Widget _buildCurrentViewContent() {
+    if (_searchQuery.trim().isNotEmpty) {
+      return _buildOmnisearchResults(Theme.of(context).brightness == Brightness.dark);
+    }
+
     switch (_activeView) {
       case 'overview':
         return AdminOverviewView(
@@ -355,6 +360,463 @@ class _AdminPortalViewState extends State<AdminPortalView> {
     }
   }
 
+  // =========================================================
+  // OMNISEARCH RESULTS VIEW
+  // =========================================================
+  Widget _buildOmnisearchResults(bool isDark) {
+    final q = _searchQuery.trim().toLowerCase();
+
+    final users = _users.where((u) {
+      final name = (u['name'] ?? '').toString().toLowerCase();
+      final email = (u['email'] ?? '').toString().toLowerCase();
+      final phone = (u['phone'] ?? '').toString().toLowerCase();
+      final role = (u['role'] ?? '').toString().toLowerCase();
+      return name.contains(q) || email.contains(q) || phone.contains(q) || role.contains(q);
+    }).toList();
+
+    final businesses = _providers.where((p) {
+      final name = (p['businessName'] ?? '').toString().toLowerCase();
+      final slug = (p['slug'] ?? '').toString().toLowerCase();
+      final cat = (p['category'] ?? '').toString().toLowerCase();
+      final zone = (p['zone'] ?? '').toString().toLowerCase();
+      final phone = (p['whatsapp'] ?? p['phone'] ?? '').toString().toLowerCase();
+      return name.contains(q) || slug.contains(q) || cat.contains(q) || zone.contains(q) || phone.contains(q);
+    }).toList();
+
+    final prods = _products.where((p) {
+      final title = (p['title'] ?? '').toString().toLowerCase();
+      final cat = (p['category'] ?? '').toString().toLowerCase();
+      final desc = (p['description'] ?? '').toString().toLowerCase();
+      final seller = (p['businessName'] ?? p['providerName'] ?? '').toString().toLowerCase();
+      return title.contains(q) || cat.contains(q) || desc.contains(q) || seller.contains(q);
+    }).toList();
+
+    final requests = _serviceRequests.where((r) {
+      final title = (r['title'] ?? '').toString().toLowerCase();
+      final cat = (r['category'] ?? '').toString().toLowerCase();
+      final desc = (r['description'] ?? '').toString().toLowerCase();
+      final zone = (r['zone'] ?? '').toString().toLowerCase();
+      return title.contains(q) || cat.contains(q) || desc.contains(q) || zone.contains(q);
+    }).toList();
+
+    final audits = _auditLogs.where((a) {
+      final action = (a['action'] ?? '').toString().toLowerCase();
+      final details = (a['details'] ?? '').toString().toLowerCase();
+      final user = (a['adminEmail'] ?? a['user'] ?? '').toString().toLowerCase();
+      return action.contains(q) || details.contains(q) || user.contains(q);
+    }).toList();
+
+    final totalHits = users.length + businesses.length + prods.length + requests.length + audits.length;
+
+    if (totalHits == 0) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            Icon(Icons.search_off_rounded, size: 54, color: Colors.grey[400]),
+            const Gap(12),
+            Text(
+              'No records matching "$_searchQuery"',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const Gap(6),
+            const Text(
+              'Try searching for a user name, business name, phone number, category, zone, or audit action.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const Gap(16),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ServoraColors.emerald600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+              icon: const Icon(Icons.clear_rounded, size: 16),
+              label: const Text('Clear Search', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Summary bar
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Found $totalHits matching records',
+              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900),
+            ),
+            TextButton.icon(
+              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+              icon: const Icon(Icons.close_rounded, size: 14, color: Colors.grey),
+              label: const Text('Clear', style: TextStyle(fontSize: 11.5, color: Colors.grey)),
+            ),
+          ],
+        ),
+        const Gap(10),
+
+        // Users
+        if (users.isNotEmpty) ...[
+          _buildSearchSectionTitle('Users & Customers (${users.length})', Icons.people_alt_rounded, Colors.blue),
+          ...users.map((u) => _buildUserSearchResultCard(u, isDark)),
+          const Gap(14),
+        ],
+
+        // Businesses
+        if (businesses.isNotEmpty) ...[
+          _buildSearchSectionTitle('Businesses & Merchants (${businesses.length})', Icons.apartment_rounded, const Color(0xFF059669)),
+          ...businesses.map((b) => _buildBusinessSearchResultCard(b, isDark)),
+          const Gap(14),
+        ],
+
+        // Products
+        if (prods.isNotEmpty) ...[
+          _buildSearchSectionTitle('Products & Inventory (${prods.length})', Icons.shopping_bag_rounded, Colors.amber[800]!),
+          ...prods.map((p) => _buildProductSearchResultCard(p, isDark)),
+          const Gap(14),
+        ],
+
+        // Requests
+        if (requests.isNotEmpty) ...[
+          _buildSearchSectionTitle('Service Requests & Gigs (${requests.length})', Icons.message_rounded, Colors.purple),
+          ...requests.map((r) => _buildRequestSearchResultCard(r, isDark)),
+          const Gap(14),
+        ],
+
+        // Audits
+        if (audits.isNotEmpty) ...[
+          _buildSearchSectionTitle('Audit Logs & Events (${audits.length})', Icons.shield_rounded, Colors.redAccent),
+          ...audits.map((a) => _buildAuditSearchResultCard(a, isDark)),
+          const Gap(14),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSearchSectionTitle(String title, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, top: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const Gap(6),
+          Text(title, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserSearchResultCard(dynamic u, bool isDark) {
+    final name = u['name'] ?? 'User';
+    final email = u['email'] ?? 'No email';
+    final phone = u['phone'] ?? 'No phone';
+    final role = (u['role'] ?? 'CUSTOMER').toString().toUpperCase();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: Colors.blue.withOpacity(0.15),
+            child: Text(
+              name.isNotEmpty ? name[0].toUpperCase() : 'U',
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+            ),
+          ),
+          const Gap(10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: role.contains('ADMIN') ? Colors.red.withOpacity(0.15) : (role.contains('PROVIDER') ? Colors.teal.withOpacity(0.15) : Colors.blue.withOpacity(0.15)),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        role,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: role.contains('ADMIN') ? Colors.red : (role.contains('PROVIDER') ? Colors.teal : Colors.blue),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const Gap(2),
+                Text('$email • $phone', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              ],
+            ),
+          ),
+          const Gap(8),
+          IconButton(
+            icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+            tooltip: 'View in CRM',
+            onPressed: () {
+              setState(() {
+                _searchController.clear();
+                _searchQuery = '';
+                _activeView = 'crm';
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBusinessSearchResultCard(dynamic b, bool isDark) {
+    final name = b['businessName'] ?? 'Business';
+    final slug = b['slug'] ?? '';
+    final category = b['category'] ?? 'General';
+    final zone = b['zone'] ?? 'Tamale';
+    final verified = b['verificationStatus'] == 'VERIFIED' || b['isVerified'] == true;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFF059669).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.storefront_rounded, color: Color(0xFF059669), size: 20),
+          ),
+          const Gap(10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
+                    if (verified)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text('VERIFIED', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Color(0xFF059669))),
+                      ),
+                  ],
+                ),
+                const Gap(2),
+                Text('$category • $zone • @$slug', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              ],
+            ),
+          ),
+          const Gap(8),
+          IconButton(
+            icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+            tooltip: 'View in Businesses',
+            onPressed: () {
+              setState(() {
+                _searchController.clear();
+                _searchQuery = '';
+                _activeView = 'businesses';
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductSearchResultCard(dynamic p, bool isDark) {
+    final title = p['title'] ?? 'Product';
+    final price = p['price']?.toString() ?? '0';
+    final category = p['category'] ?? 'General';
+    final seller = p['businessName'] ?? p['providerName'] ?? 'Merchant';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.shopping_bag_rounded, color: Colors.amber, size: 20),
+          ),
+          const Gap(10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                const Gap(2),
+                Text('GH₵ $price • $category • By $seller', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              ],
+            ),
+          ),
+          const Gap(8),
+          IconButton(
+            icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+            tooltip: 'Manage in Products',
+            onPressed: () {
+              setState(() {
+                _searchController.clear();
+                _searchQuery = '';
+                _activeView = 'products';
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequestSearchResultCard(dynamic r, bool isDark) {
+    final title = r['title'] ?? 'Service Request';
+    final category = r['category'] ?? 'General';
+    final zone = r['zone'] ?? 'Tamale';
+    final status = r['status'] ?? 'OPEN';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.purple.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.message_rounded, color: Colors.purple, size: 20),
+          ),
+          const Gap(10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                const Gap(2),
+                Text('$category • $zone • Status: $status', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              ],
+            ),
+          ),
+          const Gap(8),
+          IconButton(
+            icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+            tooltip: 'View in Requests',
+            onPressed: () {
+              setState(() {
+                _searchController.clear();
+                _searchQuery = '';
+                _activeView = 'requests';
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAuditSearchResultCard(dynamic a, bool isDark) {
+    final action = a['action'] ?? 'AUDIT_EVENT';
+    final details = a['details'] ?? '';
+    final user = a['adminEmail'] ?? a['user'] ?? 'System';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.shield_rounded, color: Colors.redAccent, size: 20),
+          ),
+          const Gap(10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(action, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                const Gap(2),
+                Text('$user: $details', style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 2, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+          const Gap(8),
+          IconButton(
+            icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+            tooltip: 'View in Activity',
+            onPressed: () {
+              setState(() {
+                _searchController.clear();
+                _searchQuery = '';
+                _activeView = 'activity';
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAdminSearchBar(bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -396,9 +858,12 @@ class _AdminPortalViewState extends State<AdminPortalView> {
   }
 
   // =========================================================
-  // EDGE-TO-EDGE TOPBAR
+  // EDGE-TO-EDGE TOPBAR (Without Redundant Back Button)
   // =========================================================
   Widget _buildEdgeToEdgeTopbar(BuildContext context, bool isDark) {
+    final adminUser = authNotifier.state.user;
+    final initial = (adminUser?.name.isNotEmpty == true) ? adminUser!.name[0].toUpperCase() : 'A';
+
     return Container(
       height: 56,
       decoration: BoxDecoration(
@@ -413,21 +878,6 @@ class _AdminPortalViewState extends State<AdminPortalView> {
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, size: 22),
-            tooltip: 'Exit to Home',
-            onPressed: () {
-              if (_activeView != 'overview') {
-                setState(() => _activeView = 'overview');
-              } else if (widget.onSwitchToCustomer != null) {
-                widget.onSwitchToCustomer!();
-              } else if (Navigator.of(context).canPop()) {
-                context.pop();
-              } else {
-                context.go('/home');
-              }
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.menu_rounded, size: 22),
             tooltip: 'Open Admin Menu',
@@ -448,6 +898,19 @@ class _AdminPortalViewState extends State<AdminPortalView> {
             ],
           ),
           const Spacer(),
+
+          // Dark / Light Theme Toggle
+          IconButton(
+            icon: Icon(
+              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+              color: const Color(0xFF059669),
+              size: 20,
+            ),
+            tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            onPressed: () {
+              themeModeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
+            },
+          ),
 
           // Bell with live notification badge
           Stack(
@@ -473,20 +936,128 @@ class _AdminPortalViewState extends State<AdminPortalView> {
             ],
           ),
 
-          // User Avatar Pill
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              color: Color(0xFF059669),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Text(
-                'D',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+          // Logout Button
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+            tooltip: 'Sign Out / Log Out',
+            onPressed: () => _confirmLogout(context),
+          ),
+          const Gap(4),
+
+          // User Avatar Pill with Popup Menu
+          PopupMenuButton<String>(
+            tooltip: 'Admin Account Options',
+            offset: const Offset(0, 42),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            color: isDark ? const Color(0xFF0F172A) : Colors.white,
+            onSelected: (val) {
+              if (val == 'theme') {
+                themeModeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
+              } else if (val == 'customer') {
+                widget.onSwitchToCustomer?.call();
+              } else if (val == 'logout') {
+                _confirmLogout(context);
+              }
+            },
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(adminUser?.name ?? 'Admin Executive', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text(adminUser?.email ?? 'admin@servora.gh', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'theme',
+                child: Row(
+                  children: [
+                    Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 18, color: const Color(0xFF059669)),
+                    const Gap(10),
+                    Text(isDark ? 'Light Theme' : 'Dark Theme', style: const TextStyle(fontSize: 12.5)),
+                  ],
+                ),
+              ),
+              if (widget.onSwitchToCustomer != null)
+                const PopupMenuItem(
+                  value: 'customer',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_outline_rounded, size: 18),
+                      Gap(10),
+                      Text('Customer View', style: TextStyle(fontSize: 12.5)),
+                    ],
+                  ),
+                ),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
+                    Gap(10),
+                    Text('Log Out', style: TextStyle(fontSize: 12.5, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ],
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                color: Color(0xFF059669),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  initial,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+                ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================
+  // LOGOUT CONFIRMATION DIALOG
+  // =========================================================
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Log Out of Admin Console?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'You will be signed out of your administrator session and returned to the guest view.',
+          style: TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              authNotifier.logout();
+              if (context.mounted) {
+                context.go('/home');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Logged out of Admin successfully.')),
+                );
+              }
+            },
+            child: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -562,20 +1133,36 @@ class _AdminPortalViewState extends State<AdminPortalView> {
               ),
             ),
 
+            const Divider(height: 1),
+
+            // Dark / Light Mode Switch in Drawer
+            SwitchListTile(
+              secondary: Icon(
+                isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                color: const Color(0xFF059669),
+                size: 20,
+              ),
+              title: Text(isDark ? 'Dark Mode' : 'Light Mode', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+              value: isDark,
+              activeColor: const Color(0xFF059669),
+              onChanged: (val) {
+                themeModeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+              },
+            ),
+
             // Switch to Customer View
-            if (widget.onSwitchToCustomer != null) ...[
-              const Divider(height: 1),
+            if (widget.onSwitchToCustomer != null)
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     icon: const Icon(Icons.person_outline_rounded, size: 16),
-                    label: const Text('Switch to Customer Mode', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                    label: const Text('Customer Mode', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                     onPressed: () {
                       Navigator.of(context).pop();
                       widget.onSwitchToCustomer!();
@@ -583,7 +1170,18 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                   ),
                 ),
               ),
-            ],
+
+            // Logout Option in Drawer
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+              title: const Text('Log Out of Admin', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12.5)),
+              onTap: () {
+                Navigator.of(context).pop();
+                _confirmLogout(context);
+              },
+            ),
+            const Gap(6),
           ],
         ),
       ),
@@ -618,7 +1216,11 @@ class _AdminPortalViewState extends State<AdminPortalView> {
       selectedTileColor: ServoraColors.emerald600.withOpacity(0.12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       onTap: () {
-        setState(() => _activeView = viewId);
+        setState(() {
+          _activeView = viewId;
+          _searchController.clear();
+          _searchQuery = '';
+        });
         Navigator.of(context).pop();
       },
     );
