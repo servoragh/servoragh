@@ -87,7 +87,7 @@ async function resolveBusinessId(rawIdOrSlug: string): Promise<string | null> {
 // GET /api/favorites - Get saved favorites for current user or check specific business status
 export async function GET(req: Request) {
   try {
-    const session = await getSession();
+    const session = await getSession(req);
     const { searchParams } = new URL(req.url);
     const rawBusinessId = searchParams.get("businessId");
 
@@ -170,7 +170,7 @@ export async function GET(req: Request) {
 // POST /api/favorites - Toggle favorite or update alert settings
 export async function POST(req: Request) {
   try {
-    const session = await getSession();
+    const session = await getSession(req);
     if (!session) {
       return NextResponse.json(
         { error: "Unauthorized. Please log in to sync favorites across devices.", requiresAuth: true, isFavorited: false },

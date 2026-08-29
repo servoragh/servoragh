@@ -35,6 +35,7 @@ import {
   Maximize2,
   ZoomIn,
   ZoomOut,
+  Search,
 } from "lucide-react";
 import { formatGHS } from "@/lib/utils";
 import { FavoriteButton } from "@/components/FavoriteButton";
@@ -51,6 +52,7 @@ export default function PublicDigitalStorefrontPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<"products" | "rentals" | "services" | "posts">("products");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Catalog Detail Modal States
   const [viewingProduct, setViewingProduct] = useState<any>(null);
@@ -218,9 +220,33 @@ export default function PublicDigitalStorefrontPage() {
     );
   }
 
-  const products = profile.products || [];
-  const rentals = profile.rentals || [];
-  const services = profile.services || [];
+  const q = searchQuery.trim().toLowerCase();
+  const rawProducts = profile.products || [];
+  const rawRentals = profile.rentals || [];
+  const rawServices = profile.services || [];
+
+  const products = rawProducts.filter((p: any) => {
+    if (!q) return true;
+    const title = (p.title || "").toLowerCase();
+    const category = (p.category || "").toLowerCase();
+    const description = (p.description || "").toLowerCase();
+    return title.includes(q) || category.includes(q) || description.includes(q);
+  });
+
+  const rentals = rawRentals.filter((r: any) => {
+    if (!q) return true;
+    const title = (r.title || "").toLowerCase();
+    const category = (r.category || "").toLowerCase();
+    const description = (r.description || "").toLowerCase();
+    return title.includes(q) || category.includes(q) || description.includes(q);
+  });
+
+  const services = rawServices.filter((s: any) => {
+    if (!q) return true;
+    const name = (s.serviceName || s.name || "").toLowerCase();
+    const description = (s.description || "").toLowerCase();
+    return name.includes(q) || description.includes(q);
+  });
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 py-8 lg:py-12 text-stone-900 dark:text-stone-100">
@@ -444,6 +470,27 @@ export default function PublicDigitalStorefrontPage() {
 
         {/* TABBED SHOWCASE: PRODUCTS, RENTALS, SERVICES */}
         <div className="space-y-6">
+          {/* Real-Time Store Catalog Search Bar */}
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Search ${profile.businessName} catalog & services...`}
+              className="w-full pl-11 pr-10 py-3.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-xs transition"
+            />
+            <Search className="w-4 h-4 text-stone-400 absolute left-4 top-1/2 -translate-y-1/2" />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-1 cursor-pointer"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
           <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-stone-200 dark:border-stone-800">
             <button
               onClick={() => setActiveTab("products")}

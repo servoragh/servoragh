@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import '../../../core/constants/constants.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_card.dart';
+import '../../../shared/widgets/servora_shimmer_skeleton.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../core/utils/location_helper.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -20,10 +21,18 @@ class CustomerPortalView extends StatefulWidget {
 
 class CustomerPortalViewState extends State<CustomerPortalView> {
   String _activeTab = 'overview';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   bool _isLoading = true;
 
   Future<void> refreshData() async {
     await _fetchLiveCustomerData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   // Live Database Collections
@@ -149,6 +158,51 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
     }
   }
 
+  Widget _buildCustomerSkeleton(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Identity Card Skeleton
+        ServoraCard(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const ServoraShimmerSkeleton(width: 52, height: 52, borderRadius: 16),
+              const Gap(12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    ServoraShimmerSkeleton(width: 140, height: 18, borderRadius: 6),
+                    Gap(6),
+                    ServoraShimmerSkeleton(width: 180, height: 12, borderRadius: 4),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Gap(14),
+        // Search Bar Skeleton
+        const ServoraShimmerSkeleton(width: double.infinity, height: 44, borderRadius: 16),
+        const Gap(14),
+        // Tabs Skeleton
+        Row(
+          children: const [
+            Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 42, borderRadius: 14)),
+            Gap(8),
+            Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 42, borderRadius: 14)),
+            Gap(8),
+            Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 42, borderRadius: 14)),
+          ],
+        ),
+        const Gap(16),
+        // Content Skeleton
+        const ServoraShimmerSkeleton(width: double.infinity, height: 160, borderRadius: 20),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -159,12 +213,7 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
     final zone = _profile?['defaultZone'] ?? userModel?.serviceArea ?? 'Tamale Central';
 
     if (_isLoading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(
-          child: CircularProgressIndicator(color: ServoraColors.emerald600),
-        ),
-      );
+      return _buildCustomerSkeleton(isDark);
     }
 
     return Column(
@@ -248,17 +297,55 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
+                      side: BorderSide(color: ServoraColors.emerald600.withOpacity(0.5)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     icon: const Icon(Icons.storefront_rounded, size: 16, color: ServoraColors.emerald600),
-                    label: const Text('Switch to Merchant Mode / Storefront ➔', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                    label: const Text('Manage Business Storefront ➔', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
                     onPressed: widget.onSwitchToMerchant,
                   ),
                 ),
             ],
           ),
         ),
-        const Gap(12),
+        const Gap(14),
+
+        // 2. Modern Search Bar for Customer Portal
+        Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: isDark ? ServoraColors.darkSurface : const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? ServoraColors.darkCardBorder : const Color(0xFFCBD5E1),
+            ),
+          ),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (val) => setState(() => _searchQuery = val),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            decoration: InputDecoration(
+              hintText: 'Search my requests, escrow deals, saved items...',
+              hintStyle: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.white38 : Colors.grey[500],
+              ),
+              prefixIcon: const Icon(Icons.search_rounded, color: ServoraColors.emerald600, size: 20),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? GestureDetector(
+                      onTap: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                      child: const Icon(Icons.cancel_rounded, size: 18, color: Colors.grey),
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 11),
+            ),
+          ),
+        ),
+        const Gap(14),
 
         // 2. Horizontal Scrollable Navigation Tabs
         SingleChildScrollView(

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../constants/constants.dart';
+import '../../features/auth/providers/auth_provider.dart';
 
 class MarketplaceApiService {
   static final Dio _dio = Dio(
@@ -13,6 +14,22 @@ class MarketplaceApiService {
       },
     ),
   );
+
+  static Future<Options> _authOptions() async {
+    try {
+      final token = await authNotifier.storage.getToken();
+      final user = authNotifier.state.user;
+      return Options(
+        headers: {
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (user?.phone != null && user!.phone.isNotEmpty) 'x-user-phone': user.phone,
+          if (user?.id != null && user!.id.isNotEmpty) 'x-user-id': user.id,
+        },
+      );
+    } catch (_) {
+      return Options();
+    }
+  }
 
   /// Fetch live marketplace products from database
   static Future<List<dynamic>> fetchProducts() async {
@@ -103,7 +120,8 @@ class MarketplaceApiService {
   /// Fetch user saved favorite business IDs and slugs from backend API
   static Future<Set<String>> fetchUserFavoriteIds() async {
     try {
-      final response = await _dio.get('/favorites');
+      final opts = await _authOptions();
+      final response = await _dio.get('/favorites', options: opts);
       if (response.statusCode == 200 && response.data != null) {
         if (response.data['favorites'] is List) {
           final list = response.data['favorites'] as List;
@@ -129,7 +147,8 @@ class MarketplaceApiService {
   /// Toggle favorite status on backend API (syncs between Web & Mobile)
   static Future<bool> toggleBusinessFavorite(String businessId) async {
     try {
-      final response = await _dio.post('/favorites', data: {'businessId': businessId});
+      final opts = await _authOptions();
+      final response = await _dio.post('/favorites', data: {'businessId': businessId}, options: opts);
       if (response.statusCode == 200 && response.data != null) {
         return (response.data['isFavorited'] == true);
       }

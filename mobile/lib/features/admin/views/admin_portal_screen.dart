@@ -34,8 +34,16 @@ class AdminPortalView extends StatefulWidget {
 class _AdminPortalViewState extends State<AdminPortalView> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _activeView = 'overview';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   bool _isLoading = true;
   String? _errorMessage;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   // Live Database Collections
   Map<String, dynamic> _stats = {};
@@ -174,6 +182,9 @@ class _AdminPortalViewState extends State<AdminPortalView> {
           children: [
             // Edge-to-Edge Topbar
             _buildEdgeToEdgeTopbar(context, isDark),
+
+            // Top Modern Admin Omnisearch Bar
+            _buildAdminSearchBar(isDark),
 
             // Scrollable Active View with Pull-to-Refresh
             Expanded(
@@ -326,6 +337,46 @@ class _AdminPortalViewState extends State<AdminPortalView> {
           onNavigateToView: (view) => setState(() => _activeView = view),
         );
     }
+  }
+
+  Widget _buildAdminSearchBar(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Container(
+        height: 42,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+          ),
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (val) => setState(() => _searchQuery = val),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          decoration: InputDecoration(
+            hintText: 'Search users, businesses, flags, transactions...',
+            hintStyle: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.white38 : Colors.grey[500],
+            ),
+            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF059669), size: 18),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? GestureDetector(
+                    onTap: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                    child: const Icon(Icons.cancel_rounded, size: 16, color: Colors.grey),
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          ),
+        ),
+      ),
+    );
   }
 
   // =========================================================

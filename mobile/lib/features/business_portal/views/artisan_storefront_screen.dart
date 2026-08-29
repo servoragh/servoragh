@@ -27,6 +27,8 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
   Map<String, dynamic>? _storeData;
   int _activeTabIndex = 0; // 0: Products, 1: Rentals, 2: Services
   final Map<String, int> _cardImageIndex = {};
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   static const String _defaultBannerUrl =
       'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&auto=format&fit=crop&q=80';
@@ -35,6 +37,12 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
   void initState() {
     super.initState();
     _loadStorefront();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadStorefront() async {
@@ -425,9 +433,33 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
     final String description = data['description'] ?? data['aboutText'] ?? data['bio'] ?? "Northern Ghana's verified enterprise and artisan specialist.";
 
     final Map<String, dynamic> catalogs = data['catalogs'] ?? {};
-    final List productsList = catalogs['products'] ?? (data['products'] is List ? data['products'] : []);
-    final List rentalsList = catalogs['rentals'] ?? (data['rentals'] is List ? data['rentals'] : []);
-    final List servicesList = catalogs['services'] ?? (data['services'] is List ? data['services'] : []);
+    final List rawProductsList = catalogs['products'] ?? (data['products'] is List ? data['products'] : []);
+    final List rawRentalsList = catalogs['rentals'] ?? (data['rentals'] is List ? data['rentals'] : []);
+    final List rawServicesList = catalogs['services'] ?? (data['services'] is List ? data['services'] : []);
+
+    final q = _searchQuery.trim().toLowerCase();
+    final List productsList = rawProductsList.where((p) {
+      if (q.isEmpty) return true;
+      final title = (p['title'] ?? '').toString().toLowerCase();
+      final category = (p['category'] ?? '').toString().toLowerCase();
+      final desc = (p['description'] ?? '').toString().toLowerCase();
+      return title.contains(q) || category.contains(q) || desc.contains(q);
+    }).toList();
+
+    final List rentalsList = rawRentalsList.where((r) {
+      if (q.isEmpty) return true;
+      final title = (r['title'] ?? '').toString().toLowerCase();
+      final category = (r['category'] ?? '').toString().toLowerCase();
+      final desc = (r['description'] ?? '').toString().toLowerCase();
+      return title.contains(q) || category.contains(q) || desc.contains(q);
+    }).toList();
+
+    final List servicesList = rawServicesList.where((s) {
+      if (q.isEmpty) return true;
+      final sName = (s['name'] ?? s['serviceName'] ?? '').toString().toLowerCase();
+      final desc = (s['description'] ?? '').toString().toLowerCase();
+      return sName.contains(q) || desc.contains(q);
+    }).toList();
 
     final String logoUrl = data['logoUrl'] ?? data['user']?['avatarUrl'] ?? '';
     final String rawBanner = data['bannerUrl'] ?? '';
@@ -471,26 +503,41 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                     child: Image.network(
                       bannerUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        height: 160,
-                        color: const Color(0xFF064E3B),
-                        child: const Center(
-                          child: Icon(Icons.storefront_rounded, color: Colors.white24, size: 56),
-                        ),
-                      ),
+                      errorBuilder: (_, __, ___) => Image.network(_defaultBannerUrl, fit: BoxFit.cover),
                     ),
                   ),
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
+                          colors: [
+                            Colors.black.withOpacity(0.4),
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.7),
+                          ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withOpacity(0.1),
-                            Colors.black.withOpacity(0.65),
-                          ],
                         ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.65),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.photo_size_select_actual_outlined, color: Colors.white, size: 13),
+                          Gap(4),
+                          Text('View Cover', style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold)),
+                        ],
                       ),
                     ),
                   ),
@@ -499,201 +546,207 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
             ),
           ),
 
-          // 2. Identity Header Card (Logo, Name, Tagline, Modern Verified Badge & Action Buttons)
+          // 2. Main Identity & Profile Overview Card
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: isDark ? ServoraColors.darkSurface : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Top Avatar & Title Stack
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Avatar / Profile Logo Image (Tap to open high-res zoom lightbox)
-                        GestureDetector(
-                          onTap: logoUrl.isNotEmpty
-                              ? () => ServoraImageLightbox.show(context, title: name, images: [logoUrl])
-                              : null,
-                          child: Container(
-                            width: 72,
-                            height: 72,
-                            decoration: BoxDecoration(
-                              color: ServoraColors.emerald600.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: ServoraColors.emerald600.withOpacity(0.3), width: 1.5),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(17),
-                              child: logoUrl.isNotEmpty
-                                  ? Image.network(
-                                      logoUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Center(
+            child: Transform.translate(
+              offset: const Offset(0, -20),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: isDark ? ServoraColors.darkSurface : Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Business Logo
+                          GestureDetector(
+                            onTap: () {
+                              if (logoUrl.isNotEmpty) {
+                                ServoraImageLightbox.show(context, title: '$name Logo', images: [logoUrl]);
+                              }
+                            },
+                            child: Container(
+                              width: 68,
+                              height: 68,
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: ServoraColors.emerald600.withOpacity(0.4), width: 1.5),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(17),
+                                child: logoUrl.isNotEmpty
+                                    ? Image.network(
+                                        logoUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Center(
+                                          child: Text(
+                                            name.isNotEmpty ? name[0].toUpperCase() : 'S',
+                                            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
+                                          ),
+                                        ),
+                                      )
+                                    : Center(
                                         child: Text(
                                           name.isNotEmpty ? name[0].toUpperCase() : 'S',
                                           style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
                                         ),
                                       ),
-                                    )
-                                  : Center(
-                                      child: Text(
-                                        name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
-                                      ),
-                                    ),
+                              ),
                             ),
                           ),
-                        ),
-                        const Gap(14),
+                          const Gap(14),
 
-                        // Title, Modern Badges & Zone
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 4,
-                                children: [
-                                  // Modern Sleek Verified Badge
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                                    decoration: BoxDecoration(
-                                      color: ServoraColors.emerald600.withOpacity(0.12),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: ServoraColors.emerald600.withOpacity(0.35)),
+                          // Title, Modern Badges & Zone
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 4,
+                                  children: [
+                                    // Modern Sleek Verified Badge
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                                      decoration: BoxDecoration(
+                                        color: ServoraColors.emerald600.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: ServoraColors.emerald600.withOpacity(0.35)),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.verified_rounded, size: 12, color: ServoraColors.emerald600),
+                                          Gap(3.5),
+                                          Text(
+                                            'Verified Business',
+                                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: ServoraColors.emerald600),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.verified_rounded, size: 12, color: ServoraColors.emerald600),
-                                        Gap(3.5),
-                                        Text(
-                                          'Verified Business',
-                                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: ServoraColors.emerald600),
-                                        ),
-                                      ],
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        zone,
+                                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.grey[700]),
+                                      ),
                                     ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      zone,
-                                      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.grey[700]),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Gap(6),
-                              Text(
-                                name,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: isDark ? Colors.white : const Color(0xFF18181B),
+                                  ],
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (tagline.isNotEmpty) ...[
-                                const Gap(3),
+                                const Gap(6),
                                 Text(
-                                  tagline,
-                                  style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.grey[700], fontWeight: FontWeight.w500),
+                                  name,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    color: isDark ? Colors.white : const Color(0xFF18181B),
+                                  ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
+                                if (tagline.isNotEmpty) ...[
+                                  const Gap(3),
+                                  Text(
+                                    tagline,
+                                    style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.grey[700], fontWeight: FontWeight.w500),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const Gap(14),
-
-                    // Primary Action CTAs Row (WhatsApp, Call, QR Code, Get Price Estimate)
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF25D366),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                          icon: const Icon(Icons.chat_bubble_rounded, size: 14),
-                          label: const Text('WhatsApp', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                          onPressed: () => WhatsAppHelper.openWhatsApp(
-                            phone: whatsapp,
-                            message: "Hello $name, I am contacting you via your Servora storefront.",
-                          ),
-                        ),
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          icon: const Icon(Icons.phone_rounded, size: 14),
-                          label: const Text('Call', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                          onPressed: () => _makePhoneCall(phone),
-                        ),
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          icon: const Icon(Icons.qr_code_2_rounded, size: 15, color: ServoraColors.emerald600),
-                          label: const Text('QR Code', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          onPressed: () => _showQrDialog(name, 'https://servora.vercel.app/biz/${widget.slug}'),
-                        ),
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          icon: const Icon(Icons.request_quote_rounded, size: 15, color: Color(0xFFD97706)),
-                          label: const Text('Get Price Estimate', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          onPressed: () => _showPriceEstimateDialog(name, whatsapp),
-                        ),
-                      ],
-                    ),
-
-                    if (description.isNotEmpty) ...[
-                      const Gap(14),
-                      const Divider(height: 1),
-                      const Gap(12),
-                      Text(
-                        description,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          height: 1.5,
-                          color: isDark ? Colors.white70 : Colors.grey[800],
-                        ),
+                        ],
                       ),
+                      const Gap(14),
+
+                      // Primary Action CTAs Row (WhatsApp, Call, QR Code, Get Price Estimate, Like)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF25D366),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            icon: const Icon(Icons.chat_bubble_rounded, size: 14),
+                            label: const Text('WhatsApp', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                            onPressed: () => WhatsAppHelper.openWhatsApp(
+                              phone: whatsapp,
+                              message: "Hello $name, I am contacting you via your Servora storefront.",
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.phone_rounded, size: 14),
+                            label: const Text('Call', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                            onPressed: () => _makePhoneCall(phone),
+                          ),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.qr_code_2_rounded, size: 15, color: ServoraColors.emerald600),
+                            label: const Text('QR Code', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => _showQrDialog(name, 'https://servora.vercel.app/biz/${widget.slug}'),
+                          ),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.request_quote_rounded, size: 15, color: Color(0xFFD97706)),
+                            label: const Text('Get Estimate', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => _showPriceEstimateDialog(name, whatsapp),
+                          ),
+                          ServoraFavoriteButton(businessId: widget.slug, businessName: name),
+                        ],
+                      ),
+
+                      if (description.isNotEmpty) ...[
+                        const Gap(14),
+                        const Divider(height: 1),
+                        const Gap(12),
+                        Text(
+                          description,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            height: 1.5,
+                            color: isDark ? Colors.white70 : Colors.grey[800],
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -762,56 +815,28 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
                                   gradient: LinearGradient(
+                                    colors: [Colors.transparent, Colors.black.withOpacity(0.4)],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
-                                    colors: [Colors.transparent, Colors.black.withOpacity(0.75)],
                                   ),
                                 ),
                               ),
                             ),
                             Positioned(
-                              left: 12,
-                              bottom: 12,
-                              right: 90,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.location_on_rounded, size: 12, color: ServoraColors.emerald500),
-                                      const Gap(3),
-                                      Expanded(
-                                        child: Text(
-                                          addressDetails,
-                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  if (landmark.isNotEmpty) ...[
-                                    const Gap(2),
-                                    Text('Landmark: $landmark', style: const TextStyle(fontSize: 9.5, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            Positioned(
-                              right: 12,
-                              bottom: 12,
+                              bottom: 10,
+                              right: 10,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.9),
-                                  borderRadius: BorderRadius.circular(10),
+                                  color: Colors.black.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.zoom_in_rounded, size: 13, color: Colors.black),
-                                    Gap(3),
-                                    Text('Full Photo', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black)),
+                                    Icon(Icons.zoom_in_rounded, size: 13, color: Colors.white),
+                                    Gap(4),
+                                    Text('Tap to Enlarge', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
                                   ],
                                 ),
                               ),
@@ -825,7 +850,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
               ),
             ),
 
-          // 4. Location & Live Google Maps Directions Section
+          // 4. Physical Workshop Address & Directions Card
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -887,7 +912,55 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
             ),
           ),
 
-          // 5. 3-Tab Segment Selector (Products, Equipment Rentals, Services Offered)
+          // 5. Storefront Search Bar
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Container(
+                height: 46,
+                decoration: BoxDecoration(
+                  color: isDark ? ServoraColors.darkSurface : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? ServoraColors.darkCardBorder : const Color(0xFFCBD5E1),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  decoration: InputDecoration(
+                    hintText: 'Search $name products & services...',
+                    hintStyle: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white38 : Colors.grey[500],
+                    ),
+                    prefixIcon: const Icon(Icons.search_rounded, color: ServoraColors.emerald600, size: 20),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                            child: const Icon(Icons.cancel_rounded, size: 18, color: Colors.grey),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 6. 3-Tab Segment Selector (Products, Equipment Rentals, Services Offered)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -909,14 +982,19 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
             ),
           ),
 
-          // 6. Tab Content Area
+          // 7. Tab Content Area
           if (_activeTabIndex == 0) ...[
             // PRODUCTS TAB
             if (productsList.isEmpty)
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: Text('No products listed by this merchant.', style: TextStyle(fontSize: 12, color: Colors.grey))),
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: Text(
+                      _searchQuery.isNotEmpty ? 'No products match "$_searchQuery"' : 'No products listed by this merchant.',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
                 ),
               )
             else
@@ -980,10 +1058,15 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
           ] else if (_activeTabIndex == 1) ...[
             // EQUIPMENT RENTALS TAB
             if (rentalsList.isEmpty)
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: Text('No equipment rentals listed by this merchant.', style: TextStyle(fontSize: 12, color: Colors.grey))),
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: Text(
+                      _searchQuery.isNotEmpty ? 'No equipment matches "$_searchQuery"' : 'No equipment rentals listed by this merchant.',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
                 ),
               )
             else
@@ -1113,10 +1196,15 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
           ] else ...[
             // SERVICES OFFERED TAB
             if (servicesList.isEmpty)
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: Text('No custom services listed by this artisan.', style: TextStyle(fontSize: 12, color: Colors.grey))),
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: Text(
+                      _searchQuery.isNotEmpty ? 'No services match "$_searchQuery"' : 'No custom services listed by this artisan.',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
                 ),
               )
             else

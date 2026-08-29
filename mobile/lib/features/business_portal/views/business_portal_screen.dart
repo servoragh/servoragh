@@ -23,6 +23,8 @@ class BusinessPortalView extends StatefulWidget {
 class _BusinessPortalViewState extends State<BusinessPortalView> {
   String _activeTab = 'catalogs'; // 'catalogs' | 'leads' | 'messages'
   String _catalogFilter = 'products'; // 'products' | 'rentals' | 'services'
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   bool _isLoading = true;
   String? _errorMessage;
   Map<String, dynamic>? _profile;
@@ -48,6 +50,12 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   void initState() {
     super.initState();
     _fetchLivePortalData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchLivePortalData() async {
@@ -1119,15 +1127,92 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     );
   }
 
+  Widget _buildPortalSkeleton(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Hero Banner Skeleton
+        Container(
+          height: 180,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  ServoraShimmerSkeleton(width: 72, height: 72, borderRadius: 18),
+                  Gap(14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ServoraShimmerSkeleton(width: 80, height: 16, borderRadius: 8),
+                        Gap(8),
+                        ServoraShimmerSkeleton(width: double.infinity, height: 20, borderRadius: 6),
+                        Gap(6),
+                        ServoraShimmerSkeleton(width: 120, height: 12, borderRadius: 6),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              Spacer(),
+              Row(
+                children: [
+                  Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 38, borderRadius: 12)),
+                  Gap(10),
+                  Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 38, borderRadius: 12)),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const Gap(16),
+        // Workspace Tabs Skeleton
+        const Row(
+          children: [
+            Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 42, borderRadius: 16)),
+            Gap(8),
+            Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 42, borderRadius: 16)),
+          ],
+        ),
+        const Gap(16),
+        // Card Skeleton
+        ServoraCard(
+          padding: const EdgeInsets.all(18),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ServoraShimmerSkeleton(width: 200, height: 20, borderRadius: 6),
+              Gap(8),
+              ServoraShimmerSkeleton(width: double.infinity, height: 14, borderRadius: 6),
+              Gap(16),
+              Row(
+                children: [
+                  Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 40, borderRadius: 12)),
+                  Gap(6),
+                  Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 40, borderRadius: 12)),
+                  Gap(6),
+                  Expanded(child: ServoraShimmerSkeleton(width: double.infinity, height: 40, borderRadius: 12)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (_isLoading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(
-          child: CircularProgressIndicator(color: ServoraColors.emerald600),
-        ),
-      );
+      return _buildPortalSkeleton(isDark);
     }
 
     final user = authNotifier.state.user;
@@ -1255,16 +1340,23 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.12),
+                                color: const Color(0xFF047857),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: Text(
-                                verificationStatus.toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.verified_rounded, size: 10, color: Colors.white),
+                                  const Gap(3),
+                                  Text(
+                                    verificationStatus.replaceAll('_', ' ').toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -1275,7 +1367,7 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                         Text(
                           businessName,
                           style: const TextStyle(
-                            fontSize: 17,
+                            fontSize: 16,
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
                             height: 1.2,
@@ -1285,17 +1377,21 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                         ),
                         const Gap(4),
 
-                        // Location & Handle
+                        // Subtitle: Location & Handle
                         Row(
                           children: [
-                            const Icon(Icons.location_on_outlined, color: Color(0xFF34D399), size: 13),
+                            const Icon(Icons.location_on_rounded, size: 12, color: Color(0xFF34D399)),
                             const Gap(3),
-                            Text(
-                              zone,
-                              style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w500),
+                            Expanded(
+                              child: Text(
+                                zone,
+                                style: const TextStyle(fontSize: 11, color: Colors.white70),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            const Gap(8),
-                            Flexible(
+                            const Text(' • ', style: TextStyle(color: Colors.white38)),
+                            Expanded(
                               child: Text(
                                 'servora.gh/biz/@$slug',
                                 style: const TextStyle(
@@ -1462,7 +1558,44 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
               ],
             ),
           ),
-          const Gap(16),
+          const Gap(14),
+
+          // Search Bar for Business Catalog
+          Container(
+            height: 44,
+            decoration: BoxDecoration(
+              color: isDark ? ServoraColors.darkSurface : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? ServoraColors.darkCardBorder : const Color(0xFFCBD5E1),
+              ),
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              decoration: InputDecoration(
+                hintText: 'Search my catalog items & services...',
+                hintStyle: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white38 : Colors.grey[500],
+                ),
+                prefixIcon: const Icon(Icons.search_rounded, color: ServoraColors.emerald600, size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? GestureDetector(
+                        onTap: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        child: const Icon(Icons.cancel_rounded, size: 18, color: Colors.grey),
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 11),
+              ),
+            ),
+          ),
+          const Gap(14),
 
           // Segmented Catalog Sub-Tabs
           Row(
@@ -1603,17 +1736,29 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   }
 
   Widget _buildProductsList() {
-    if (_products.isEmpty) {
-      return _buildEmptyState('No Products in Database', 'Tap "+ Add Product" to create your first listing.');
+    final q = _searchQuery.trim().toLowerCase();
+    final filtered = _products.where((p) {
+      if (q.isEmpty) return true;
+      final title = (p['title'] ?? '').toString().toLowerCase();
+      final category = (p['category'] ?? '').toString().toLowerCase();
+      final desc = (p['description'] ?? '').toString().toLowerCase();
+      return title.contains(q) || category.contains(q) || desc.contains(q);
+    }).toList();
+
+    if (filtered.isEmpty) {
+      return _buildEmptyState(
+        _searchQuery.isNotEmpty ? 'No products match "$_searchQuery"' : 'No Products in Database',
+        _searchQuery.isNotEmpty ? 'Try clearing your search query.' : 'Tap "+ Add Product" to create your first listing.',
+      );
     }
 
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _products.length,
+      itemCount: filtered.length,
       separatorBuilder: (_, __) => const Gap(10),
       itemBuilder: (context, idx) {
-        final p = _products[idx];
+        final p = filtered[idx];
         final price = (p['price'] is num) ? (p['price'] as num).toDouble() : (double.tryParse(p['price']?.toString() ?? '0') ?? 0.0);
         final originalPrice = (p['originalPrice'] is num) ? (p['originalPrice'] as num).toDouble() : double.tryParse(p['originalPrice']?.toString() ?? '');
 
@@ -1712,17 +1857,29 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   }
 
   Widget _buildRentalsList() {
-    if (_rentals.isEmpty) {
-      return _buildEmptyState('No Rentals in Database', 'Tap "+ Add Equipment Rental" to publish machinery.');
+    final q = _searchQuery.trim().toLowerCase();
+    final filtered = _rentals.where((r) {
+      if (q.isEmpty) return true;
+      final title = (r['title'] ?? '').toString().toLowerCase();
+      final category = (r['category'] ?? '').toString().toLowerCase();
+      final desc = (r['description'] ?? '').toString().toLowerCase();
+      return title.contains(q) || category.contains(q) || desc.contains(q);
+    }).toList();
+
+    if (filtered.isEmpty) {
+      return _buildEmptyState(
+        _searchQuery.isNotEmpty ? 'No equipment matches "$_searchQuery"' : 'No Rentals in Database',
+        _searchQuery.isNotEmpty ? 'Try clearing your search query.' : 'Tap "+ Add Equipment Rental" to publish machinery.',
+      );
     }
 
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _rentals.length,
+      itemCount: filtered.length,
       separatorBuilder: (_, __) => const Gap(10),
       itemBuilder: (context, idx) {
-        final r = _rentals[idx];
+        final r = filtered[idx];
         final price = (r['dailyRate'] is num) ? (r['dailyRate'] as num).toDouble() : (double.tryParse(r['dailyRate']?.toString() ?? '0') ?? 0.0);
 
         final rawImages = r['images'];
@@ -1793,17 +1950,28 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   }
 
   Widget _buildServicesList() {
-    if (_services.isEmpty) {
-      return _buildEmptyState('No Services in Database', 'Tap "+ Add Service" to showcase your trade skills.');
+    final q = _searchQuery.trim().toLowerCase();
+    final filtered = _services.where((s) {
+      if (q.isEmpty) return true;
+      final name = (s['serviceName'] ?? s['name'] ?? '').toString().toLowerCase();
+      final desc = (s['description'] ?? '').toString().toLowerCase();
+      return name.contains(q) || desc.contains(q);
+    }).toList();
+
+    if (filtered.isEmpty) {
+      return _buildEmptyState(
+        _searchQuery.isNotEmpty ? 'No services match "$_searchQuery"' : 'No Services in Database',
+        _searchQuery.isNotEmpty ? 'Try clearing your search query.' : 'Tap "+ Add Service" to showcase your trade skills.',
+      );
     }
 
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _services.length,
+      itemCount: filtered.length,
       separatorBuilder: (_, __) => const Gap(10),
       itemBuilder: (context, idx) {
-        final s = _services[idx];
+        final s = filtered[idx];
         final price = (s['startingPrice'] is num) ? (s['startingPrice'] as num).toDouble() : (double.tryParse(s['startingPrice']?.toString() ?? '0') ?? 0.0);
 
         final rawPhotos = s['portfolioPhotos'];
