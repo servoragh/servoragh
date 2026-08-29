@@ -59,7 +59,8 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/products/detail',
       builder: (BuildContext context, GoRouterState state) {
-        final product = state.extra as Map<String, dynamic>? ?? {};
+        final raw = state.extra;
+        final product = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
         return ProductDetailScreen(product: product);
       },
     ),
@@ -67,7 +68,8 @@ final appRouter = GoRouter(
       path: '/products/:slug',
       builder: (BuildContext context, GoRouterState state) {
         final slug = state.pathParameters['slug'] ?? '';
-        final product = state.extra as Map<String, dynamic>? ?? {'slug': slug};
+        final raw = state.extra;
+        final product = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{'slug': slug};
         return ProductDetailScreen(product: product, slug: slug);
       },
     ),
@@ -75,7 +77,8 @@ final appRouter = GoRouter(
       path: '/product/:slug',
       builder: (BuildContext context, GoRouterState state) {
         final slug = state.pathParameters['slug'] ?? '';
-        final product = state.extra as Map<String, dynamic>? ?? {'slug': slug};
+        final raw = state.extra;
+        final product = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{'slug': slug};
         return ProductDetailScreen(product: product, slug: slug);
       },
     ),
