@@ -88,15 +88,6 @@ export async function GET(request: Request) {
           { sellerId: userId },
         ],
       },
-      include: {
-        _count: {
-          select: {
-            likes: true,
-            questions: true,
-            reviews: true,
-          },
-        },
-      },
       orderBy: { createdAt: "desc" },
     });
 
@@ -104,15 +95,6 @@ export async function GET(request: Request) {
     if (products.length === 0) {
       products = await prisma.productListing.findMany({
         take: 12,
-        include: {
-          _count: {
-            select: {
-              likes: true,
-              questions: true,
-              reviews: true,
-            },
-          },
-        },
         orderBy: { createdAt: "desc" },
       });
     }
@@ -123,40 +105,27 @@ export async function GET(request: Request) {
     let reviews: any[] = [];
     if (productIds.length > 0) {
       try {
-        const rawReviews = (await prisma.$queryRawUnsafe(`
-          SELECT 
-            r.id,
-            r."productId",
-            r."userId",
-            r.rating,
-            r.title,
-            r.comment,
-            r.photos,
-            r."isVerified",
-            r."sellerReply",
-            r."sellerRepliedAt",
-            r."createdAt",
-            p.title as "productTitle",
-            p.slug as "productSlug",
-            u.name as "authorName",
-            u."avatarUrl" as "authorAvatar",
-            u.phone as "authorPhone"
-          FROM "ProductReview" r
-          INNER JOIN "ProductListing" p ON r."productId" = p.id
-          LEFT JOIN "User" u ON r."userId" = u.id
-          WHERE r."productId" = ANY($1::text[])
-          ORDER BY r."createdAt" DESC
-        `, productIds).catch(() => [])) as any[];
+        const rawReviews = await prisma.productReview.findMany({
+          where: {
+            productId: { in: productIds },
+          },
+          include: {
+            product: { select: { id: true, title: true, slug: true } },
+            user: { select: { id: true, name: true, avatarUrl: true, phone: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        });
 
         reviews = rawReviews.map((r) => ({
           id: r.id,
           productId: r.productId,
-          productTitle: r.productTitle,
-          productSlug: r.productSlug,
+          productTitle: r.product?.title || "Product Item",
+          productSlug: r.product?.slug || "",
           userId: r.userId,
-          authorName: r.authorName || "Customer",
-          authorAvatar: r.authorAvatar || null,
-          authorPhone: r.authorPhone || null,
+          authorName: r.user?.name || "Customer",
+          authorAvatar: r.user?.avatarUrl || null,
+          authorPhone: r.user?.phone || null,
           rating: Number(r.rating) || 5,
           title: r.title || "Customer Review",
           comment: r.comment,
@@ -164,10 +133,11 @@ export async function GET(request: Request) {
           isVerified: Boolean(r.isVerified),
           sellerReply: r.sellerReply || null,
           sellerRepliedAt: r.sellerRepliedAt || null,
-          createdAt: r.createdAt,
+          createdAt: r.createdAt.toISOString(),
         }));
       } catch (err) {
-        console.error("Error querying reviews:", err);
+        console.warn("Product reviews query fallback:", err);
+        reviews = [];
       }
     }
 
@@ -175,45 +145,36 @@ export async function GET(request: Request) {
     let questions: any[] = [];
     if (productIds.length > 0) {
       try {
-        const rawQuestions = (await prisma.$queryRawUnsafe(`
-          SELECT 
-            q.id,
-            q."productId",
-            q."userId",
-            q.question,
-            q.answer,
-            q."answeredBy",
-            q."answeredAt",
-            q."createdAt",
-            p.title as "productTitle",
-            p.slug as "productSlug",
-            u.name as "askerName",
-            u."avatarUrl" as "askerAvatar",
-            u.phone as "askerPhone"
-          FROM "ProductQuestion" q
-          INNER JOIN "ProductListing" p ON q."productId" = p.id
-          LEFT JOIN "User" u ON q."userId" = u.id
-          WHERE q."productId" = ANY($1::text[])
-          ORDER BY q."createdAt" DESC
-        `, productIds).catch(() => [])) as any[];
+        const rawQuestions = await prisma.productQuestion.findMany({
+          where: {
+            productId: { in: productIds },
+          },
+          include: {
+            product: { select: { id: true, title: true, slug: true } },
+            user: { select: { id: true, name: true, avatarUrl: true, phone: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        });
 
         questions = rawQuestions.map((q) => ({
           id: q.id,
           productId: q.productId,
-          productTitle: q.productTitle,
-          productSlug: q.productSlug,
+          productTitle: q.product?.title || "Product Item",
+          productSlug: q.product?.slug || "",
           userId: q.userId,
-          askerName: q.askerName || "Interested Customer",
-          askerAvatar: q.askerAvatar || null,
-          askerPhone: q.askerPhone || null,
+          askerName: q.user?.name || "Interested Customer",
+          askerAvatar: q.user?.avatarUrl || null,
+          askerPhone: q.user?.phone || null,
           question: q.question,
           answer: q.answer || null,
           answeredBy: q.answeredBy || null,
           answeredAt: q.answeredAt || null,
-          createdAt: q.createdAt,
+          createdAt: q.createdAt.toISOString(),
         }));
       } catch (err) {
-        console.error("Error querying questions:", err);
+        console.warn("Product questions query fallback:", err);
+        questions = [];
       }
     }
 
@@ -288,14 +249,14 @@ export async function GET(request: Request) {
       chatMemberships = [];
     }
 
-    const chatRooms = chatMemberships.map((m) => {
-      const otherPart = m.room?.participants?.find((p: any) => p.user.id !== userId);
+    const chatRooms = (chatMemberships || []).map((m) => {
+      const otherPart = m.room?.participants?.find((p: any) => p?.user?.id && p.user.id !== userId);
       return {
         id: m.room?.id,
         scope: m.room?.scope,
         title: m.room?.title || otherPart?.user?.name || "Customer Inquiry",
         status: m.room?.status,
-        unreadCount: m.unreadCount,
+        unreadCount: m.unreadCount || 0,
         updatedAt: m.room?.updatedAt,
         customer: otherPart?.user || null,
         lastMessage: m.room?.messages?.[0] || null,
@@ -330,7 +291,7 @@ export async function GET(request: Request) {
     const activeEscrows = escrowDeals.filter((d) => d.status !== "COMPLETED" && d.status !== "REFUNDED");
     const activeEscrowsCount = activeEscrows.length;
     const totalEscrowVolumeGhs = escrowDeals.reduce((acc, d) => acc + Number(d.amount || 0), 0);
-    const unreadMessagesCount = chatMemberships.reduce((acc, m) => acc + (m.unreadCount || 0), 0);
+    const unreadMessagesCount = (chatMemberships || []).reduce((acc, m) => acc + (m.unreadCount || 0), 0);
     const pendingLeadsCount = (businessProfile?.leads || []).filter((l) => l.status === "NEW_INQUIRY").length;
 
     const kpis = {
@@ -371,6 +332,6 @@ export async function GET(request: Request) {
     });
   } catch (error: any) {
     console.error("Business Portal API Error:", error);
-    return NextResponse.json({ error: "Failed to load business portal data." }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Failed to load business portal data." }, { status: 500 });
   }
 }

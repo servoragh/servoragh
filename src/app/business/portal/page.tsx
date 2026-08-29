@@ -54,12 +54,19 @@ export default function BusinessOwnerPortalPage() {
   async function fetchPortalData() {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetch("/api/business/portal");
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to load portal data.");
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError("Please sign in to access your merchant business dashboard.");
+          return;
+        }
+        throw new Error(json.error || "Failed to load portal data.");
+      }
       setData(json);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Unable to reach business portal server.");
     } finally {
       setLoading(false);
     }
@@ -73,6 +80,32 @@ export default function BusinessOwnerPortalPage() {
           <p className="text-sm font-bold text-stone-600 dark:text-stone-300">
             Loading Servora Enterprise Portal...
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center p-6">
+        <div className="text-center max-w-md bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-8 shadow-xl space-y-4">
+          <Building2 className="w-12 h-12 text-emerald-500 mx-auto" />
+          <h2 className="text-lg font-black text-stone-900 dark:text-white">Business Owner Portal</h2>
+          <p className="text-xs text-stone-500">{error}</p>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <Link
+              href="/login?redirect=/business/portal"
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-md transition"
+            >
+              Sign In to Storefront ➔
+            </Link>
+            <button
+              onClick={fetchPortalData}
+              className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold rounded-xl text-xs transition cursor-pointer"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );
