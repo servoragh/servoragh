@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/home/views/home_screen.dart';
 import '../../features/products/views/products_screen.dart';
@@ -15,6 +15,14 @@ import '../../features/products/views/product_detail_screen.dart';
 import '../../features/businesses/views/businesses_screen.dart';
 import '../../shared/widgets/main_shell_scaffold.dart';
 
+/// Helper to wrap screens in native iOS CupertinoPage with smooth swipe-to-back animations
+Page<dynamic> _iosPage({required GoRouterState state, required Widget child}) {
+  return CupertinoPage<void>(
+    key: state.pageKey,
+    child: child,
+  );
+}
+
 final appRouter = GoRouter(
   initialLocation: '/home',
   routes: [
@@ -26,127 +34,187 @@ final appRouter = GoRouter(
       routes: [
         GoRoute(
           path: '/home',
-          builder: (BuildContext context, GoRouterState state) => const HomeScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+            state: state,
+            child: const HomeScreen(),
+          ),
         ),
         GoRoute(
           path: '/products',
-          builder: (BuildContext context, GoRouterState state) => const ProductsScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+            state: state,
+            child: const ProductsScreen(),
+          ),
         ),
         GoRoute(
           path: '/community',
-          builder: (BuildContext context, GoRouterState state) => const CommunityScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+            state: state,
+            child: const CommunityScreen(),
+          ),
         ),
         GoRoute(
           path: '/notice-board',
-          builder: (BuildContext context, GoRouterState state) => const CommunityScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+            state: state,
+            child: const CommunityScreen(),
+          ),
         ),
         GoRoute(
           path: '/businesses',
-          builder: (BuildContext context, GoRouterState state) => const BusinessesScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+            state: state,
+            child: const BusinessesScreen(),
+          ),
         ),
         GoRoute(
           path: '/profile',
-          builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+            state: state,
+            child: const ProfileScreen(),
+          ),
         ),
         GoRoute(
           path: '/account',
-          builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+            state: state,
+            child: const ProfileScreen(),
+          ),
         ),
       ],
     ),
 
-    // Full-screen overlay routes (without persistent bottom bar)
+    // Full-screen overlay routes (with native iOS slide and swipe back gestures)
     GoRoute(
       path: '/products/detail',
-      builder: (BuildContext context, GoRouterState state) {
+      pageBuilder: (BuildContext context, GoRouterState state) {
         final raw = state.extra;
         final product = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-        return ProductDetailScreen(product: product);
+        return _iosPage(state: state, child: ProductDetailScreen(product: product));
       },
     ),
     GoRoute(
       path: '/products/:slug',
-      builder: (BuildContext context, GoRouterState state) {
+      pageBuilder: (BuildContext context, GoRouterState state) {
         final slug = state.pathParameters['slug'] ?? '';
         final raw = state.extra;
         final product = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{'slug': slug};
-        return ProductDetailScreen(product: product, slug: slug);
+        return _iosPage(state: state, child: ProductDetailScreen(product: product, slug: slug));
       },
     ),
     GoRoute(
       path: '/product/:slug',
-      builder: (BuildContext context, GoRouterState state) {
+      pageBuilder: (BuildContext context, GoRouterState state) {
         final slug = state.pathParameters['slug'] ?? '';
         final raw = state.extra;
         final product = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{'slug': slug};
-        return ProductDetailScreen(product: product, slug: slug);
+        return _iosPage(state: state, child: ProductDetailScreen(product: product, slug: slug));
       },
     ),
     GoRoute(
       path: '/delivery',
-      builder: (BuildContext context, GoRouterState state) => const DeliveryScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const DeliveryScreen(),
+      ),
     ),
     GoRoute(
       path: '/businesses',
-      builder: (BuildContext context, GoRouterState state) => const BusinessesScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const BusinessesScreen(),
+      ),
     ),
     GoRoute(
       path: '/search',
-      builder: (BuildContext context, GoRouterState state) => const SearchScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const SearchScreen(),
+      ),
     ),
     GoRoute(
       path: '/services/request',
-      builder: (BuildContext context, GoRouterState state) => const RequestWizardScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const RequestWizardScreen(),
+      ),
     ),
     GoRoute(
       path: '/request',
-      builder: (BuildContext context, GoRouterState state) => const RequestWizardScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const RequestWizardScreen(),
+      ),
     ),
     GoRoute(
       path: '/biz/:slug',
-      builder: (BuildContext context, GoRouterState state) {
+      pageBuilder: (BuildContext context, GoRouterState state) {
         final slug = state.pathParameters['slug'] ?? 'kwame-electrical-tamale';
-        return ArtisanStorefrontScreen(slug: slug);
+        return _iosPage(state: state, child: ArtisanStorefrontScreen(slug: slug));
       },
     ),
     GoRoute(
       path: '/provider/:slug',
-      builder: (BuildContext context, GoRouterState state) {
+      pageBuilder: (BuildContext context, GoRouterState state) {
         final slug = state.pathParameters['slug'] ?? 'kwame-electrical-tamale';
-        return ArtisanStorefrontScreen(slug: slug);
+        return _iosPage(state: state, child: ArtisanStorefrontScreen(slug: slug));
       },
     ),
     GoRoute(
       path: '/escrow',
-      builder: (BuildContext context, GoRouterState state) => const EscrowDealScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const EscrowDealScreen(),
+      ),
     ),
     GoRoute(
       path: '/activity',
-      builder: (BuildContext context, GoRouterState state) => const ActivityScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const ActivityScreen(),
+      ),
     ),
     GoRoute(
       path: '/portal',
-      builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const ProfileScreen(),
+      ),
     ),
     GoRoute(
       path: '/dashboard',
-      builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const ProfileScreen(),
+      ),
     ),
     GoRoute(
       path: '/auth/login',
-      builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const LoginScreen(),
+      ),
     ),
     GoRoute(
       path: '/login',
-      builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const LoginScreen(),
+      ),
     ),
     GoRoute(
       path: '/register',
-      builder: (BuildContext context, GoRouterState state) => const LoginScreen(initialRegisterMode: true),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const LoginScreen(initialRegisterMode: true),
+      ),
     ),
     GoRoute(
       path: '/provider/register',
-      builder: (BuildContext context, GoRouterState state) => const LoginScreen(initialRegisterMode: true, initialRole: 'PROVIDER'),
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const LoginScreen(initialRegisterMode: true, initialRole: 'PROVIDER'),
+      ),
     ),
   ],
 );

@@ -1361,17 +1361,43 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
         _buildWorkspaceTabRow(isDark),
         const Gap(16),
 
-        // 4. ACTIVE WORKSPACE VIEW
-        if (_activeTab == 'catalogs')
-          _buildCatalogsWorkspace(isDark)
-        else if (_activeTab == 'escrow')
-          _buildEscrowWorkspace(isDark)
-        else if (_activeTab == 'reviews')
-          _buildReviewsWorkspace(isDark)
-        else if (_activeTab == 'messages')
-          _buildMessagesWorkspace(isDark)
-        else
-          _buildLeadsWorkspace(isDark),
+        // 4. ACTIVE WORKSPACE VIEW (With iOS Slide Transition)
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 260),
+          reverseDuration: const Duration(milliseconds: 260),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            final inOffset = Tween<Offset>(
+              begin: const Offset(0.15, 0.0),
+              end: Offset.zero,
+            ).animate(animation);
+
+            return SlideTransition(
+              position: inOffset,
+              child: FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+            );
+          },
+          child: KeyedSubtree(
+            key: ValueKey<String>(_activeTab),
+            child: () {
+              if (_activeTab == 'catalogs') {
+                return _buildCatalogsWorkspace(isDark);
+              } else if (_activeTab == 'escrow') {
+                return _buildEscrowWorkspace(isDark);
+              } else if (_activeTab == 'reviews') {
+                return _buildReviewsWorkspace(isDark);
+              } else if (_activeTab == 'messages') {
+                return _buildMessagesWorkspace(isDark);
+              } else {
+                return _buildLeadsWorkspace(isDark);
+              }
+            }(),
+          ),
+        ),
       ],
     );
   }

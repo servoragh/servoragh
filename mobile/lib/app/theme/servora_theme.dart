@@ -12,6 +12,16 @@ class ServoraTheme {
   static const Color escrowBg = Color(0xFFFEF3C7);
   static const Color escrowText = Color(0xFFB45309);
 
+  static const PageTransitionsTheme _iosPageTransitionsTheme = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+    },
+  );
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -19,6 +29,7 @@ class ServoraTheme {
       primaryColor: primaryEmerald,
       scaffoldBackgroundColor: lightBg,
       cardColor: lightCard,
+      pageTransitionsTheme: _iosPageTransitionsTheme,
       colorScheme: const ColorScheme.light(
         primary: primaryEmerald,
         secondary: accentMint,
@@ -54,6 +65,7 @@ class ServoraTheme {
       primaryColor: primaryEmerald,
       scaffoldBackgroundColor: darkBg,
       cardColor: darkCard,
+      pageTransitionsTheme: _iosPageTransitionsTheme,
       colorScheme: const ColorScheme.dark(
         primary: primaryEmerald,
         secondary: accentMint,

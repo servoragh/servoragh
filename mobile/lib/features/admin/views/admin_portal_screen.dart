@@ -246,7 +246,30 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                               child: Center(child: CircularProgressIndicator(color: ServoraColors.emerald600)),
                             )
                           else
-                            _buildCurrentViewContent(),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 260),
+                              reverseDuration: const Duration(milliseconds: 260),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              transitionBuilder: (Widget child, Animation<double> animation) {
+                                final inOffset = Tween<Offset>(
+                                  begin: const Offset(0.15, 0.0),
+                                  end: Offset.zero,
+                                ).animate(animation);
+
+                                return SlideTransition(
+                                  position: inOffset,
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: KeyedSubtree(
+                                key: ValueKey<String>(_activeView),
+                                child: _buildCurrentViewContent(),
+                              ),
+                            ),
 
                           const Gap(30),
                         ],
@@ -899,59 +922,16 @@ class _AdminPortalViewState extends State<AdminPortalView> {
           ),
           const Spacer(),
 
-          // Dark / Light Theme Toggle
-          IconButton(
-            icon: Icon(
-              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-              color: const Color(0xFF059669),
-              size: 20,
-            ),
-            tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-            onPressed: () {
-              themeModeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
-            },
-          ),
-
-          // Bell with live notification badge
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_none_rounded, size: 20),
-                tooltip: 'Activity Alerts',
-                onPressed: () => setState(() => _activeView = 'activity'),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Logout Button
-          IconButton(
-            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
-            tooltip: 'Sign Out / Log Out',
-            onPressed: () => _confirmLogout(context),
-          ),
-          const Gap(4),
-
-          // User Avatar Pill with Popup Menu
+          // User Avatar Pill with Integrated Popup Menu (Notifications, Theme Mode, Logout)
           PopupMenuButton<String>(
-            tooltip: 'Admin Account Options',
+            tooltip: 'Admin Account & Quick Settings',
             offset: const Offset(0, 42),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             color: isDark ? const Color(0xFF0F172A) : Colors.white,
             onSelected: (val) {
-              if (val == 'theme') {
+              if (val == 'activity') {
+                setState(() => _activeView = 'activity');
+              } else if (val == 'theme') {
                 themeModeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
               } else if (val == 'customer') {
                 widget.onSwitchToCustomer?.call();
@@ -965,19 +945,49 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(adminUser?.name ?? 'Admin Executive', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            adminUser?.name ?? 'Admin Executive',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: ServoraColors.emerald600.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text('ADMIN', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
+                        ),
+                      ],
+                    ),
                     Text(adminUser?.email ?? 'admin@servora.gh', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                   ],
                 ),
               ),
               const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'activity',
+                child: Row(
+                  children: [
+                    Icon(Icons.notifications_active_rounded, size: 18, color: Color(0xFF059669)),
+                    Gap(10),
+                    Expanded(child: Text('Activity Alerts & Notices', style: TextStyle(fontSize: 12.5))),
+                    CircleAvatar(radius: 3.5, backgroundColor: Colors.red),
+                  ],
+                ),
+              ),
               PopupMenuItem(
                 value: 'theme',
                 child: Row(
                   children: [
-                    Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 18, color: const Color(0xFF059669)),
+                    Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 18, color: isDark ? Colors.amber : const Color(0xFF059669)),
                     const Gap(10),
-                    Text(isDark ? 'Light Theme' : 'Dark Theme', style: const TextStyle(fontSize: 12.5)),
+                    Text(isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme', style: const TextStyle(fontSize: 12.5)),
                   ],
                 ),
               ),
@@ -992,28 +1002,36 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                     ],
                   ),
                 ),
+              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'logout',
                 child: Row(
                   children: [
                     Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
                     Gap(10),
-                    Text('Log Out', style: TextStyle(fontSize: 12.5, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                    Text('Log Out of Admin', style: TextStyle(fontSize: 12.5, color: Colors.redAccent, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
             ],
             child: Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(
-                color: Color(0xFF059669),
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFF059669),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF059669).withOpacity(0.35),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Center(
                 child: Text(
                   initial,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
                 ),
               ),
             ),

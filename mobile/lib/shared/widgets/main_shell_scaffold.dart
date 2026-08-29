@@ -15,6 +15,10 @@ class MainShellScaffold extends StatefulWidget {
 
 class _MainShellScaffoldState extends State<MainShellScaffold> {
   DateTime? _lastBackPressTime;
+  int _lastIndex = 0;
+  double _slideDirection = 1.0; // 1.0 for right-to-left (forward), -1.0 for left-to-right (backward)
+
+  final List<int> _tabIndices = [0, 1, 3, 4];
 
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
@@ -26,6 +30,13 @@ class _MainShellScaffoldState extends State<MainShellScaffold> {
   }
 
   void _onItemTapped(int index, BuildContext context) {
+    if (index == _lastIndex) return;
+
+    setState(() {
+      _slideDirection = index > _lastIndex ? 1.0 : -1.0;
+      _lastIndex = index;
+    });
+
     switch (index) {
       case 0:
         context.go('/home');
@@ -45,9 +56,22 @@ class _MainShellScaffoldState extends State<MainShellScaffold> {
     }
   }
 
+  void _swipeTab(int currentIndex, int step, BuildContext context) {
+    final currentPos = _tabIndices.indexOf(currentIndex);
+    if (currentPos == -1) return;
+    final nextPos = currentPos + step;
+    if (nextPos >= 0 && nextPos < _tabIndices.length) {
+      _onItemTapped(_tabIndices[nextPos], context);
+    }
+  }
+
   void _handleBackPress(BuildContext context, int selectedIndex) {
     if (selectedIndex != 0) {
-      // Return to Home tab from any other tab
+      // Return to Home tab from any other tab with iOS left-to-right slide
+      setState(() {
+        _slideDirection = -1.0;
+        _lastIndex = 0;
+      });
       context.go('/home');
       return;
     }
@@ -122,7 +146,44 @@ class _MainShellScaffoldState extends State<MainShellScaffold> {
             _handleBackPress(context, selectedIndex);
           },
           child: Scaffold(
-            body: widget.child,
+            body: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragEnd: (DragEndDetails details) {
+                final velocity = details.primaryVelocity ?? 0;
+                // Swipe left (fast gesture to the left) -> move to next tab
+                if (velocity < -400) {
+                  _swipeTab(selectedIndex, 1, context);
+                }
+                // Swipe right (fast gesture to the right) -> move to previous tab
+                else if (velocity > 400) {
+                  _swipeTab(selectedIndex, -1, context);
+                }
+              },
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                reverseDuration: const Duration(milliseconds: 280),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  final inOffset = Tween<Offset>(
+                    begin: Offset(_slideDirection * 0.25, 0.0),
+                    end: Offset.zero,
+                  ).animate(animation);
+
+                  return SlideTransition(
+                    position: inOffset,
+                    child: FadeTransition(
+                      opacity: animation,
+                      child: child,
+                    ),
+                  );
+                },
+                child: KeyedSubtree(
+                  key: ValueKey<int>(selectedIndex),
+                  child: widget.child,
+                ),
+              ),
+            ),
             bottomNavigationBar: NavigationBar(
               selectedIndex: selectedIndex,
               onDestinationSelected: (index) => _onItemTapped(index, context),
