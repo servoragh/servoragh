@@ -155,4 +155,63 @@ class MarketplaceApiService {
 
     return null;
   }
+
+  /// Execute universal multi-index hybrid search
+  static Future<Map<String, dynamic>?> universalSearch(
+    String query, {
+    String? zone,
+    String? category,
+    String? entity,
+    double? minPrice,
+    double? maxPrice,
+    bool verifiedOnly = false,
+    int limit = 30,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'q': query,
+        'limit': limit,
+        'device': 'MOBILE_ANDROID',
+      };
+      if (zone != null && zone.isNotEmpty && zone != 'all') queryParams['zone'] = zone;
+      if (category != null && category.isNotEmpty && category != 'all') queryParams['category'] = category;
+      if (entity != null && entity.isNotEmpty && entity != 'all') queryParams['entity'] = entity;
+      if (minPrice != null) queryParams['min_price'] = minPrice;
+      if (maxPrice != null) queryParams['max_price'] = maxPrice;
+      if (verifiedOnly) queryParams['verified'] = 'true';
+
+      final response = await _dio.get('/search/universal', queryParameters: queryParams);
+      if (response.statusCode == 200 && response.data != null && response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Fetch trending searches in Northern Ghana
+  static Future<List<Map<String, dynamic>>> fetchTrendingSearches() async {
+    try {
+      final response = await _dio.get('/search/trending');
+      if (response.statusCode == 200 && response.data != null && response.data['trending'] is List) {
+        return (response.data['trending'] as List)
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Fetch instant search autocomplete suggestions
+  static Future<List<Map<String, dynamic>>> fetchAutocomplete(String query) async {
+    try {
+      final response = await _dio.get('/search/autocomplete', queryParameters: {'q': query});
+      if (response.statusCode == 200 && response.data != null && response.data['suggestions'] is List) {
+        return (response.data['suggestions'] as List)
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
 }
+

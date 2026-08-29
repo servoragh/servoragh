@@ -25,6 +25,7 @@ import { UnifiedEcommerceSearch } from "@/components/UnifiedEcommerceSearch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RequestWizardModal } from "@/components/RequestWizardModal";
 import { TopAnnouncementBar } from "@/components/TopAnnouncementBar";
+import { GlobalSearchCommandModal } from "@/components/GlobalSearchCommandModal";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -391,6 +392,9 @@ export function Navbar() {
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
       />
+
+      {/* Global Universal Search Command Modal (⌘K) */}
+      <GlobalSearchCommandModal />
     </>
   );
 }

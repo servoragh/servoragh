@@ -1497,13 +1497,25 @@ model UniversalTransaction {
   @@index([providerId, status])
 }
 
+model SearchQueryTelemetry {
+  id                String    @id @default(uuid())
+  query             String
+  normalizedQuery   String
+  userZone          String?   // e.g. "Sakasaka", "Choggu", "Tamale"
+  deviceType        String    @default("WEB") // WEB, MOBILE_ANDROID, MOBILE_IOS
+  hitsCount         Int       @default(0)
+  productsCount     Int       @default(0)
+  artisansCount     Int       @default(0)
+  rentalsCount      Int       @default(0)
+  communityCount    Int       @default(0)
+  processingTimeMs  Int       @default(0)
+  userId            String?
+  ipHash            String?
+  createdAt         DateTime  @default(now())
 
-
-
-
-
-
-
-
-
-
+  @@index([query])
+  @@index([normalizedQuery])
+  @@index([createdAt])
+  @@index([userZone])
+  @@index([hitsCount])
+}

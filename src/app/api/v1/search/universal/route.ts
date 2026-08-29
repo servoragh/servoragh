@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q") || "";
-    const zone = searchParams.get("zone") || searchParams.get("city") || undefined;
+    const zone = searchParams.get("zone") || undefined;
     const category = searchParams.get("category") || undefined;
     const entity = (searchParams.get("entity") as any) || "all";
     const minPrice = searchParams.get("min_price") ? Number(searchParams.get("min_price")) : undefined;
