@@ -504,16 +504,13 @@ export default function PublicDigitalStorefrontPage() {
                 return (
                   <div
                     key={p.id}
-                    className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-all group"
+                    className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
                   >
                     <div>
-                      <div
-                        onClick={() => {
-                          setViewingProduct({ ...p, images: pImages });
-                          setActiveImageIndex(0);
-                          setViewingMediaType(p.videoUrl && pImages.length === 0 ? "video" : "image");
-                        }}
-                        className="cursor-pointer relative aspect-video w-full rounded-2xl bg-stone-100 dark:bg-stone-800 overflow-hidden mb-3 group/img"
+                      {/* Clickable Main Image linking to product detail view */}
+                      <Link
+                        href={`/products/${p.slug || p.id}`}
+                        className="block relative aspect-[4/3] w-full rounded-2xl bg-stone-100 dark:bg-stone-800 overflow-hidden mb-3 group/img"
                       >
                         {pImages[0] ? (
                           <img
@@ -528,87 +525,101 @@ export default function PublicDigitalStorefrontPage() {
                         )}
 
                         <div className="absolute top-2 left-2 flex items-center gap-1.5 flex-wrap">
-                          {p.videoUrl && (
-                            <span className="px-2.5 py-1 bg-purple-600/90 text-white text-[10px] font-black rounded-lg backdrop-blur-sm flex items-center gap-1 shadow-sm">
-                              <Play className="w-2.5 h-2.5 fill-white" /> 30s Video
-                            </span>
-                          )}
                           {hasDiscount && (
                             <span className="px-2 py-0.5 bg-rose-600 text-white text-[10px] font-black rounded-lg shadow-sm">
-                              {discountPercent}% OFF
+                              🏷️ {discountPercent}% OFF
                             </span>
                           )}
                         </div>
 
-                        <span className="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm flex items-center gap-1">
-                          <Eye className="w-3 h-3" /> {pImages.length} Photo{pImages.length !== 1 ? "s" : ""}
-                        </span>
-                      </div>
+                        {/* Separate Lightbox zoom button on click */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setViewingProduct({ ...p, images: pImages });
+                            setActiveImageIndex(0);
+                            setViewingMediaType(p.videoUrl && pImages.length === 0 ? "video" : "image");
+                          }}
+                          className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 hover:bg-black text-white text-[10px] font-bold rounded-lg backdrop-blur-sm flex items-center gap-1 transition-all"
+                          title="Preview full photos"
+                        >
+                          <Eye className="w-3 h-3" /> {pImages.length > 1 ? `${pImages.length} Photos` : "Zoom"}
+                        </button>
+                      </Link>
 
                       {/* Display thumbnail row of ALL uploaded images */}
                       {pImages.length > 1 && (
-                        <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
+                        <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1 scrollbar-none">
                           {pImages.map((imgUrl, idx) => (
                             <img
                               key={idx}
                               src={imgUrl}
                               alt={`${p.title} photo ${idx + 1}`}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setViewingProduct({ ...p, images: pImages });
                                 setActiveImageIndex(idx);
                                 setViewingMediaType("image");
                               }}
-                              className="w-10 h-10 rounded-xl object-cover border border-stone-200 cursor-pointer hover:border-emerald-500 transition-all shrink-0 hover:scale-105"
+                              className="w-9 h-9 rounded-xl object-cover border border-stone-200 dark:border-stone-700 cursor-pointer hover:border-emerald-500 transition-all shrink-0 hover:scale-105"
                             />
                           ))}
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{p.category}</span>
                         {p.stockQuantity !== undefined && (
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                               p.stockQuantity > 0
-                                ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+                                ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
                                 : "bg-rose-50 dark:bg-rose-950 text-rose-600"
                             }`}
                           >
-                            {p.stockQuantity > 0 ? `In Stock: ${p.stockQuantity}` : "Out of Stock"}
+                            {p.stockQuantity > 0 ? `✓ In Stock (${p.stockQuantity})` : "Out of Stock"}
                           </span>
                         )}
                       </div>
 
-                      <h4
-                        onClick={() => {
-                          setViewingProduct({ ...p, images: pImages });
-                          setActiveImageIndex(0);
-                          setViewingMediaType(p.videoUrl && pImages.length === 0 ? "video" : "image");
-                        }}
-                        className="text-base font-bold text-stone-900 dark:text-white mt-1 cursor-pointer hover:text-emerald-600"
-                      >
-                        {p.title}
-                      </h4>
+                      <Link href={`/products/${p.slug || p.id}`} className="block group/title">
+                        <h4 className="text-sm font-bold text-stone-900 dark:text-white line-clamp-2 group-hover/title:text-emerald-600 transition-colors">
+                          {p.title}
+                        </h4>
+                      </Link>
                       <p className="text-xs text-stone-500 line-clamp-2 mt-1">{p.description}</p>
                     </div>
 
-                    <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
+                    <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between mt-3">
                       <div>
                         <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
                           {formatGHS(p.price)}
                         </span>
                         {hasDiscount && (
-                          <span className="block text-[11px] text-stone-400 line-through">
+                          <span className="block text-[11px] text-stone-400 line-through font-semibold">
                             {formatGHS(p.originalPrice)}
                           </span>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleWhatsAppClick(p.title)}
-                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" /> Inquire
-                      </button>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleWhatsAppClick(p.title)}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" /> Order
+                        </button>
+                        <Link
+                          href={`/products/${p.slug || p.id}`}
+                          className="p-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-xl transition-all"
+                          title="View full details"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 );
