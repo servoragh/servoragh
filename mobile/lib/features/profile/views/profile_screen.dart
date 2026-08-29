@@ -252,28 +252,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: 'Browse Verified Businesses & Artisans',
           subtitle: 'Explore 11+ verified Northern enterprises & view digital storefronts',
           onTap: () => context.go('/businesses'),
-        ),
+        ).animate().fadeIn(delay: 50.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
         const Gap(8),
         _buildActionTile(
           icon: Icons.shopping_bag_rounded,
           title: 'Shop Northern Marketplace Products',
           subtitle: 'Fugu smocks, solar kits, shea butter, agro-produce with Escrow protection',
           onTap: () => context.go('/products'),
-        ),
+        ).animate().fadeIn(delay: 100.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
         const Gap(8),
         _buildActionTile(
           icon: Icons.post_add_rounded,
           title: 'Post a Free Price / Service Request',
           subtitle: 'Get quotes from verified Tamale artisans without upfront payment',
           onTap: () => context.push('/services/request'),
-        ),
+        ).animate().fadeIn(delay: 150.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
         const Gap(8),
         _buildActionTile(
           icon: Icons.shield_rounded,
           title: 'Escrow Buyer & Seller Protection',
           subtitle: 'Learn how Servora secures your mobile money and payments safely',
           onTap: () => context.push('/escrow'),
-        ),
+        ).animate().fadeIn(delay: 200.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
         const Gap(8),
         _buildActionTile(
           icon: Icons.chat_rounded,
@@ -283,7 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             phone: '+233240000000',
             message: 'Hello Servora Team, I have a question about the marketplace app.',
           ),
-        ),
+        ).animate().fadeIn(delay: 250.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
       ],
     );
   }

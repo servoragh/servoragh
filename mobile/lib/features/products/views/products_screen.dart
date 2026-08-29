@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/servora_colors.dart';
@@ -324,7 +325,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     onSelected: (_) => setState(() => _selectedCategory = cat),
                   ),
-                );
+                ).animate().fadeIn(delay: (index * 30).ms, duration: 250.ms).scale(begin: const Offset(0.92, 0.92), end: const Offset(1, 1), curve: Curves.easeOutCubic);
               },
             ),
           ),
@@ -354,7 +355,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           ),
                         ),
                       ),
-                    )
+                    ).animate().fadeIn(duration: 300.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1))
                   : SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
@@ -371,7 +372,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     padding: const EdgeInsets.only(bottom: 12),
                                     child: ServoraProductCard(
                                       product: Map<String, dynamic>.from(filtered[i]),
-                                    ),
+                                    ).animate().fadeIn(delay: (i * 35).ms, duration: 300.ms).slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
                                   ),
                               ],
                             ),
@@ -387,7 +388,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     padding: const EdgeInsets.only(bottom: 12),
                                     child: ServoraProductCard(
                                       product: Map<String, dynamic>.from(filtered[i]),
-                                    ),
+                                    ).animate().fadeIn(delay: (i * 35).ms, duration: 300.ms).slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
                                   ),
                               ],
                             ),

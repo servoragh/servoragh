@@ -560,7 +560,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                         ),
-                      ),
+                      ).animate().fadeIn(delay: 100.ms, duration: 300.ms).slideY(begin: 0.08, end: 0),
                       const Gap(16),
 
                       // Post Request Big Emerald CTA
@@ -578,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           label: const Text('Post Request & Get Prices', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                           onPressed: () => context.push('/services/request'),
                         ),
-                      ),
+                      ).animate().fadeIn(delay: 180.ms, duration: 300.ms).scale(begin: const Offset(0.97, 0.97), end: const Offset(1, 1), curve: Curves.easeOutCubic),
                     ],
                   ),
                 ),
@@ -589,7 +589,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Discover Marketplace Services', style: ServoraTypography.titleLarge(isDark)),
+                      Text('Discover Marketplace Services', style: ServoraTypography.titleLarge(isDark))
+                          .animate().fadeIn(duration: 250.ms),
                       const Gap(12),
 
                       SizedBox(
@@ -633,7 +634,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ],
                                 ),
                               ),
-                            );
+                            ).animate().fadeIn(delay: (index * 45).ms, duration: 300.ms).slideX(begin: 0.15, end: 0, curve: Curves.easeOutCubic);
                           },
                         ),
                       ),
@@ -656,7 +657,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: const Text('View All ↗', style: TextStyle(color: ServoraColors.emerald600, fontSize: 12, fontWeight: FontWeight.bold)),
                           ),
                         ],
-                      ),
+                      ).animate().fadeIn(duration: 250.ms),
                       const Gap(12),
 
                       SizedBox(
@@ -673,7 +674,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 provider: Map<String, dynamic>.from(m as Map),
                                 width: 310,
                               ),
-                            );
+                            ).animate().fadeIn(delay: (index * 60).ms, duration: 350.ms).slideX(begin: 0.12, end: 0, curve: Curves.easeOutCubic);
                           },
                         ),
                       ),
@@ -697,7 +698,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: const Text('View All ↗', style: TextStyle(color: ServoraColors.emerald600, fontSize: 12, fontWeight: FontWeight.bold)),
                           ),
                         ],
-                      ),
+                      ).animate().fadeIn(duration: 250.ms),
                       const Gap(12),
 
                       Builder(
@@ -716,7 +717,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         padding: const EdgeInsets.only(bottom: 12),
                                         child: ServoraProductCard(
                                           product: Map<String, dynamic>.from(products[i]),
-                                        ),
+                                        ).animate().fadeIn(delay: (i * 40).ms, duration: 300.ms).scale(begin: const Offset(0.96, 0.96), end: const Offset(1, 1), curve: Curves.easeOutCubic),
                                       ),
                                   ],
                                 ),
@@ -732,7 +733,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         padding: const EdgeInsets.only(bottom: 12),
                                         child: ServoraProductCard(
                                           product: Map<String, dynamic>.from(products[i]),
-                                        ),
+                                        ).animate().fadeIn(delay: (i * 40).ms, duration: 300.ms).scale(begin: const Offset(0.96, 0.96), end: const Offset(1, 1), curve: Curves.easeOutCubic),
                                       ),
                                   ],
                                 ),

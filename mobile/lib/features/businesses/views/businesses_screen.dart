@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/servora_colors.dart';
@@ -390,9 +391,9 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
                                 : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: isSelected
-                                  ? ServoraColors.emerald600
-                                  : (isDark ? ServoraColors.darkCardBorder : Colors.transparent),
+                                color: isSelected
+                                    ? ServoraColors.emerald600
+                                    : (isDark ? ServoraColors.darkCardBorder : Colors.transparent),
                             ),
                           ),
                           child: Text(
@@ -406,7 +407,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
                             ),
                           ),
                         ),
-                      );
+                      ).animate().fadeIn(delay: (index * 30).ms, duration: 250.ms).scale(begin: const Offset(0.92, 0.92), end: const Offset(1, 1), curve: Curves.easeOutCubic);
                     },
                   ),
                 ),
@@ -447,7 +448,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
                             ),
                           ],
                         ),
-                      )
+                      ).animate().fadeIn(duration: 300.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1))
                     : RefreshIndicator(
                         color: ServoraColors.emerald600,
                         onRefresh: _loadBusinesses,
@@ -459,7 +460,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
                             return ServoraProviderCard(
                               provider: filteredList[index],
                               width: double.infinity,
-                            );
+                            ).animate().fadeIn(delay: (index * 50).ms, duration: 300.ms).slideY(begin: 0.08, end: 0, curve: Curves.easeOutCubic);
                           },
                         ),
                       ),

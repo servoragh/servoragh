@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -438,7 +439,7 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
             const Gap(8),
             _buildKpiCard('MOMO ESCROW VAULT', 'GH₵ ${escrowBal.toStringAsFixed(2)}', '100% Protected funds', Icons.shield_rounded, const Color(0xFF059669), isDark),
           ],
-        ),
+        ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.05, end: 0),
         const Gap(8),
         Row(
           children: [
@@ -446,7 +447,7 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
             const Gap(8),
             _buildKpiCard('OPEN DISPUTES', '$openDisputes', openDisputes == 0 ? 'Good standing ✓' : 'Requires mediation', Icons.gavel_rounded, Colors.amber[800]!, isDark),
           ],
-        ),
+        ).animate().fadeIn(delay: 50.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
         const Gap(14),
 
         // Quick Shortcuts

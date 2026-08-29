@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -741,7 +742,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             icon: const Icon(Icons.qr_code_2_rounded, size: 15, color: ServoraColors.emerald600),
-                            label: const Text('QR Code', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            label: const Text('QR Code', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                             onPressed: () => _showQrDialog(name, '${ServoraConstants.webBaseUrl}/biz/${widget.slug}'),
                           ),
                           OutlinedButton.icon(
@@ -749,11 +750,29 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            icon: const Icon(Icons.request_quote_rounded, size: 15, color: Color(0xFFD97706)),
-                            label: const Text('Get Estimate', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            onPressed: () => _showPriceEstimateDialog(name, whatsapp),
+                            icon: const Icon(Icons.share_rounded, size: 14, color: ServoraColors.emerald600),
+                            label: const Text('Share', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                            onPressed: () => _shareStorefront(name, '${ServoraConstants.webBaseUrl}/biz/${widget.slug}'),
                           ),
-                          ServoraFavoriteButton(businessId: widget.slug, businessName: name),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.request_quote_rounded, size: 14, color: ServoraColors.emerald600),
+                            label: const Text('Quote', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                            onPressed: () => context.push(
+                              '/services/request',
+                              extra: {
+                                'prefillMerchant': name,
+                                'merchantSlug': widget.slug,
+                              },
+                            ),
+                          ),
+                          ServoraFavoriteButton(
+                            businessId: widget.slug,
+                            businessName: name,
+                          ),
                         ],
                       ),
 
@@ -774,7 +793,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                   ),
                 ),
               ),
-            ),
+            ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.05, end: 0),
           ),
 
           // 3. Physical Storefront & Workshop Photo Showcase

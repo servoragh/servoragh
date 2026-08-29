@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
@@ -32,8 +33,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
   List<dynamic> _posts = [];
   bool _isLoading = true;
   String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   String _selectedZone = 'All Northern Ghana';
   String _selectedCategory = 'ALL';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   final List<Map<String, String>> _categories = [
     {'id': 'ALL', 'label': '🌟 All Notices'},
@@ -495,7 +503,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
         icon: const Icon(Icons.add_rounded),
         label: const Text('Post Notice', style: TextStyle(fontWeight: FontWeight.bold)),
         onPressed: _openCreatePostModal,
-      ),
+      ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack),
       body: RefreshIndicator(
         color: const Color(0xFF059669),
         onRefresh: _fetchLivePosts,
@@ -503,18 +511,30 @@ class _CommunityScreenState extends State<CommunityScreen> {
           children: [
             // Search & Zone Filter Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
+                      controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'Search equipment, gigs, fugu...',
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                        hintText: 'Search notices, gigs, alerts...',
+                        hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+                        prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF059669)),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 16),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _searchQuery = '';
+                                  _fetchLivePosts();
+                                },
+                              )
+                            : null,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         filled: true,
                         fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                       ),
                       onSubmitted: (v) {
                         _searchQuery = v.trim();
@@ -572,7 +592,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       setState(() => _selectedCategory = cat['id']!);
                       _fetchLivePosts();
                     },
-                  );
+                  ).animate().fadeIn(delay: (idx * 25).ms, duration: 200.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1), curve: Curves.easeOutCubic);
                 },
               ),
             ),
@@ -600,14 +620,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
                               ),
                             ],
                           ),
-                        )
+                        ).animate().fadeIn(duration: 300.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1))
                       : ListView.separated(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           itemCount: _posts.length,
                           separatorBuilder: (_, __) => const Gap(12),
                           itemBuilder: (context, idx) {
                             final p = _posts[idx];
-                            return _buildPostCard(p, isDark);
+                            return _buildPostCard(p, isDark).animate().fadeIn(delay: (idx * 40).ms, duration: 300.ms).slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic);
                           },
                         ),
             ),

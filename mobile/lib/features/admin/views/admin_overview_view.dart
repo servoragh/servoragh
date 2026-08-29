@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_card.dart';
@@ -63,7 +64,7 @@ class AdminOverviewView extends StatelessWidget {
               ),
             ),
           ],
-        ),
+        ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.05, end: 0),
         const Gap(10),
         Row(
           children: [
@@ -89,7 +90,7 @@ class AdminOverviewView extends StatelessWidget {
               ),
             ),
           ],
-        ),
+        ).animate().fadeIn(delay: 50.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
         const Gap(16),
 
         // Zero-Capital Launch Mode Widget
