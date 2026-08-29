@@ -34,7 +34,10 @@ class ServoraProviderCard extends StatelessWidget {
     final String phone = provider['phone'] ?? provider['user']?['phone'] ?? '+233240000000';
     final String slug = provider['slug'] ?? 'biz';
     final int trustScore = int.tryParse((provider['trustScore'] ?? 100).toString()) ?? 100;
-    final String? avatarUrl = provider['logoUrl'] ?? provider['avatarUrl'] ?? provider['user']?['avatarUrl'] ?? provider['image'];
+    final dynamic rawLogo = provider['logoUrl'] ?? provider['avatarUrl'] ?? provider['user']?['avatarUrl'] ?? provider['image'];
+    final String? avatarUrl = rawLogo is String
+        ? (rawLogo.isNotEmpty ? rawLogo : null)
+        : (rawLogo is List && rawLogo.isNotEmpty ? rawLogo[0]?.toString() : null);
 
     final List<String> badges = (provider['badges'] is List)
         ? (provider['badges'] as List).map((b) => b.toString()).toList()

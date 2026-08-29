@@ -170,8 +170,8 @@ class _ServoraLiveTickerBarState extends State<ServoraLiveTickerBar> {
     final badgeText = currentItem['badgeText'] ?? currentItem['tag'] ?? 'SERVORA';
     final badgeColorTag = (currentItem['badgeColor'] ?? currentItem['tag'] ?? 'emerald').toString();
     final text = currentItem['text'] ?? '';
-    final ctaLabel = currentItem['ctaLabel'] as String?;
-    final ctaUrl = currentItem['ctaUrl'] as String?;
+    final ctaLabel = currentItem['ctaLabel']?.toString();
+    final ctaUrl = currentItem['ctaUrl']?.toString();
 
     return Container(
       width: double.infinity,

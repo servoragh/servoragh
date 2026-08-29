@@ -22,12 +22,37 @@ class ServoraProductCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final p = product;
 
-    final String? imageUrl = (p['image'] as String?) ??
-        ((p['images'] is List && (p['images'] as List).isNotEmpty) ? (p['images'] as List)[0] : null);
+    String? imageUrl;
+    if (p['image'] is String && (p['image'] as String).isNotEmpty) {
+      imageUrl = p['image'] as String;
+    } else if (p['image'] is List && (p['image'] as List).isNotEmpty) {
+      imageUrl = (p['image'] as List)[0]?.toString();
+    } else if (p['images'] is List && (p['images'] as List).isNotEmpty) {
+      imageUrl = (p['images'] as List)[0]?.toString();
+    } else if (p['images'] is String && (p['images'] as String).isNotEmpty) {
+      imageUrl = p['images'] as String;
+    }
 
-    final List<String> pImages = (p['images'] is List)
-        ? (p['images'] as List).map((e) => e.toString()).toList()
-        : (imageUrl != null ? [imageUrl] : []);
+    final List<String> pImages = [];
+    if (p['images'] is List) {
+      pImages.addAll((p['images'] as List).map((e) => e.toString()).where((s) => s.isNotEmpty));
+    } else if (p['images'] is String && (p['images'] as String).isNotEmpty) {
+      pImages.add(p['images'] as String);
+    }
+    if (p['image'] is List) {
+      for (final img in (p['image'] as List)) {
+        if (img != null && img.toString().isNotEmpty && !pImages.contains(img.toString())) {
+          pImages.add(img.toString());
+        }
+      }
+    } else if (p['image'] is String && (p['image'] as String).isNotEmpty) {
+      if (!pImages.contains(p['image'])) {
+        pImages.insert(0, p['image'] as String);
+      }
+    }
+    if (pImages.isEmpty && imageUrl != null) {
+      pImages.add(imageUrl);
+    }
 
     final double price = (p['price'] is num)
         ? (p['price'] as num).toDouble()

@@ -248,9 +248,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       images.add(rawImages);
     }
 
-    final mainImage = prod['image'] as String?;
-    if (mainImage != null && mainImage.isNotEmpty && !images.contains(mainImage)) {
-      images.insert(0, mainImage);
+    final dynamic rawMainImage = prod['image'];
+    if (rawMainImage is String && rawMainImage.isNotEmpty && !images.contains(rawMainImage)) {
+      images.insert(0, rawMainImage);
+    } else if (rawMainImage is List) {
+      for (final img in rawMainImage) {
+        if (img != null && img.toString().isNotEmpty && !images.contains(img.toString())) {
+          images.add(img.toString());
+        }
+      }
     }
 
     if (images.isEmpty) {
