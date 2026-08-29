@@ -17,6 +17,8 @@ class ProductsScreen extends StatefulWidget {
 class _ProductsScreenState extends State<ProductsScreen> {
   String _selectedCategory = 'All';
   String _selectedZone = 'All Northern Ghana';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   List<Map<String, dynamic>> _apiProducts = [];
 
@@ -105,6 +107,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
     _fetchLiveProducts();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchLiveProducts() async {
     setState(() => _isLoading = true);
     final results = await MarketplaceApiService.fetchProducts();
@@ -190,10 +198,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final dataset = _apiProducts.isNotEmpty ? _apiProducts : _productsList;
+    final query = _searchQuery.trim().toLowerCase();
     final filtered = dataset.where((p) {
       final matchesCategory = _selectedCategory == 'All' || p['category'] == _selectedCategory;
-      final matchesZone = _selectedZone == 'All Northern Ghana' || p['location'].contains(_selectedZone);
-      return matchesCategory && matchesZone;
+      final locationStr = (p['location'] ?? p['area'] ?? '').toString();
+      final matchesZone = _selectedZone == 'All Northern Ghana' || locationStr.contains(_selectedZone);
+      final titleStr = (p['title'] ?? '').toString().toLowerCase();
+      final descStr = (p['description'] ?? '').toString().toLowerCase();
+      final sellerStr = (p['seller'] ?? p['businessName'] ?? '').toString().toLowerCase();
+      final matchesSearch = query.isEmpty ||
+          titleStr.contains(query) ||
+          descStr.contains(query) ||
+          sellerStr.contains(query);
+      return matchesCategory && matchesZone && matchesSearch;
     }).toList();
 
     return Scaffold(
@@ -218,12 +235,66 @@ class _ProductsScreenState extends State<ProductsScreen> {
               color: ServoraColors.emerald600,
               minHeight: 2,
             ),
-          // Category Filter Pills
+
+          // 1. Live Product Search Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: isDark ? ServoraColors.darkSurface : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: isDark ? ServoraColors.darkCardBorder : const Color(0xFFCBD5E1),
+                ),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (val) => setState(() => _searchQuery = val),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
+                  hintText: 'Search products, fugu, solar panels...',
+                  hintStyle: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.white38 : Colors.grey[500],
+                  ),
+                  prefixIcon: const Icon(Icons.search_rounded, color: ServoraColors.emerald600, size: 20),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_searchQuery.isNotEmpty)
+                        GestureDetector(
+                          onTap: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6),
+                            child: Icon(Icons.cancel_rounded, size: 18, color: Colors.grey),
+                          ),
+                        ),
+                      GestureDetector(
+                        onTap: () => context.push('/search'),
+                        child: const Padding(
+                          padding: EdgeInsets.only(right: 10),
+                          child: Icon(Icons.tune_rounded, size: 18, color: ServoraColors.emerald600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                ),
+              ),
+            ),
+          ),
+
+          // 2. Category Filter Pills
           SizedBox(
-            height: 48,
+            height: 44,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               itemCount: _categories.length,
               itemBuilder: (context, index) {
                 final cat = _categories[index];

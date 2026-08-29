@@ -73,8 +73,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   String get _productSlug {
-    if (widget.slug != null && widget.slug!.isNotEmpty) return widget.slug!;
-    return _liveProduct?['slug'] ?? _liveProduct?['id'] ?? 'product';
+    if (widget.slug != null && widget.slug!.isNotEmpty) {
+      return widget.slug!.replaceFirst(RegExp(r'^(leg-prod-|prod-|rent-)'), '');
+    }
+    final raw = widget.product['slug']?.toString() ??
+        widget.product['id']?.toString() ??
+        _liveProduct?['slug']?.toString() ??
+        _liveProduct?['id']?.toString() ??
+        '';
+    return raw.replaceFirst(RegExp(r'^(leg-prod-|prod-|rent-)'), '');
   }
 
   Future<void> _fetchLiveProductData() async {
@@ -83,17 +90,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     try {
       final res = await authNotifier.apiClient.get('/products/$slug');
-      if (res.statusCode == 200 && res.data != null) {
+      if (res.statusCode == 200 && res.data != null && res.data['product'] != null) {
         final data = res.data;
         if (mounted) {
           setState(() {
-            _liveProduct = data['product'] ?? _liveProduct;
+            _liveProduct = Map<String, dynamic>.from(data['product'] as Map);
             _isLiked = data['isLiked'] ?? false;
             _likesCount = data['likesCount'] ?? _liveProduct?['likesCount'] ?? 0;
-            _questions = data['questions'] ?? [];
-            _reviews = data['reviews'] ?? [];
-            _reviewsSummary = data['reviewsSummary'];
-            _recommendations = data['recommendations'] ?? [];
+            _questions = (data['questions'] is List) ? data['questions'] as List : [];
+            _reviews = (data['reviews'] is List) ? data['reviews'] as List : [];
+            _reviewsSummary = data['reviewsSummary'] is Map ? Map<String, dynamic>.from(data['reviewsSummary'] as Map) : null;
+            _recommendations = (data['recommendations'] is List) ? data['recommendations'] as List : [];
           });
         }
       }

@@ -15,8 +15,11 @@ export default function ProductsMarketplacePage() {
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchProducts();
-  }, [selectedCategory]);
+    const timer = setTimeout(() => {
+      fetchProducts();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [selectedCategory, searchQuery]);
 
   async function fetchProducts() {
     try {
@@ -24,7 +27,7 @@ export default function ProductsMarketplacePage() {
       let url = "/api/products";
       const queryParams: string[] = [];
       if (selectedCategory) queryParams.push(`category=${encodeURIComponent(selectedCategory)}`);
-      if (searchQuery) queryParams.push(`q=${encodeURIComponent(searchQuery)}`);
+      if (searchQuery.trim()) queryParams.push(`q=${encodeURIComponent(searchQuery.trim())}`);
       if (queryParams.length > 0) url += `?${queryParams.join("&")}`;
 
       const res = await fetch(url);

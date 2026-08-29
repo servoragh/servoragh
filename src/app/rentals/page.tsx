@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Tag,
   Zap,
+  Search,
 } from "lucide-react";
 import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
 import { formatGHS, parseJsonArray } from "@/lib/utils";
@@ -32,6 +33,7 @@ export default function ToolRentalsPage() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Post Rental Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -131,6 +133,16 @@ export default function ToolRentalsPage() {
     }
   }
 
+  const query = searchQuery.trim().toLowerCase();
+  const filteredRentals = rentals.filter((r) => {
+    if (!query) return true;
+    const titleMatch = (r.title || "").toLowerCase().includes(query);
+    const descMatch = (r.description || "").toLowerCase().includes(query);
+    const businessMatch = (r.provider?.businessName || "").toLowerCase().includes(query);
+    const areaMatch = (r.provider?.serviceArea || "").toLowerCase().includes(query);
+    return titleMatch || descMatch || businessMatch || areaMatch;
+  });
+
   return (
     <div className="min-h-screen py-10 bg-stone-50 dark:bg-stone-950 text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
@@ -157,44 +169,72 @@ export default function ToolRentalsPage() {
           </button>
         </div>
 
-        {/* Category Filters */}
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4 rounded-2xl flex items-center gap-2 overflow-x-auto shadow-sm">
-          <div className="flex items-center gap-1.5 shrink-0 pr-2 border-r border-stone-200 dark:border-stone-800 font-bold text-stone-700 dark:text-stone-300">
-            <Filter className="w-3.5 h-3.5 text-amber-500" /> Filter:
+        {/* Search & Category Filters */}
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4 rounded-3xl space-y-3 shadow-sm">
+          {/* Search Input */}
+          <div className="flex items-center gap-2 bg-stone-100 dark:bg-stone-800 px-3.5 py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700">
+            <Search className="w-4 h-4 text-amber-500" />
+            <input
+              type="text"
+              placeholder="Search generators, concrete mixers, scaffolding, drills (e.g. '5kVA generator sakasaka')..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent text-xs text-stone-900 dark:text-white outline-none w-full font-medium"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          {RENTAL_CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-xl font-bold transition shrink-0 border ${
-                selectedCategory === cat.id
-                  ? "bg-amber-600 border-amber-500 text-white shadow"
-                  : "bg-stone-100 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-200"
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <div className="flex items-center gap-1.5 shrink-0 pr-2 border-r border-stone-200 dark:border-stone-800 font-bold text-stone-700 dark:text-stone-300">
+              <Filter className="w-3.5 h-3.5 text-amber-500" /> Filter:
+            </div>
+            {RENTAL_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-3 py-1.5 rounded-xl font-bold transition shrink-0 border cursor-pointer ${
+                  selectedCategory === cat.id
+                    ? "bg-amber-600 border-amber-500 text-white shadow"
+                    : "bg-stone-100 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-200"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Equipment Grid */}
         {loading ? (
           <div className="text-center py-12 text-stone-500 font-semibold">Loading heavy rental equipment...</div>
-        ) : rentals.length === 0 ? (
+        ) : filteredRentals.length === 0 ? (
           <div className="bg-white dark:bg-stone-900 p-12 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-3">
             <Wrench className="w-12 h-12 text-stone-400 mx-auto" />
-            <h3 className="text-base font-bold text-stone-900 dark:text-white">No Equipment Listed in this Category</h3>
-            <p className="text-stone-500">Be the first to list equipment or heavy tools for rent on the Northern Marketplace!</p>
+            <h3 className="text-base font-bold text-stone-900 dark:text-white">
+              {searchQuery ? `No Equipment Found for "${searchQuery}"` : "No Equipment Listed in this Category"}
+            </h3>
+            <p className="text-stone-500">
+              {searchQuery
+                ? "Try searching for a different keyword like 'generator', 'scaffolding', or 'welder'."
+                : "Be the first to list equipment or heavy tools for rent on the Northern Marketplace!"}
+            </p>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-5 py-2.5 bg-amber-600 text-white font-bold rounded-xl shadow"
+              className="px-5 py-2.5 bg-amber-600 text-white font-bold rounded-xl shadow cursor-pointer"
             >
               List Equipment Now
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rentals.map((r) => {
+            {filteredRentals.map((r) => {
               const parsedImages = parseJsonArray(r.images);
               const phoneNum = r.provider?.user?.phone || "";
 

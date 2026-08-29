@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { MapPin, Clock, MessageSquare, PlusCircle, Filter } from "lucide-react";
+import { MapPin, Clock, MessageSquare, PlusCircle, Filter, Search, X } from "lucide-react";
 import { RequestWizardModal } from "@/components/RequestWizardModal";
 import { formatDate } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ export default function ServiceRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [filterArea, setFilterArea] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchRequests();
@@ -30,6 +31,16 @@ export default function ServiceRequestsPage() {
     }
   }
 
+  const query = searchQuery.trim().toLowerCase();
+  const filteredRequests = requests.filter((req) => {
+    if (!query) return true;
+    const titleMatch = (req.title || "").toLowerCase().includes(query);
+    const descMatch = (req.description || "").toLowerCase().includes(query);
+    const catMatch = (req.category || "").toLowerCase().includes(query);
+    const areaMatch = (req.area || req.location || "").toLowerCase().includes(query);
+    return titleMatch || descMatch || catMatch || areaMatch;
+  });
+
   return (
     <div className="min-h-screen py-10 bg-stone-50 dark:bg-stone-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -45,54 +56,80 @@ export default function ServiceRequestsPage() {
 
           <button
             onClick={() => setIsWizardOpen(true)}
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-2"
+            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-2 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Post a New Request</span>
           </button>
         </div>
 
-        {/* Filter Bar */}
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4 rounded-2xl mb-8 flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2 text-xs font-bold text-stone-700 dark:text-stone-300">
-            <Filter className="w-4 h-4 text-emerald-600" />
-            <span>Filter by Area:</span>
+        {/* Search & Filter Bar */}
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4 rounded-3xl mb-8 space-y-3 shadow-xs">
+          {/* Search Input */}
+          <div className="flex items-center gap-2 bg-stone-100 dark:bg-stone-800 px-3.5 py-2 rounded-2xl border border-stone-200 dark:border-stone-700">
+            <Search className="w-4 h-4 text-emerald-600" />
+            <input
+              type="text"
+              placeholder="Search service requests (e.g. 'plumber leak sakasaka', 'welder gate choggu')..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent text-xs text-stone-900 dark:text-white outline-none w-full font-medium"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {["", "Sakasaka", "Nyohini", "Choggu", "Aboabo", "Dungu"].map((area) => (
-              <button
-                key={area}
-                onClick={() => setFilterArea(area)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
-                  filterArea === area
-                    ? "bg-emerald-600 text-white border-emerald-600"
-                    : "bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700"
-                }`}
-              >
-                {area || "All Tamale Areas"}
-              </button>
-            ))}
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 text-xs font-bold text-stone-700 dark:text-stone-300">
+              <Filter className="w-4 h-4 text-emerald-600" />
+              <span>Filter by Area:</span>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {["", "Sakasaka", "Nyohini", "Choggu", "Aboabo", "Dungu"].map((area) => (
+                <button
+                  key={area}
+                  onClick={() => setFilterArea(area)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                    filterArea === area
+                      ? "bg-emerald-600 text-white border-emerald-600"
+                      : "bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700"
+                  }`}
+                >
+                  {area || "All Tamale Areas"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Request List */}
         {loading ? (
           <div className="text-center py-12 text-stone-500 text-sm">Loading job requests...</div>
-        ) : requests.length === 0 ? (
+        ) : filteredRequests.length === 0 ? (
           <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl text-center border border-stone-200 dark:border-stone-800">
-            <h3 className="font-bold text-stone-900 dark:text-white mb-2">No Service Requests Found</h3>
-            <p className="text-xs text-stone-500 mb-4">Be the first to post a service request in Tamale!</p>
+            <h3 className="font-bold text-stone-900 dark:text-white mb-2">
+              {searchQuery ? `No Requests Found for "${searchQuery}"` : "No Service Requests Found"}
+            </h3>
+            <p className="text-xs text-stone-500 mb-4">
+              {searchQuery ? "Try a different search term or clear the search filter." : "Be the first to post a service request in Tamale!"}
+            </p>
             <button
               onClick={() => setIsWizardOpen(true)}
-              className="px-6 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl"
+              className="px-6 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer"
             >
               Post Request Now
             </button>
           </div>
         ) : (
           <div className="space-y-4">
-            {requests.map((req) => (
+            {filteredRequests.map((req) => (
               <div
                 key={req.id}
                 className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 rounded-3xl shadow-sm hover:shadow-md transition flex flex-col md:flex-row items-start md:items-center justify-between gap-4"

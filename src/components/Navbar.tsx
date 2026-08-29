@@ -195,8 +195,15 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Trigger & Switcher */}
-          <div className="flex items-center gap-2 lg:hidden">
+          {/* Mobile Menu Trigger, Search & Switcher */}
+          <div className="flex items-center gap-1.5 lg:hidden">
+            <Link
+              href="/search"
+              className="p-2 rounded-2xl bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 transition shrink-0 border border-stone-200 dark:border-stone-700"
+              aria-label="Search Marketplace"
+            >
+              <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            </Link>
             <ThemeToggle />
             <button
               onClick={() => setMobileMenuOpen(true)}

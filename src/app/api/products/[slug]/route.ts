@@ -12,6 +12,7 @@ export async function GET(
     const rawParams = await params;
     const rawSlug = rawParams?.slug || "";
     const slug = decodeURIComponent(rawSlug).trim();
+    const cleanIdOrSlug = slug.replace(/^(leg-prod-|prod-|rent-)/, "");
 
     let session: any = null;
     try {
@@ -21,22 +22,16 @@ export async function GET(
     }
     const userId = session?.id;
 
-    // 1. Try finding in ProductListing (Primary Classifieds & Marketplace Model)
+    // 1. Try finding in ProductListing (Primary Classifieds & Marketplace Model) with EXACT id/slug
     let listing: any = null;
-    const cleanWord = slug.replace(/[-_]/g, " ").replace(/\d+/g, "").trim();
-
     try {
       listing = await prisma.productListing.findFirst({
         where: {
           OR: [
             { slug: { equals: slug, mode: "insensitive" } },
             { id: slug },
-            ...(cleanWord.length > 2
-              ? [
-                  { title: { contains: cleanWord, mode: "insensitive" as any } },
-                  { slug: { contains: cleanWord.split(" ")[0], mode: "insensitive" as any } },
-                ]
-              : []),
+            { slug: { equals: cleanIdOrSlug, mode: "insensitive" } },
+            { id: cleanIdOrSlug },
           ],
         },
         include: {
@@ -161,14 +156,16 @@ export async function GET(
         listing.id
       ).catch(() => null);
     } else {
-      // Fallback to legacy Product model
+      // 1b. Try finding in legacy Product model with EXACT id/slug
       let legacyProd: any = null;
       try {
         legacyProd = await prisma.product.findFirst({
           where: {
             OR: [
-              { slug },
+              { slug: { equals: slug, mode: "insensitive" } },
               { id: slug },
+              { slug: { equals: cleanIdOrSlug, mode: "insensitive" } },
+              { id: cleanIdOrSlug },
             ],
           },
           include: {
@@ -185,7 +182,19 @@ export async function GET(
 
       if (legacyProd) {
         productIdForRelations = legacyProd.id;
-        const parsedImages = typeof legacyProd.images === "string" ? JSON.parse(legacyProd.images || "[]") : (legacyProd.images || []);
+        let parsedImages: string[] = [];
+        try {
+          if (Array.isArray(legacyProd.images)) {
+            parsedImages = legacyProd.images;
+          } else if (typeof legacyProd.images === "string" && legacyProd.images.startsWith("[")) {
+            parsedImages = JSON.parse(legacyProd.images);
+          } else if (legacyProd.images) {
+            parsedImages = [legacyProd.images];
+          }
+        } catch {
+          parsedImages = legacyProd.images ? [legacyProd.images] : [];
+        }
+
         const priceNum = Number(legacyProd.price);
         const origPriceNum = legacyProd.originalPrice ? Number(legacyProd.originalPrice) : (priceNum * 1.15);
         const discountPct = Math.round(((origPriceNum - priceNum) / origPriceNum) * 100);
@@ -241,6 +250,95 @@ export async function GET(
           `UPDATE "Product" SET "viewCount" = "viewCount" + 1 WHERE "id" = $1`,
           legacyProd.id
         ).catch(() => null);
+      } else {
+        // 1c. Try finding in RentalTool with EXACT id/slug
+        let rentalTool: any = null;
+        try {
+          rentalTool = await prisma.rentalTool.findFirst({
+            where: {
+              OR: [
+                { slug: { equals: slug, mode: "insensitive" } },
+                { id: slug },
+                { slug: { equals: cleanIdOrSlug, mode: "insensitive" } },
+                { id: cleanIdOrSlug },
+              ],
+            },
+            include: {
+              provider: {
+                include: {
+                  user: true,
+                },
+              },
+            },
+          });
+        } catch (e: any) {
+          console.warn("RentalTool lookup fallback:", e?.message);
+        }
+
+        if (rentalTool) {
+          productIdForRelations = rentalTool.id;
+          let parsedImages: string[] = [];
+          try {
+            if (Array.isArray(rentalTool.images)) {
+              parsedImages = rentalTool.images;
+            } else if (typeof rentalTool.images === "string" && rentalTool.images.startsWith("[")) {
+              parsedImages = JSON.parse(rentalTool.images);
+            } else if (rentalTool.images) {
+              parsedImages = [rentalTool.images];
+            }
+          } catch {
+            parsedImages = rentalTool.images ? [rentalTool.images] : [];
+          }
+
+          const dailyRate = Number(rentalTool.dailyRate) || 0;
+
+          productPayload = {
+            id: rentalTool.id,
+            title: rentalTool.title,
+            slug: rentalTool.slug || rentalTool.id,
+            description: rentalTool.description,
+            category: rentalTool.category || "Tool & Heavy Equipment Rentals",
+            subCategory: "Equipment Rentals",
+            condition: "USED_GOOD",
+            price: dailyRate,
+            originalPrice: dailyRate * 1.1,
+            discountPercent: 0,
+            currency: "GHS",
+            stockQuantity: 1,
+            inventoryStatus: "IN_STOCK",
+            images: parsedImages,
+            videoUrl: null,
+            area: rentalTool.provider?.serviceArea || "Tamale Metro",
+            deliveryOptions: ["PICKUP", "LOCAL_DELIVERY"],
+            likesCount: 8,
+            viewsCount: 20,
+            isNegotiable: false,
+            createdAt: rentalTool.createdAt,
+            updatedAt: rentalTool.updatedAt,
+            sellerType: "BUSINESS",
+            seller: {
+              id: rentalTool.provider?.id || "provider-id",
+              name: rentalTool.provider?.businessName || "Tamale Rental Equipment Hub",
+              businessName: rentalTool.provider?.businessName || "Tamale Rental Equipment Hub",
+              slug: rentalTool.provider?.slug || "tamale-equipment",
+              logoUrl: rentalTool.provider?.logoUrl || "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&q=80",
+              avatarUrl: rentalTool.provider?.logoUrl || "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&q=80",
+              phone: rentalTool.provider?.user?.phone || "+233240000000",
+              whatsapp: rentalTool.provider?.user?.phone || "+233240000000",
+              zone: rentalTool.provider?.serviceArea || "Tamale Metro",
+              location: rentalTool.provider?.serviceArea || "Tamale Metro",
+              serviceArea: rentalTool.provider?.serviceArea || "Tamale Metro",
+              ratingAverage: 4.9,
+              rating: 4.9,
+              reviewsCount: 15,
+              reviewCount: 15,
+              verificationStatus: "VERIFIED",
+              tagline: "Verified Tool & Machine Rentals in Tamale",
+              bio: "Offering reliable heavy duty tools, concrete mixers, drills, and power equipment for rent.",
+              memberSince: rentalTool.provider?.createdAt || rentalTool.createdAt,
+            },
+          };
+        }
       }
     }
 

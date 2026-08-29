@@ -55,8 +55,11 @@ export default function CommunityHubPage() {
       const pid = params.get("postId");
       if (pid) setTargetPostId(pid);
     }
-    fetchCommunityPosts();
-  }, [selectedZone, selectedCategory, selectedStatus]);
+    const timer = setTimeout(() => {
+      fetchCommunityPosts();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [selectedZone, selectedCategory, selectedStatus, search]);
 
   async function fetchCommunityPosts() {
     try {
