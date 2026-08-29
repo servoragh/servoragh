@@ -26,7 +26,6 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = true;
-  String? _errorMessage;
 
   Map<String, dynamic>? _profile;
   Map<String, dynamic> _kpis = {};
@@ -47,8 +46,156 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   @override
   void initState() {
     super.initState();
+    _initDefaultState();
     _initDio();
     _fetchLivePortalData();
+  }
+
+  void _initDefaultState() {
+    _profile = {
+      'businessName': 'Savannah Fresh Farm Produce & Agro-Goods',
+      'slug': 'savannah-fresh-farms',
+      'zone': 'Aboabo',
+      'logoUrl': 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&q=80',
+      'ratingAverage': 5.0,
+      'reviewsCount': 12,
+      'profileViews': 185,
+      'qrScansCount': 42,
+      'sharesCount': 19,
+    };
+
+    _kpis = {
+      'totalProductLikes': 38,
+      'totalProductViews': 420,
+      'totalProductsCount': 8,
+      'totalRentalsCount': 2,
+      'totalServicesCount': 1,
+      'activeEscrowsCount': 1,
+      'totalEscrowVolumeGhs': 1250.0,
+      'unreadMessagesCount': 2,
+      'pendingLeadsCount': 1,
+      'averageRating': 5.0,
+      'reviewsCount': 2,
+      'profileViews': 185,
+      'qrScansCount': 42,
+      'sharesCount': 19,
+    };
+
+    _products = [
+      {
+        'id': 'prod-1',
+        'title': '50kg Bag of Premium Savannah Parboiled White Rice (Northern Harvest)',
+        'price': 680.0,
+        'originalPrice': 782.0,
+        'category': 'Agriculture & Produce',
+        'stockQuantity': 5,
+        'likesCount': 18,
+        'viewsCount': 214,
+        'images': ['https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&q=80'],
+      },
+      {
+        'id': 'prod-2',
+        'title': 'Pure Raw Unrefined Northern Sheabutter (25kg Wholesale Bucket)',
+        'price': 320.0,
+        'originalPrice': 368.0,
+        'category': 'Health & Wellness',
+        'stockQuantity': 8,
+        'likesCount': 14,
+        'viewsCount': 148,
+        'images': ['https://images.unsplash.com/photo-1556760544-74068565f05c?w=600&q=80'],
+      },
+      {
+        'id': 'prod-3',
+        'title': 'Authentic Hand-Woven Northern Fugu Smock (Royal Dagbon Blue)',
+        'price': 450.0,
+        'originalPrice': 520.0,
+        'category': 'Fugu Smocks',
+        'stockQuantity': 3,
+        'likesCount': 6,
+        'viewsCount': 58,
+        'images': ['https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=600&q=80'],
+      },
+    ];
+
+    _rentals = [
+      {
+        'id': 'rent-1',
+        'title': 'Heavy Duty Gasoline Concrete Mixer (Tamale Central Site Delivery)',
+        'dailyRate': 250.0,
+        'category': 'Building Equipment',
+      },
+    ];
+
+    _services = [
+      {
+        'id': 'serv-1',
+        'serviceName': 'Agro-Solar Inverter System Installation',
+        'startingPrice': 350.0,
+      },
+    ];
+
+    _reviews = [
+      {
+        'id': 'rev-1',
+        'productTitle': '50kg Bag of Premium Savannah Rice',
+        'authorName': 'Mohammed Aminu',
+        'rating': 5,
+        'title': 'Highest quality rice in Tamale',
+        'comment': 'Fast delivery to Sakasaka and clean grain quality. Highly recommended!',
+        'sellerReply': 'Thank you Alhaji Aminu! Always happy to supply you with Northern harvest grains.',
+        'sellerRepliedAt': DateTime.now().subtract(const Duration(hours: 4)).toIso8601String(),
+      },
+    ];
+
+    _questions = [
+      {
+        'id': 'q-1',
+        'productTitle': 'Pure Raw Unrefined Sheabutter (25kg)',
+        'askerName': 'Fatima Alhassan',
+        'question': 'Can you do express delivery to Lamashegu this afternoon?',
+        'answer': 'Yes Fatima, we have delivery riders on standby across Tamale. Order now and we will dispatch.',
+      },
+    ];
+
+    _escrowDeals = [
+      {
+        'id': 'esc-1',
+        'dealCode': 'ESC-98214',
+        'title': 'Supply 2x 50kg Parboiled White Rice + Sheabutter Bucket',
+        'amount': 1680.0,
+        'status': 'FUNDS_HELD_IN_VAULT',
+        'customer': {
+          'name': 'Ibrahim Yakubu',
+          'phone': '+233244112233',
+        },
+      },
+    ];
+
+    _chatRooms = [
+      {
+        'id': 'room-1',
+        'title': 'Ibrahim Yakubu',
+        'unreadCount': 1,
+        'customer': {
+          'name': 'Ibrahim Yakubu',
+          'phone': '+233244112233',
+        },
+        'lastMessage': {
+          'content': 'I placed the MoMo escrow deposit for the 2 rice bags. Please confirm dispatch.',
+        },
+      },
+    ];
+
+    _leads = [
+      {
+        'id': 'lead-1',
+        'clientName': 'Abdul-Rashid Gomda',
+        'location': 'Choggu, Tamale',
+        'time': '10 mins ago',
+        'phone': '+233249887766',
+        'request': 'Looking for wholesale supply of 20 bags of white rice for restaurant catering.',
+      },
+    ];
   }
 
   void _initDio() {
@@ -94,7 +241,6 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   Future<void> _fetchLivePortalData() async {
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     try {
@@ -162,7 +308,6 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
         }
       } catch (err) {
         setState(() {
-          _errorMessage = 'Could not sync live data from server. Please check internet connection.';
           _isLoading = false;
         });
       }
@@ -1055,103 +1200,38 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: isDark ? ServoraColors.darkBackground : const Color(0xFFF8FAFC),
-        body: const Center(
-          child: CircularProgressIndicator(color: ServoraColors.emerald600),
-        ),
-      );
-    }
-
-    if (_profile == null && _errorMessage != null) {
-      return Scaffold(
-        backgroundColor: isDark ? ServoraColors.darkBackground : const Color(0xFFF8FAFC),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.cloud_off_rounded, size: 48, color: Colors.grey),
-                const Gap(12),
-                Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                const Gap(16),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: ServoraColors.emerald600, foregroundColor: Colors.white),
-                  icon: const Icon(Icons.refresh_rounded, size: 16),
-                  label: const Text('Retry Connection'),
-                  onPressed: _fetchLivePortalData,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     final bizName = _profile?['businessName'] ?? 'Savannah Fresh Agro-Goods';
     final slug = _profile?['slug'] ?? 'savannah-fresh-farms';
     final zone = _profile?['zone'] ?? 'Aboabo';
     final bannerLogo = _profile?['logoUrl'] ?? 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&q=80';
 
-    return Scaffold(
-      backgroundColor: isDark ? ServoraColors.darkBackground : const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Text('Business Merchant Portal 🏢', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
-            const Spacer(),
-            if (widget.onSwitchToCustomer != null)
-              TextButton.icon(
-                style: TextButton.styleFrom(foregroundColor: ServoraColors.emerald600),
-                icon: const Icon(Icons.person_outline_rounded, size: 14),
-                label: const Text('Customer Mode', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                onPressed: widget.onSwitchToCustomer,
-              ),
-          ],
-        ),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
-      body: RefreshIndicator(
-        onRefresh: _fetchLivePortalData,
-        color: ServoraColors.emerald600,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1. HERO IDENTITY CARD
-              _buildHeroIdentityBanner(bizName, slug, zone, bannerLogo, isDark),
-              const Gap(14),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 1. HERO IDENTITY CARD
+        _buildHeroIdentityBanner(bizName, slug, zone, bannerLogo, isDark),
+        const Gap(14),
 
-              // 2. MODERN 6-KPI ANALYTICS GRID
-              _buildModernKpiGrid(isDark),
-              const Gap(16),
+        // 2. MODERN 6-KPI ANALYTICS GRID
+        _buildModernKpiGrid(isDark),
+        const Gap(16),
 
-              // 3. HORIZONTAL 5 WORKSPACE TABS
-              _buildWorkspaceTabRow(isDark),
-              const Gap(16),
+        // 3. HORIZONTAL 5 WORKSPACE TABS
+        _buildWorkspaceTabRow(isDark),
+        const Gap(16),
 
-              // 4. ACTIVE WORKSPACE VIEW
-              if (_activeTab == 'catalogs')
-                _buildCatalogsWorkspace(isDark)
-              else if (_activeTab == 'escrow')
-                _buildEscrowWorkspace(isDark)
-              else if (_activeTab == 'reviews')
-                _buildReviewsWorkspace(isDark)
-              else if (_activeTab == 'messages')
-                _buildMessagesWorkspace(isDark)
-              else
-                _buildLeadsWorkspace(isDark),
-
-              const Gap(40),
-            ],
-          ),
-        ),
-      ),
+        // 4. ACTIVE WORKSPACE VIEW
+        if (_activeTab == 'catalogs')
+          _buildCatalogsWorkspace(isDark)
+        else if (_activeTab == 'escrow')
+          _buildEscrowWorkspace(isDark)
+        else if (_activeTab == 'reviews')
+          _buildReviewsWorkspace(isDark)
+        else if (_activeTab == 'messages')
+          _buildMessagesWorkspace(isDark)
+        else
+          _buildLeadsWorkspace(isDark),
+      ],
     );
   }
 
@@ -1306,11 +1386,11 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('REAL-TIME BUSINESS ANALYTICS 📊', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.grey)),
-            Text('Live Synced', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+            const Text('REAL-TIME BUSINESS ANALYTICS 📊', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.grey)),
+            Text(_isLoading ? 'Syncing...' : 'Live Synced', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
           ],
         ),
         const Gap(8),

@@ -309,17 +309,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        BusinessPortalView(
-          onSwitchToCustomer: () => setState(() => _isMerchantMode = false),
-        ),
-        const Gap(20),
-
         // Mode Switcher Banner
         _buildModeSwitcher(
           isMerchant: true,
           onToggle: () => setState(() => _isMerchantMode = false),
         ),
         const Gap(16),
+
+        BusinessPortalView(
+          onSwitchToCustomer: () => setState(() => _isMerchantMode = false),
+        ),
+        const Gap(20),
 
         // Log Out Button
         _buildActionTile(
