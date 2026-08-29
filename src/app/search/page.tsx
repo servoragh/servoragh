@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -48,7 +48,7 @@ interface SearchHit {
   highlightedSubtitle: string;
 }
 
-export default function UniversalSearchPage() {
+function UniversalSearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -529,5 +529,13 @@ export default function UniversalSearchPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function UniversalSearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-emerald-600 font-bold text-sm">Loading Universal Search...</div>}>
+      <UniversalSearchContent />
+    </Suspense>
   );
 }
