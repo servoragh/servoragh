@@ -60,6 +60,7 @@ class AuthNotifier extends ChangeNotifier {
       if (response.statusCode == 200 && response.data['user'] != null) {
         final user = UserModel.fromJson(response.data['user']);
         final activeRole = storage.getActiveRole();
+        await storage.saveUserData(user.id, user.phone);
         _state = AuthState(
           user: user.copyWith(activeRole: activeRole),
           isAuthenticated: true,
@@ -142,6 +143,7 @@ class AuthNotifier extends ChangeNotifier {
         final userData = res.data['user'] ?? {};
         final user = UserModel.fromJson(userData);
         await storage.saveToken(token.toString());
+        await storage.saveUserData(user.id, user.phone);
 
         _state = AuthState(
           user: user,
@@ -155,6 +157,7 @@ class AuthNotifier extends ChangeNotifier {
       // If demo user matched, allow instant login
       if (demoUser != null) {
         await storage.saveToken('demo_verified_token');
+        await storage.saveUserData(demoUser.id, demoUser.phone);
         _state = AuthState(
           user: demoUser,
           isAuthenticated: true,
@@ -171,6 +174,7 @@ class AuthNotifier extends ChangeNotifier {
     } catch (e) {
       if (demoUser != null) {
         await storage.saveToken('demo_verified_token');
+        await storage.saveUserData(demoUser.id, demoUser.phone);
         _state = AuthState(
           user: demoUser,
           isAuthenticated: true,
@@ -223,6 +227,7 @@ class AuthNotifier extends ChangeNotifier {
         };
         final user = UserModel.fromJson(userData);
         await storage.saveToken(token.toString());
+        await storage.saveUserData(user.id, user.phone);
 
         _state = AuthState(
           user: user,
@@ -289,6 +294,7 @@ class AuthNotifier extends ChangeNotifier {
         };
         final user = UserModel.fromJson(userData);
         await storage.saveToken(token.toString());
+        await storage.saveUserData(user.id, user.phone);
 
         _state = AuthState(
           user: user,

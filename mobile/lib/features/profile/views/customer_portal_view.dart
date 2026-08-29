@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
@@ -50,6 +51,7 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
   List<dynamic> _escrowDeals = [];
   List<dynamic> _disputes = [];
   List<dynamic> _favorites = [];
+  List<dynamic> _likedProducts = [];
   List<dynamic> _reviews = [];
   List<dynamic> _communityPosts = [];
   List<dynamic> _activityLogs = [];
@@ -102,6 +104,7 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
           _escrowDeals = List<dynamic>.from(data['escrowDeals'] ?? []);
           _disputes = List<dynamic>.from(data['disputes'] ?? []);
           _favorites = List<dynamic>.from(data['favorites'] ?? []);
+          _likedProducts = List<dynamic>.from(data['likedProducts'] ?? []);
           _reviews = List<dynamic>.from(data['reviews'] ?? []);
           _communityPosts = List<dynamic>.from(data['communityPosts'] ?? []);
           _activityLogs = List<dynamic>.from(data['activityLogs'] ?? []);
@@ -360,7 +363,7 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
               const Gap(6),
               _buildTabChip('💬 Messages', 'messages'),
               const Gap(6),
-              _buildTabChip('❤️ Saved (${_favorites.length})', 'favorites'),
+              _buildTabChip('❤️ Saved (${_favorites.length + _likedProducts.length})', 'favorites'),
               const Gap(6),
               _buildTabChip('⭐ Reviews & Forum', 'reviews'),
               const Gap(6),
@@ -372,8 +375,11 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
         ),
         const Gap(14),
 
-        // 3. Tab Body
-        _buildActiveTabContent(isDark),
+        // 3. Tab Body (or Unified Omnisearch)
+        if (_searchQuery.trim().isNotEmpty)
+          _buildOmnisearchResults(isDark)
+        else
+          _buildActiveTabContent(isDark),
       ],
     );
   }
@@ -811,19 +817,150 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
   }
 
   // ==========================================
-  // TAB 5: SAVED STORES & FAVORITES
+  // TAB 5: SAVED STORES & LIKED PRODUCTS
   // ==========================================
   Widget _buildFavoritesTab(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('BOOKMARKED BUSINESSES & WORKSHOPS (${_favorites.length})', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Colors.grey)),
-        const Gap(8),
+        // 1. Liked Products Section
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('❤️ LIKED PRODUCTS & CLASSIFIEDS (${_likedProducts.length})', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Colors.grey)),
+            if (_likedProducts.isNotEmpty)
+              TextButton(
+                onPressed: () => context.push('/products'),
+                child: const Text('Browse Market ➔', style: TextStyle(fontSize: 10, color: ServoraColors.emerald600, fontWeight: FontWeight.bold)),
+              ),
+          ],
+        ),
+        const Gap(6),
+
+        if (_likedProducts.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? ServoraColors.darkSurface : Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isDark ? ServoraColors.darkCardBorder : Colors.grey[200]!),
+            ),
+            child: const Center(
+              child: Text(
+                'No liked products yet. Tap the heart icon on any marketplace item to save it here!',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, fontSize: 11),
+              ),
+            ),
+          )
+        else
+          ..._likedProducts.map((prod) {
+            final price = prod['price'] ?? 0;
+            final origPrice = prod['originalPrice'];
+            final discount = prod['discountPercent'];
+            final img = prod['image'] ?? 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80';
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: ServoraCard(
+                padding: const EdgeInsets.all(10),
+                child: InkWell(
+                  onTap: () => context.push('/products/${prod['slug'] ?? prod['id']}', extra: prod),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: img,
+                          width: 54,
+                          height: 54,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => const ServoraShimmerSkeleton(width: 54, height: 54),
+                          errorWidget: (_, __, ___) => Container(width: 54, height: 54, color: Colors.grey[300], child: const Icon(Icons.broken_image, size: 20)),
+                        ),
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              prod['title'] ?? 'Product',
+                              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const Gap(2),
+                            Row(
+                              children: [
+                                Text(
+                                  'GH₵ $price',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
+                                ),
+                                if (origPrice != null && origPrice > price) ...[
+                                  const Gap(4),
+                                  Text(
+                                    'GH₵ $origPrice',
+                                    style: const TextStyle(fontSize: 10, decoration: TextDecoration.lineThrough, color: Colors.grey),
+                                  ),
+                                ],
+                                if (discount != null && discount > 0) ...[
+                                  const Gap(6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                    decoration: BoxDecoration(color: const Color(0xFFFEE2E2), borderRadius: BorderRadius.circular(4)),
+                                    child: Text('-$discount%', style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.red)),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const Gap(2),
+                            Text(
+                              '🏪 ${prod['businessName'] ?? "Tamale Seller"} • 📍 ${prod['area'] ?? "Tamale"}',
+                              style: const TextStyle(fontSize: 10, color: Colors.grey),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Gap(6),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          minimumSize: const Size(60, 28),
+                        ),
+                        onPressed: () => context.push('/products/${prod['slug'] ?? prod['id']}', extra: prod),
+                        child: const Text('View ➔', style: TextStyle(fontSize: 10)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+
+        const Gap(16),
+
+        // 2. Bookmarked Businesses Section
+        Text('🏢 BOOKMARKED BUSINESSES & WORKSHOPS (${_favorites.length})', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Colors.grey)),
+        const Gap(6),
 
         if (_favorites.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 30),
-            child: Center(child: Text('No saved stores. Bookmark verified artisans in Tamale to reach them quickly!', style: TextStyle(color: Colors.grey, fontSize: 11.5))),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? ServoraColors.darkSurface : Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isDark ? ServoraColors.darkCardBorder : Colors.grey[200]!),
+            ),
+            child: const Center(
+              child: Text(
+                'No saved businesses. Bookmark verified artisans in Tamale to reach them quickly!',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, fontSize: 11),
+              ),
+            ),
           )
         else
           ..._favorites.map((fav) {
@@ -855,6 +992,244 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
               ),
             );
           }),
+      ],
+    );
+  }
+
+  // ==========================================
+  // UNIFIED GENERAL OMNISEARCH RESULTS
+  // ==========================================
+  Widget _buildOmnisearchResults(bool isDark) {
+    final q = _searchQuery.trim().toLowerCase();
+
+    final filteredRequests = _serviceRequests.where((r) {
+      final title = (r['title'] ?? '').toString().toLowerCase();
+      final desc = (r['description'] ?? '').toString().toLowerCase();
+      final status = (r['status'] ?? '').toString().toLowerCase();
+      return title.contains(q) || desc.contains(q) || status.contains(q);
+    }).toList();
+
+    final filteredEscrow = _escrowDeals.where((e) {
+      final title = (e['title'] ?? '').toString().toLowerCase();
+      final code = (e['dealCode'] ?? '').toString().toLowerCase();
+      final prov = (e['provider']?['name'] ?? '').toString().toLowerCase();
+      return title.contains(q) || code.contains(q) || prov.contains(q);
+    }).toList();
+
+    final filteredLiked = _likedProducts.where((p) {
+      final title = (p['title'] ?? '').toString().toLowerCase();
+      final cat = (p['category'] ?? '').toString().toLowerCase();
+      final biz = (p['businessName'] ?? '').toString().toLowerCase();
+      return title.contains(q) || cat.contains(q) || biz.contains(q);
+    }).toList();
+
+    final filteredStores = _favorites.where((f) {
+      final bizName = (f['business']?['businessName'] ?? '').toString().toLowerCase();
+      final zone = (f['business']?['zone'] ?? '').toString().toLowerCase();
+      return bizName.contains(q) || zone.contains(q);
+    }).toList();
+
+    final filteredPosts = _communityPosts.where((c) {
+      final title = (c['title'] ?? '').toString().toLowerCase();
+      final content = (c['content'] ?? '').toString().toLowerCase();
+      return title.contains(q) || content.contains(q);
+    }).toList();
+
+    final totalFound = filteredRequests.length + filteredEscrow.length + filteredLiked.length + filteredStores.length + filteredPosts.length;
+
+    if (totalFound == 0) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.search_off_rounded, size: 48, color: Colors.grey[400]),
+              const Gap(10),
+              Text('No records matching "$_searchQuery"', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              const Gap(4),
+              const Text('Search across your requests, escrow deals, saved items, and forum posts.', style: TextStyle(color: Colors.grey, fontSize: 11), textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('SEARCH RESULTS FOR "$_searchQuery"', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
+            Text('$totalFound found', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.grey)),
+          ],
+        ),
+        const Gap(12),
+
+        // 1. Matching Liked Products
+        if (filteredLiked.isNotEmpty) ...[
+          Text('❤️ Liked Products (${filteredLiked.length})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+          const Gap(6),
+          ...filteredLiked.map((prod) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: ServoraCard(
+                  padding: const EdgeInsets.all(10),
+                  child: InkWell(
+                    onTap: () => context.push('/products/${prod['slug'] ?? prod['id']}', extra: prod),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: CachedNetworkImage(
+                            imageUrl: prod['image'] ?? '',
+                            width: 42,
+                            height: 42,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Container(width: 42, height: 42, color: Colors.grey[300]),
+                          ),
+                        ),
+                        const Gap(10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(prod['title'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              Text('GH₵ ${prod['price']} • ${prod['businessName']}', style: const TextStyle(fontSize: 10.5, color: ServoraColors.emerald600)),
+                            ],
+                          ),
+                        ),
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), minimumSize: const Size(50, 26)),
+                          onPressed: () => context.push('/products/${prod['slug'] ?? prod['id']}', extra: prod),
+                          child: const Text('View', style: TextStyle(fontSize: 9.5)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )),
+          const Gap(10),
+        ],
+
+        // 2. Matching Requests
+        if (filteredRequests.isNotEmpty) ...[
+          Text('📋 Service Requests (${filteredRequests.length})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+          const Gap(6),
+          ...filteredRequests.map((req) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: ServoraCard(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(req['title'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            Text('Status: ${req['status']} • ${req['quotes']?.length ?? 0} quotes', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), minimumSize: const Size(50, 26)),
+                        onPressed: () => context.push('/requests/${req['id']}'),
+                        child: const Text('Details', style: TextStyle(fontSize: 9.5)),
+                      ),
+                    ],
+                  ),
+                ),
+              )),
+          const Gap(10),
+        ],
+
+        // 3. Matching Escrow Deals
+        if (filteredEscrow.isNotEmpty) ...[
+          Text('🛡️ Escrow Contracts (${filteredEscrow.length})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+          const Gap(6),
+          ...filteredEscrow.map((deal) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: ServoraCard(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(deal['title'] ?? 'Deal', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            Text('GH₵ ${deal['amount']} • ${deal['provider']?['name'] ?? "Artisan"}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: ServoraColors.emerald600.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                        child: Text(deal['status'] ?? 'VAULT', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                      ),
+                    ],
+                  ),
+                ),
+              )),
+          const Gap(10),
+        ],
+
+        // 4. Matching Saved Stores
+        if (filteredStores.isNotEmpty) ...[
+          Text('🏢 Saved Businesses (${filteredStores.length})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+          const Gap(6),
+          ...filteredStores.map((fav) {
+            final biz = fav['business'] ?? {};
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: ServoraCard(
+                padding: const EdgeInsets.all(10),
+                child: Row(
+                  children: [
+                    const Icon(Icons.storefront_rounded, size: 20, color: ServoraColors.emerald600),
+                    const Gap(8),
+                    Expanded(
+                      child: Text(biz['businessName'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), minimumSize: const Size(50, 26)),
+                      onPressed: () => context.push('/biz/${biz['slug'] ?? biz['id']}'),
+                      child: const Text('Store', style: TextStyle(fontSize: 9.5)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const Gap(10),
+        ],
+
+        // 5. Matching Community Posts
+        if (filteredPosts.isNotEmpty) ...[
+          Text('💬 Community Posts (${filteredPosts.length})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+          const Gap(6),
+          ...filteredPosts.map((post) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: ServoraCard(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.forum_outlined, size: 18, color: Colors.grey),
+                      const Gap(8),
+                      Expanded(
+                        child: Text(post['title'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), minimumSize: const Size(50, 26)),
+                        onPressed: () => context.push('/community/${post['id']}'),
+                        child: const Text('Read', style: TextStyle(fontSize: 9.5)),
+                      ),
+                    ],
+                  ),
+                ),
+              )),
+        ],
       ],
     );
   }

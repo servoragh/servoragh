@@ -26,6 +26,14 @@ class ApiClient {
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+          final userId = await storageService.getUserId();
+          if (userId != null && userId.isNotEmpty) {
+            options.headers['x-user-id'] = userId;
+          }
+          final userPhone = await storageService.getUserPhone();
+          if (userPhone != null && userPhone.isNotEmpty) {
+            options.headers['x-user-phone'] = userPhone;
+          }
           return handler.next(options);
         },
         onError: (DioException error, handler) {

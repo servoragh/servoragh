@@ -248,6 +248,354 @@ export default function PublicDigitalStorefrontPage() {
     return name.includes(q) || description.includes(q);
   });
 
+  const renderProductCard = (p: any) => {
+    const pImages: string[] = Array.isArray(p.images)
+      ? p.images
+      : typeof p.images === "string"
+      ? (() => {
+          try {
+            const parsed = JSON.parse(p.images);
+            return Array.isArray(parsed) ? parsed : [p.images];
+          } catch {
+            return p.images ? [p.images] : [];
+          }
+        })()
+      : [];
+
+    const hasDiscount = p.originalPrice && Number(p.originalPrice) > Number(p.price);
+    const discountPercent = hasDiscount
+      ? Math.round(((Number(p.originalPrice) - Number(p.price)) / Number(p.originalPrice)) * 100)
+      : 0;
+
+    return (
+      <div
+        key={p.id}
+        className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
+      >
+        <div>
+          <Link
+            href={`/products/${p.slug || p.id}`}
+            className="block relative aspect-[4/3] w-full rounded-2xl bg-stone-100 dark:bg-stone-800 overflow-hidden mb-3 group/img"
+          >
+            {pImages[0] ? (
+              <img
+                src={pImages[0]}
+                alt={p.title}
+                className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-stone-400">
+                <Package className="w-8 h-8 opacity-40" />
+              </div>
+            )}
+
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 flex-wrap">
+              {hasDiscount && (
+                <span className="px-2 py-0.5 bg-rose-600 text-white text-[10px] font-black rounded-lg shadow-sm">
+                  🏷️ {discountPercent}% OFF
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setViewingProduct({ ...p, images: pImages });
+                setActiveImageIndex(0);
+                setViewingMediaType(p.videoUrl && pImages.length === 0 ? "video" : "image");
+              }}
+              className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 hover:bg-black text-white text-[10px] font-bold rounded-lg backdrop-blur-sm flex items-center gap-1 transition-all"
+              title="Preview full photos"
+            >
+              <Eye className="w-3 h-3" /> {pImages.length > 1 ? `${pImages.length} Photos` : "Zoom"}
+            </button>
+          </Link>
+
+          {pImages.length > 1 && (
+            <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1 scrollbar-none">
+              {pImages.map((imgUrl, idx) => (
+                <img
+                  key={idx}
+                  src={imgUrl}
+                  alt={`${p.title} photo ${idx + 1}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setViewingProduct({ ...p, images: pImages });
+                    setActiveImageIndex(idx);
+                    setViewingMediaType("image");
+                  }}
+                  className="w-9 h-9 rounded-xl object-cover border border-stone-200 dark:border-stone-700 cursor-pointer hover:border-emerald-500 transition-all shrink-0 hover:scale-105"
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{p.category}</span>
+            {p.stockQuantity !== undefined && (
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  p.stockQuantity > 0
+                    ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                    : "bg-rose-50 dark:bg-rose-950 text-rose-600"
+                }`}
+              >
+                {p.stockQuantity > 0 ? `✓ In Stock (${p.stockQuantity})` : "Out of Stock"}
+              </span>
+            )}
+          </div>
+
+          <Link href={`/products/${p.slug || p.id}`} className="block group/title">
+            <h4 className="text-sm font-bold text-stone-900 dark:text-white line-clamp-2 group-hover/title:text-emerald-600 transition-colors">
+              {p.title}
+            </h4>
+          </Link>
+          <p className="text-xs text-stone-500 line-clamp-2 mt-1">{p.description}</p>
+        </div>
+
+        <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between mt-3">
+          <div>
+            <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
+              {formatGHS(p.price)}
+            </span>
+            {hasDiscount && (
+              <span className="block text-[11px] text-stone-400 line-through font-semibold">
+                {formatGHS(p.originalPrice)}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleWhatsAppClick(p.title)}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1"
+            >
+              <MessageSquare className="w-3.5 h-3.5" /> Order
+            </button>
+            <Link
+              href={`/products/${p.slug || p.id}`}
+              className="p-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-xl transition-all"
+              title="View full details"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderRentalCard = (r: any) => {
+    const rImages: string[] = Array.isArray(r.images)
+      ? r.images
+      : typeof r.images === "string"
+      ? (() => {
+          try {
+            return JSON.parse(r.images);
+          } catch {
+            return r.images ? [r.images] : [];
+          }
+        })()
+      : [];
+
+    return (
+      <div
+        key={r.id}
+        className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-all group"
+      >
+        <div>
+          <div
+            onClick={() => openLightbox(r.title, rImages, 0)}
+            className="cursor-zoom-in group/img aspect-video w-full rounded-2xl bg-amber-50 dark:bg-amber-950/40 overflow-hidden mb-3 relative"
+          >
+            {rImages[0] ? (
+              <img
+                src={rImages[0]}
+                alt={r.title}
+                className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-amber-500">
+                <Wrench className="w-8 h-8 opacity-40" />
+              </div>
+            )}
+
+            {rImages.length > 0 && (
+              <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
+                <span className="opacity-0 group-hover/img:opacity-100 transition-opacity px-2.5 py-1 bg-black/80 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow">
+                  <Maximize2 className="w-3 h-3" /> View Full Size
+                </span>
+              </div>
+            )}
+
+            {rImages.length > 1 && (
+              <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm flex items-center gap-1">
+                <Eye className="w-3 h-3" /> {rImages.length} Photos
+              </span>
+            )}
+          </div>
+
+          {rImages.length > 1 && (
+            <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
+              {rImages.map((imgUrl: string, idx: number) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openLightbox(r.title, rImages, idx);
+                  }}
+                  className="w-10 h-10 rounded-xl overflow-hidden border border-amber-200 dark:border-amber-900 shrink-0 hover:scale-105 transition-transform cursor-pointer"
+                >
+                  <img src={imgUrl} alt={`${r.title} ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold text-amber-600 uppercase">{r.category}</span>
+            {r.operatorIncluded && (
+              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
+                + Operator Included
+              </span>
+            )}
+          </div>
+
+          <h4
+            onClick={() => {
+              setViewingRental({ ...r, images: rImages });
+              setActiveImageIndex(0);
+            }}
+            className="text-base font-bold text-stone-900 dark:text-white mt-1 cursor-pointer hover:text-amber-600 transition"
+          >
+            {r.title}
+          </h4>
+          <p className="text-xs text-stone-500 line-clamp-2 mt-1">{r.description}</p>
+        </div>
+
+        <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
+          <div>
+            <span className="text-base font-black text-amber-600 dark:text-amber-400">
+              {formatGHS(r.dailyRate)} / day
+            </span>
+            {r.weeklyRate && (
+              <span className="block text-[10px] text-stone-400">
+                {formatGHS(r.weeklyRate)} / week
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => handleWhatsAppClick(`Rental: ${r.title}`)}
+            className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <MessageSquare className="w-3.5 h-3.5" /> Book Rental
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderServiceCard = (s: any) => {
+    const sPhotos: string[] = Array.isArray(s.portfolioPhotos)
+      ? s.portfolioPhotos
+      : typeof s.portfolioPhotos === "string"
+      ? (() => {
+          try {
+            return JSON.parse(s.portfolioPhotos);
+          } catch {
+            return s.portfolioPhotos ? [s.portfolioPhotos] : [];
+          }
+        })()
+      : [];
+
+    return (
+      <div
+        key={s.id}
+        className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-all group"
+      >
+        <div>
+          {sPhotos.length > 0 ? (
+            <div
+              onClick={() => openLightbox(s.serviceName, sPhotos, 0)}
+              className="cursor-zoom-in group/img aspect-video w-full rounded-2xl bg-blue-50 dark:bg-blue-950/40 overflow-hidden mb-3 relative"
+            >
+              <img
+                src={sPhotos[0]}
+                alt={s.serviceName}
+                className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
+                <span className="opacity-0 group-hover/img:opacity-100 transition-opacity px-2.5 py-1 bg-black/80 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow">
+                  <Maximize2 className="w-3 h-3" /> View Full Size
+                </span>
+              </div>
+              {sPhotos.length > 1 && (
+                <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm flex items-center gap-1">
+                  <Eye className="w-3 h-3" /> {sPhotos.length} Photos
+                </span>
+              )}
+            </div>
+          ) : null}
+
+          {sPhotos.length > 1 && (
+            <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
+              {sPhotos.map((imgUrl: string, idx: number) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openLightbox(s.serviceName, sPhotos, idx);
+                  }}
+                  className="w-10 h-10 rounded-xl overflow-hidden border border-blue-200 dark:border-blue-900 shrink-0 hover:scale-105 transition-transform cursor-pointer"
+                >
+                  <img src={imgUrl} alt={`${s.serviceName} ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <h4
+            onClick={() => {
+              setViewingService({ ...s, portfolioPhotos: sPhotos });
+              setActiveImageIndex(0);
+            }}
+            className="text-base font-bold text-stone-900 dark:text-white cursor-pointer hover:text-emerald-600 transition"
+          >
+            {s.serviceName}
+          </h4>
+          <p className="text-xs text-stone-500 line-clamp-3 mt-1 leading-relaxed">{s.description}</p>
+        </div>
+
+        <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
+          <div>
+            <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
+              {s.priceStartingFrom ? `From ${formatGHS(s.priceStartingFrom)}` : "Custom Quote"}
+            </span>
+            {s.pricingModel && (
+              <span className="block text-[10px] text-stone-400 capitalize">
+                Model: {s.pricingModel.toLowerCase()}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              setViewingService({ ...s, portfolioPhotos: sPhotos });
+              setIsQuoteModalOpen(true);
+            }}
+            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <MessageSquare className="w-3.5 h-3.5" /> Get Estimate
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 py-8 lg:py-12 text-stone-900 dark:text-stone-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -491,425 +839,137 @@ export default function PublicDigitalStorefrontPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-stone-200 dark:border-stone-800">
-            <button
-              onClick={() => setActiveTab("products")}
-              className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                activeTab === "products"
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                  : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300"
-              }`}
-            >
-              <Package className="w-4 h-4" /> Products ({products.length})
-            </button>
+          {searchQuery.trim() ? (
+            /* UNIFIED GENERAL OMNISEARCH RESULTS */
+            <div className="space-y-8">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-emerald-600 tracking-wider">
+                  All Catalog Results for &quot;{searchQuery}&quot; ({products.length + rentals.length + services.length} items)
+                </span>
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="text-xs text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 underline cursor-pointer"
+                >
+                  Clear search
+                </button>
+              </div>
 
-            <button
-              onClick={() => setActiveTab("rentals")}
-              className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                activeTab === "rentals"
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                  : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300"
-              }`}
-            >
-              <Wrench className="w-4 h-4" /> Equipment Rentals ({rentals.length})
-            </button>
+              {products.length === 0 && rentals.length === 0 && services.length === 0 && (
+                <div className="py-16 text-center text-stone-400 text-xs">
+                  No products, equipment rentals, or services matching &quot;{searchQuery}&quot; found in this store.
+                </div>
+              )}
 
-            <button
-              onClick={() => setActiveTab("services")}
-              className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                activeTab === "services"
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                  : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300"
-              }`}
-            >
-              <Layers className="w-4 h-4" /> Services Offered ({services.length})
-            </button>
-          </div>
-
-          {/* PRODUCTS SHOWCASE */}
-          {activeTab === "products" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((p: any) => {
-                const pImages: string[] = Array.isArray(p.images)
-                  ? p.images
-                  : typeof p.images === "string"
-                  ? (() => {
-                      try {
-                        const parsed = JSON.parse(p.images);
-                        return Array.isArray(parsed) ? parsed : [p.images];
-                      } catch {
-                        return p.images ? [p.images] : [];
-                      }
-                    })()
-                  : [];
-
-                const hasDiscount = p.originalPrice && Number(p.originalPrice) > Number(p.price);
-                const discountPercent = hasDiscount
-                  ? Math.round(((Number(p.originalPrice) - Number(p.price)) / Number(p.originalPrice)) * 100)
-                  : 0;
-
-                return (
-                  <div
-                    key={p.id}
-                    className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
-                  >
-                    <div>
-                      {/* Clickable Main Image linking to product detail view */}
-                      <Link
-                        href={`/products/${p.slug || p.id}`}
-                        className="block relative aspect-[4/3] w-full rounded-2xl bg-stone-100 dark:bg-stone-800 overflow-hidden mb-3 group/img"
-                      >
-                        {pImages[0] ? (
-                          <img
-                            src={pImages[0]}
-                            alt={p.title}
-                            className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-stone-400">
-                            <Package className="w-8 h-8 opacity-40" />
-                          </div>
-                        )}
-
-                        <div className="absolute top-2 left-2 flex items-center gap-1.5 flex-wrap">
-                          {hasDiscount && (
-                            <span className="px-2 py-0.5 bg-rose-600 text-white text-[10px] font-black rounded-lg shadow-sm">
-                              🏷️ {discountPercent}% OFF
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Separate Lightbox zoom button on click */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setViewingProduct({ ...p, images: pImages });
-                            setActiveImageIndex(0);
-                            setViewingMediaType(p.videoUrl && pImages.length === 0 ? "video" : "image");
-                          }}
-                          className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 hover:bg-black text-white text-[10px] font-bold rounded-lg backdrop-blur-sm flex items-center gap-1 transition-all"
-                          title="Preview full photos"
-                        >
-                          <Eye className="w-3 h-3" /> {pImages.length > 1 ? `${pImages.length} Photos` : "Zoom"}
-                        </button>
-                      </Link>
-
-                      {/* Display thumbnail row of ALL uploaded images */}
-                      {pImages.length > 1 && (
-                        <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1 scrollbar-none">
-                          {pImages.map((imgUrl, idx) => (
-                            <img
-                              key={idx}
-                              src={imgUrl}
-                              alt={`${p.title} photo ${idx + 1}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setViewingProduct({ ...p, images: pImages });
-                                setActiveImageIndex(idx);
-                                setViewingMediaType("image");
-                              }}
-                              className="w-9 h-9 rounded-xl object-cover border border-stone-200 dark:border-stone-700 cursor-pointer hover:border-emerald-500 transition-all shrink-0 hover:scale-105"
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{p.category}</span>
-                        {p.stockQuantity !== undefined && (
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              p.stockQuantity > 0
-                                ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                                : "bg-rose-50 dark:bg-rose-950 text-rose-600"
-                            }`}
-                          >
-                            {p.stockQuantity > 0 ? `✓ In Stock (${p.stockQuantity})` : "Out of Stock"}
-                          </span>
-                        )}
-                      </div>
-
-                      <Link href={`/products/${p.slug || p.id}`} className="block group/title">
-                        <h4 className="text-sm font-bold text-stone-900 dark:text-white line-clamp-2 group-hover/title:text-emerald-600 transition-colors">
-                          {p.title}
-                        </h4>
-                      </Link>
-                      <p className="text-xs text-stone-500 line-clamp-2 mt-1">{p.description}</p>
-                    </div>
-
-                    <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between mt-3">
-                      <div>
-                        <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
-                          {formatGHS(p.price)}
-                        </span>
-                        {hasDiscount && (
-                          <span className="block text-[11px] text-stone-400 line-through font-semibold">
-                            {formatGHS(p.originalPrice)}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleWhatsAppClick(p.title)}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" /> Order
-                        </button>
-                        <Link
-                          href={`/products/${p.slug || p.id}`}
-                          className="p-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-xl transition-all"
-                          title="View full details"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
-                    </div>
+              {/* 1. Matching Products */}
+              {products.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-extrabold text-stone-900 dark:text-white flex items-center gap-2">
+                    <Package className="w-4 h-4 text-emerald-600" /> Products &amp; Goods ({products.length})
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {products.map((p: any) => renderProductCard(p))}
                   </div>
-                );
-              })}
-              {products.length === 0 && (
-                <div className="col-span-full py-16 text-center text-stone-400 text-xs">
-                  No active products listed on this digital storefront yet.
+                </div>
+              )}
+
+              {/* 2. Matching Equipment Rentals */}
+              {rentals.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-extrabold text-stone-900 dark:text-white flex items-center gap-2">
+                    <Wrench className="w-4 h-4 text-amber-600" /> Equipment Rentals ({rentals.length})
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {rentals.map((r: any) => renderRentalCard(r))}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Matching Services */}
+              {services.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-extrabold text-stone-900 dark:text-white flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-emerald-600" /> Services Offered ({services.length})
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {services.map((s: any) => renderServiceCard(s))}
+                  </div>
                 </div>
               )}
             </div>
-          )}
+          ) : (
+            <>
+              {/* Normal 3-Tab Segment Selector */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-stone-200 dark:border-stone-800">
+                <button
+                  onClick={() => setActiveTab("products")}
+                  className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+                    activeTab === "products"
+                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                      : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300"
+                  }`}
+                >
+                  <Package className="w-4 h-4" /> Products ({products.length})
+                </button>
 
-          {/* RENTALS SHOWCASE */}
-          {activeTab === "rentals" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {rentals.map((r: any) => {
-                const rImages: string[] = Array.isArray(r.images)
-                  ? r.images
-                  : typeof r.images === "string"
-                  ? (() => {
-                      try {
-                        return JSON.parse(r.images);
-                      } catch {
-                        return r.images ? [r.images] : [];
-                      }
-                    })()
-                  : [];
+                <button
+                  onClick={() => setActiveTab("rentals")}
+                  className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+                    activeTab === "rentals"
+                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                      : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300"
+                  }`}
+                >
+                  <Wrench className="w-4 h-4" /> Equipment Rentals ({rentals.length})
+                </button>
 
-                return (
-                  <div
-                    key={r.id}
-                    className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-all group"
-                  >
-                    <div>
-                      <div
-                        onClick={() => openLightbox(r.title, rImages, 0)}
-                        className="cursor-zoom-in group/img aspect-video w-full rounded-2xl bg-amber-50 dark:bg-amber-950/40 overflow-hidden mb-3 relative"
-                      >
-                        {rImages[0] ? (
-                          <img
-                            src={rImages[0]}
-                            alt={r.title}
-                            className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-amber-500">
-                            <Wrench className="w-8 h-8 opacity-40" />
-                          </div>
-                        )}
+                <button
+                  onClick={() => setActiveTab("services")}
+                  className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+                    activeTab === "services"
+                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                      : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300"
+                  }`}
+                >
+                  <Layers className="w-4 h-4" /> Services Offered ({services.length})
+                </button>
+              </div>
 
-                        {rImages.length > 0 && (
-                          <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
-                            <span className="opacity-0 group-hover/img:opacity-100 transition-opacity px-2.5 py-1 bg-black/80 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow">
-                              <Maximize2 className="w-3 h-3" /> View Full Size
-                            </span>
-                          </div>
-                        )}
-
-                        {rImages.length > 1 && (
-                          <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm flex items-center gap-1">
-                            <Eye className="w-3 h-3" /> {rImages.length} Photos
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Thumbnail strip */}
-                      {rImages.length > 1 && (
-                        <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
-                          {rImages.map((imgUrl: string, idx: number) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openLightbox(r.title, rImages, idx);
-                              }}
-                              className="w-10 h-10 rounded-xl overflow-hidden border border-amber-200 dark:border-amber-900 shrink-0 hover:scale-105 transition-transform cursor-pointer"
-                            >
-                              <img src={imgUrl} alt={`${r.title} ${idx + 1}`} className="w-full h-full object-cover" />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-bold text-amber-600 uppercase">{r.category}</span>
-                        {r.operatorIncluded && (
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
-                            + Operator Included
-                          </span>
-                        )}
-                      </div>
-
-                      <h4
-                        onClick={() => {
-                          setViewingRental({ ...r, images: rImages });
-                          setActiveImageIndex(0);
-                        }}
-                        className="text-base font-bold text-stone-900 dark:text-white mt-1 cursor-pointer hover:text-amber-600 transition"
-                      >
-                        {r.title}
-                      </h4>
-                      <p className="text-xs text-stone-500 line-clamp-2 mt-1">{r.description}</p>
+              {/* PRODUCTS SHOWCASE */}
+              {activeTab === "products" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {products.map((p: any) => renderProductCard(p))}
+                  {products.length === 0 && (
+                    <div className="col-span-full py-16 text-center text-stone-400 text-xs">
+                      No active products listed on this digital storefront yet.
                     </div>
-
-                    <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
-                      <div>
-                        <span className="text-base font-black text-amber-600 dark:text-amber-400">
-                          {formatGHS(r.dailyRate)} / day
-                        </span>
-                        {r.weeklyRate && (
-                          <span className="block text-[10px] text-stone-400">
-                            {formatGHS(r.weeklyRate)} / week
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleWhatsAppClick(`Rental: ${r.title}`)}
-                        className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition-all cursor-pointer"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" /> Book Rental
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-              {rentals.length === 0 && (
-                <div className="col-span-full py-16 text-center text-stone-400 text-xs">
-                  No heavy machinery or tool rentals listed yet.
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* SERVICES SHOWCASE */}
-          {activeTab === "services" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.map((s: any) => {
-                const sPhotos: string[] = Array.isArray(s.portfolioPhotos)
-                  ? s.portfolioPhotos
-                  : typeof s.portfolioPhotos === "string"
-                  ? (() => {
-                      try {
-                        return JSON.parse(s.portfolioPhotos);
-                      } catch {
-                        return s.portfolioPhotos ? [s.portfolioPhotos] : [];
-                      }
-                    })()
-                  : [];
-
-                return (
-                  <div
-                    key={s.id}
-                    className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-all group"
-                  >
-                    <div>
-                      {/* Portfolio Photo Banner */}
-                      {sPhotos.length > 0 ? (
-                        <div
-                          onClick={() => openLightbox(s.serviceName, sPhotos, 0)}
-                          className="cursor-zoom-in group/img aspect-video w-full rounded-2xl bg-blue-50 dark:bg-blue-950/40 overflow-hidden mb-3 relative"
-                        >
-                          <img
-                            src={sPhotos[0]}
-                            alt={s.serviceName}
-                            className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
-                            <span className="opacity-0 group-hover/img:opacity-100 transition-opacity px-2.5 py-1 bg-black/80 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow">
-                              <Maximize2 className="w-3 h-3" /> View Full Size
-                            </span>
-                          </div>
-                          {sPhotos.length > 1 && (
-                            <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm flex items-center gap-1">
-                              <Eye className="w-3 h-3" /> {sPhotos.length} Photos
-                            </span>
-                          )}
-                        </div>
-                      ) : null}
-
-                      {/* Thumbnail strip */}
-                      {sPhotos.length > 1 && (
-                        <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
-                          {sPhotos.map((imgUrl: string, idx: number) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openLightbox(s.serviceName, sPhotos, idx);
-                              }}
-                              className="w-10 h-10 rounded-xl overflow-hidden border border-blue-200 dark:border-blue-900 shrink-0 hover:scale-105 transition-transform cursor-pointer"
-                            >
-                              <img src={imgUrl} alt={`${s.serviceName} ${idx + 1}`} className="w-full h-full object-cover" />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-bold text-blue-600 uppercase">Service Menu</span>
-                        {s.estimatedDuration && (
-                          <span className="text-[10px] text-stone-400 flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {s.estimatedDuration}
-                          </span>
-                        )}
-                      </div>
-
-                      <h4
-                        onClick={() => {
-                          setViewingService({ ...s, photos: sPhotos });
-                          setActiveImageIndex(0);
-                        }}
-                        className="text-base font-bold text-stone-900 dark:text-white cursor-pointer hover:text-blue-600 transition"
-                      >
-                        {s.serviceName}
-                      </h4>
-                      <p className="text-xs text-stone-500 line-clamp-3 mt-2">{s.description}</p>
+              {/* RENTALS SHOWCASE */}
+              {activeTab === "rentals" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {rentals.map((r: any) => renderRentalCard(r))}
+                  {rentals.length === 0 && (
+                    <div className="col-span-full py-16 text-center text-stone-400 text-xs">
+                      No heavy machinery or tool rentals listed yet.
                     </div>
-
-                    <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
-                      <span className="text-base font-black text-blue-600 dark:text-blue-400">
-                        {s.startingPrice ? formatGHS(s.startingPrice) : "On Quote"}
-                      </span>
-                      <button
-                        onClick={() => {
-                          setCustNotes(`Interested in service: "${s.serviceName}"`);
-                          setIsQuoteModalOpen(true);
-                        }}
-                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition-all cursor-pointer"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" /> Get Estimate
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-              {services.length === 0 && (
-                <div className="col-span-full py-16 text-center text-stone-400 text-xs">
-                  No custom service options listed yet.
+                  )}
                 </div>
               )}
-            </div>
+
+              {/* SERVICES SHOWCASE */}
+              {activeTab === "services" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {services.map((s: any) => renderServiceCard(s))}
+                  {services.length === 0 && (
+                    <div className="col-span-full py-16 text-center text-stone-400 text-xs">
+                      No custom service options listed yet.
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

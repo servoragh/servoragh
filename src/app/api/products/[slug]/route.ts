@@ -400,21 +400,6 @@ export async function GET(
       productIdForRelations = productPayload.id;
     }
 
-    // 2. Fetch User's Like State
-    let isLiked = false;
-    if (userId) {
-      try {
-        const likeRows = (await prisma.$queryRawUnsafe(
-          `SELECT id FROM "ProductLike" WHERE "productId" = $1 AND "userId" = $2 LIMIT 1`,
-          productIdForRelations,
-          userId
-        ).catch(() => [])) as any[];
-        isLiked = Array.isArray(likeRows) && likeRows.length > 0;
-      } catch {
-        isLiked = false;
-      }
-    }
-
     // 3. Fetch Questions & Answers (Threaded Community Q&A)
     let questions: any[] = [];
     try {
@@ -588,6 +573,47 @@ export async function GET(
       });
     } catch {
       recommendations = [];
+    }
+
+    // 6. Check if authenticated user has liked this product
+    let isLiked = false;
+    if (userId && productIdForRelations) {
+      try {
+        const userLike = await prisma.productLike.findUnique({
+          where: {
+            productId_userId: {
+              productId: productIdForRelations,
+              userId: userId,
+            },
+          },
+        });
+        if (userLike) {
+          isLiked = true;
+        } else if (session?.phone) {
+          const userObj = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { phone: session.phone },
+                { phone: session.phone.replace("+233", "0") },
+                { phone: "+233" + session.phone.replace(/^0/, "") },
+              ],
+            },
+          });
+          if (userObj) {
+            const fallbackLike = await prisma.productLike.findUnique({
+              where: {
+                productId_userId: {
+                  productId: productIdForRelations,
+                  userId: userObj.id,
+                },
+              },
+            });
+            if (fallbackLike) isLiked = true;
+          }
+        }
+      } catch {
+        isLiked = false;
+      }
     }
 
     return NextResponse.json({

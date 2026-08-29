@@ -196,6 +196,75 @@ export async function GET(req: Request) {
       console.warn("Favorites query error:", e);
     }
 
+    let likedProducts: any[] = [];
+    try {
+      const likeConditions: any[] = [];
+      if (isValidUuid(userId)) likeConditions.push({ userId });
+      if (isValidUuid(user.id)) likeConditions.push({ userId: user.id });
+
+      const rawLikes = await prisma.productLike.findMany({
+        where: likeConditions.length > 0 ? { OR: likeConditions } : undefined,
+        include: {
+          product: {
+            include: {
+              business: {
+                select: {
+                  id: true,
+                  businessName: true,
+                  slug: true,
+                  logoUrl: true,
+                  zone: true,
+                  phone: true,
+                  ratingAverage: true,
+                },
+              },
+              seller: {
+                select: {
+                  id: true,
+                  name: true,
+                  phone: true,
+                  avatarUrl: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { id: "desc" },
+      });
+
+      likedProducts = rawLikes
+        .filter((l) => l.product != null)
+        .map((l) => {
+          const p = l.product;
+          const parsedImages = Array.isArray(p.images)
+            ? p.images
+            : typeof p.images === "string"
+            ? JSON.parse(p.images || "[]")
+            : [];
+          return {
+            id: p.id,
+            slug: p.slug,
+            title: p.title,
+            description: p.description,
+            price: Number(p.price),
+            originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
+            discountPercent: p.discountPercent,
+            images: parsedImages,
+            image: parsedImages[0] || "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80",
+            category: p.category,
+            area: p.area || "Tamale",
+            condition: p.condition || "USED_GOOD",
+            likesCount: p.likesCount,
+            businessName: p.business?.businessName || p.seller?.name || p.guestName || "Verified Local Merchant",
+            businessSlug: p.business?.slug || "royals-motors",
+            businessPhone: p.business?.phone || p.seller?.phone || p.guestPhone || "+233240000000",
+            likedAt: l.id,
+          };
+        });
+    } catch (e) {
+      console.warn("LikedProducts query error:", e);
+    }
+
     try {
       const reviewConditions: any[] = [];
       if (isValidUuid(userId)) reviewConditions.push({ authorId: userId });
@@ -251,7 +320,7 @@ export async function GET(req: Request) {
       (r) => r.status === "OPEN" || r.status === "OFFER_ACCEPTED" || r.status === "IN_PROGRESS"
     ).length;
 
-    const savedItemsCount = favorites.length;
+    const savedItemsCount = favorites.length + likedProducts.length;
     const openDisputesCount = disputes.filter(
       (d) => d.status !== "RESOLVED" && d.status !== "REFUND_ISSUED"
     ).length;
@@ -291,6 +360,7 @@ export async function GET(req: Request) {
       escrowDeals,
       disputes,
       favorites,
+      likedProducts,
       reviews,
       communityPosts,
       activityLogs,

@@ -3,6 +3,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 class LocalStorageService {
   static const _tokenKey = 'servora_jwt_auth_token';
+  static const _userIdKey = 'servora_user_id';
+  static const _userPhoneKey = 'servora_user_phone';
   static const _userRoleKey = 'servora_user_active_role'; // CUSTOMER vs PROVIDER
   static const _selectedNeighborhoodKey = 'servora_selected_neighborhood';
 
@@ -25,6 +27,22 @@ class LocalStorageService {
 
   Future<void> clearToken() async {
     await _secureStorage.delete(key: _tokenKey);
+    await _secureStorage.delete(key: _userIdKey);
+    await _secureStorage.delete(key: _userPhoneKey);
+  }
+
+  // User Identity Management for hybrid API sync
+  Future<void> saveUserData(String? id, String? phone) async {
+    if (id != null) await _secureStorage.write(key: _userIdKey, value: id);
+    if (phone != null) await _secureStorage.write(key: _userPhoneKey, value: phone);
+  }
+
+  Future<String?> getUserId() async {
+    return await _secureStorage.read(key: _userIdKey);
+  }
+
+  Future<String?> getUserPhone() async {
+    return await _secureStorage.read(key: _userPhoneKey);
   }
 
   // Role Management (Customer Mode vs Merchant/Provider Mode)

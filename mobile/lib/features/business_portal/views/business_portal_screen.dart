@@ -1597,44 +1597,140 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
           ),
           const Gap(14),
 
-          // Segmented Catalog Sub-Tabs
-          Row(
-            children: [
-              Expanded(
-                child: _buildSegmentedFilter(
-                  label: 'Products\n(${_products.length})',
-                  isSelected: _catalogFilter == 'products',
-                  onTap: () => setState(() => _catalogFilter = 'products'),
+          if (_searchQuery.trim().isNotEmpty) ...[
+            // Unified Business Omnisearch Results Across All Categories
+            _buildBusinessOmnisearchResults(),
+          ] else ...[
+            // Segmented Catalog Sub-Tabs
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSegmentedFilter(
+                    label: 'Products\n(${_products.length})',
+                    isSelected: _catalogFilter == 'products',
+                    onTap: () => setState(() => _catalogFilter = 'products'),
+                  ),
                 ),
-              ),
-              const Gap(6),
-              Expanded(
-                child: _buildSegmentedFilter(
-                  label: 'Tool & Equipment\nRentals (${_rentals.length})',
-                  isSelected: _catalogFilter == 'rentals',
-                  onTap: () => setState(() => _catalogFilter = 'rentals'),
+                const Gap(6),
+                Expanded(
+                  child: _buildSegmentedFilter(
+                    label: 'Tool & Equipment\nRentals (${_rentals.length})',
+                    isSelected: _catalogFilter == 'rentals',
+                    onTap: () => setState(() => _catalogFilter = 'rentals'),
+                  ),
                 ),
-              ),
-              const Gap(6),
-              Expanded(
-                child: _buildSegmentedFilter(
-                  label: 'Services\nPortfolio (${_services.length})',
-                  isSelected: _catalogFilter == 'services',
-                  onTap: () => setState(() => _catalogFilter = 'services'),
+                const Gap(6),
+                Expanded(
+                  child: _buildSegmentedFilter(
+                    label: 'Services\nPortfolio (${_services.length})',
+                    isSelected: _catalogFilter == 'services',
+                    onTap: () => setState(() => _catalogFilter = 'services'),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const Gap(14),
+              ],
+            ),
+            const Gap(14),
 
-          // Real Live Items List
-          if (_catalogFilter == 'products') _buildProductsList(),
-          if (_catalogFilter == 'rentals') _buildRentalsList(),
-          if (_catalogFilter == 'services') _buildServicesList(),
+            // Real Live Items List
+            if (_catalogFilter == 'products') _buildProductsList(),
+            if (_catalogFilter == 'rentals') _buildRentalsList(),
+            if (_catalogFilter == 'services') _buildServicesList(),
+          ],
         ] else if (_activeTab == 'leads') ...[
           _buildLeadsView(),
         ] else ...[
           _buildDirectMessagesView(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBusinessOmnisearchResults() {
+    final q = _searchQuery.trim().toLowerCase();
+    final matchedProducts = _products.where((p) {
+      final title = (p['title'] ?? '').toString().toLowerCase();
+      final category = (p['category'] ?? '').toString().toLowerCase();
+      final desc = (p['description'] ?? '').toString().toLowerCase();
+      return title.contains(q) || category.contains(q) || desc.contains(q);
+    }).toList();
+
+    final matchedRentals = _rentals.where((r) {
+      final title = (r['title'] ?? '').toString().toLowerCase();
+      final category = (r['category'] ?? '').toString().toLowerCase();
+      final desc = (r['description'] ?? '').toString().toLowerCase();
+      return title.contains(q) || category.contains(q) || desc.contains(q);
+    }).toList();
+
+    final matchedServices = _services.where((s) {
+      final name = (s['name'] ?? s['serviceName'] ?? '').toString().toLowerCase();
+      final desc = (s['description'] ?? '').toString().toLowerCase();
+      return name.contains(q) || desc.contains(q);
+    }).toList();
+
+    final totalFound = matchedProducts.length + matchedRentals.length + matchedServices.length;
+
+    if (totalFound == 0) {
+      return _buildEmptyState(
+        'No matches for "$_searchQuery"',
+        'No products, equipment rentals, or services matching "$_searchQuery" found in your portal.',
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'ALL CATALOG RESULTS ("$_searchQuery")',
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
+            ),
+            Text(
+              '$totalFound items',
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+            ),
+          ],
+        ),
+        const Gap(12),
+
+        if (matchedProducts.isNotEmpty) ...[
+          Row(
+            children: [
+              const Icon(Icons.inventory_2_rounded, size: 14, color: ServoraColors.emerald600),
+              const Gap(6),
+              Text('Products (${matchedProducts.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const Gap(8),
+          _buildProductsList(),
+          const Gap(16),
+        ],
+
+        if (matchedRentals.isNotEmpty) ...[
+          Row(
+            children: [
+              const Icon(Icons.build_rounded, size: 14, color: Color(0xFFD97706)),
+              const Gap(6),
+              Text('Equipment Rentals (${matchedRentals.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const Gap(8),
+          _buildRentalsList(),
+          const Gap(16),
+        ],
+
+        if (matchedServices.isNotEmpty) ...[
+          Row(
+            children: [
+              const Icon(Icons.layers_rounded, size: 14, color: Color(0xFF2563EB)),
+              const Gap(6),
+              Text('Services Portfolio (${matchedServices.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const Gap(8),
+          _buildServicesList(),
+          const Gap(16),
         ],
       ],
     );

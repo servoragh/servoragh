@@ -16,58 +16,83 @@ export async function POST(
       return NextResponse.json({ error: "Please log in to like this item." }, { status: 401 });
     }
 
-    const userId = session.id;
+    const cleanSlug = decodeURIComponent(slug).trim();
+    const cleanIdOrSlug = cleanSlug.replace(/^(leg-prod-|prod-|rent-)/, "");
 
-    // Resolve Product ID
-    const listing: any = await prisma.productListing.findFirst({
-      where: { OR: [{ slug }, { id: slug }] },
+    // 1. Resolve User in Database (supports session ID and phone fallback)
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: session.id },
+          { phone: session.phone },
+          { phone: session.phone.replace("+233", "0") },
+          { phone: "+233" + session.phone.replace(/^0/, "") },
+        ],
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User profile not found. Please log in." }, { status: 401 });
+    }
+
+    const userId = user.id;
+
+    // 2. Resolve Product in ProductListing
+    const listing = await prisma.productListing.findFirst({
+      where: {
+        OR: [
+          { slug: { equals: cleanSlug, mode: "insensitive" } },
+          { id: cleanSlug },
+          { slug: { equals: cleanIdOrSlug, mode: "insensitive" } },
+          { id: cleanIdOrSlug },
+        ],
+      },
       select: { id: true, likesCount: true },
     });
 
     if (!listing) {
-      return NextResponse.json({ error: "Listing not found." }, { status: 404 });
+      return NextResponse.json({ error: "Product listing not found." }, { status: 404 });
     }
 
     const productId = listing.id;
 
-    // Check if like exists
-    const existing: any[] = await prisma.$queryRawUnsafe(
-      `SELECT id FROM "ProductLike" WHERE "productId" = $1 AND "userId" = $2 LIMIT 1`,
-      productId,
-      userId
-    );
+    // 3. Check if like exists using Prisma ORM
+    const existing = await prisma.productLike.findUnique({
+      where: {
+        productId_userId: {
+          productId,
+          userId,
+        },
+      },
+    }).catch(() => null);
 
     let isLiked = false;
     let newLikesCount = listing.likesCount || 0;
 
-    if (existing.length > 0) {
+    if (existing) {
       // Unlike
-      await prisma.$executeRawUnsafe(
-        `DELETE FROM "ProductLike" WHERE "productId" = $1 AND "userId" = $2`,
-        productId,
-        userId
-      );
+      await prisma.productLike.delete({
+        where: { id: existing.id },
+      });
       newLikesCount = Math.max(0, newLikesCount - 1);
       isLiked = false;
     } else {
       // Like
-      const likeId = `like_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO "ProductLike" ("id", "productId", "userId") VALUES ($1, $2, $3)`,
-        likeId,
-        productId,
-        userId
-      );
+      await prisma.productLike.create({
+        data: {
+          productId,
+          userId,
+        },
+      });
       newLikesCount = newLikesCount + 1;
       isLiked = true;
     }
 
-    // Update count on listing
-    await prisma.$executeRawUnsafe(
-      `UPDATE "ProductListing" SET "likesCount" = $1 WHERE "id" = $2`,
-      newLikesCount,
-      productId
-    );
+    // Update likesCount on product listing
+    await prisma.productListing.update({
+      where: { id: productId },
+      data: { likesCount: newLikesCount },
+    }).catch(() => null);
 
     return NextResponse.json({
       success: true,

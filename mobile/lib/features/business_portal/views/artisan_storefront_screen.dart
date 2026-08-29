@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/constants/constants.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../core/services/marketplace_api_service.dart';
 import '../../../core/utils/whatsapp_helper.dart';
@@ -153,7 +154,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
   }
 
   void _shareStorefront(String name, String slug) {
-    final url = 'https://servora.vercel.app/biz/$slug';
+    final url = '${ServoraConstants.webBaseUrl}/biz/$slug';
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -212,7 +213,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
   }
 
   void _showQrDialog(String name, String url) {
-    final qrData = url.isNotEmpty ? url : 'https://servora.vercel.app/biz/${widget.slug}';
+    final qrData = url.isNotEmpty ? url : '${ServoraConstants.webBaseUrl}/biz/${widget.slug}';
 
     showDialog(
       context: context,
@@ -717,7 +718,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                             ),
                             icon: const Icon(Icons.qr_code_2_rounded, size: 15, color: ServoraColors.emerald600),
                             label: const Text('QR Code', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            onPressed: () => _showQrDialog(name, 'https://servora.vercel.app/biz/${widget.slug}'),
+                            onPressed: () => _showQrDialog(name, '${ServoraConstants.webBaseUrl}/biz/${widget.slug}'),
                           ),
                           OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
@@ -960,51 +961,73 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
             ),
           ),
 
-          // 6. 3-Tab Segment Selector (Products, Equipment Rentals, Services Offered)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isDark ? ServoraColors.darkSurface : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
-                ),
+          // 6. Omnisearch Multi-Catalog Stream OR 3-Tab Segment Selector
+          if (_searchQuery.trim().isNotEmpty) ...[
+            // UNIFIED GENERAL OMNISEARCH RESULTS
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildSegmentTab(0, 'Products', productsList.length, isDark),
-                    _buildSegmentTab(1, 'Equipment Rentals', rentalsList.length, isDark),
-                    _buildSegmentTab(2, 'Services Offered', servicesList.length, isDark),
+                    Text(
+                      'ALL RESULTS MATCHING "$_searchQuery"',
+                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
+                    ),
+                    Text(
+                      '${productsList.length + rentalsList.length + servicesList.length} items',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+                    ),
                   ],
                 ),
               ),
             ),
-          ),
 
-          // 7. Tab Content Area
-          if (_activeTabIndex == 0) ...[
-            // PRODUCTS TAB
-            if (productsList.isEmpty)
+            if (productsList.isEmpty && rentalsList.isEmpty && servicesList.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
                   child: Center(
-                    child: Text(
-                      _searchQuery.isNotEmpty ? 'No products match "$_searchQuery"' : 'No products listed by this merchant.',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    child: Column(
+                      children: [
+                        Icon(Icons.search_off_rounded, size: 48, color: Colors.grey[400]),
+                        const Gap(10),
+                        Text(
+                          'No items matching "$_searchQuery"',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        const Gap(4),
+                        Text(
+                          'This store does not have products, equipment rentals, or services matching "$_searchQuery".',
+                          style: const TextStyle(color: Colors.grey, fontSize: 11),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              )
-            else
+              ),
+
+            // 1. PRODUCTS SECTION (if any match)
+            if (productsList.isNotEmpty) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.inventory_2_rounded, size: 16, color: ServoraColors.emerald600),
+                      const Gap(6),
+                      Text('PRODUCTS & GOODS (${productsList.length})', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+              ),
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 sliver: SliverToBoxAdapter(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Left Column (even indices: 0, 2, 4, ...)
                       Expanded(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -1028,7 +1051,6 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                         ),
                       ),
                       const Gap(10),
-                      // Right Column (odd indices: 1, 3, 5, ...)
                       Expanded(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -1055,273 +1077,414 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                   ),
                 ),
               ),
-          ] else if (_activeTabIndex == 1) ...[
-            // EQUIPMENT RENTALS TAB
-            if (rentalsList.isEmpty)
+            ],
+
+            // 2. EQUIPMENT RENTALS SECTION (if any match)
+            if (rentalsList.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Center(
-                    child: Text(
-                      _searchQuery.isNotEmpty ? 'No equipment matches "$_searchQuery"' : 'No equipment rentals listed by this merchant.',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.handyman_rounded, size: 16, color: Color(0xFFD97706)),
+                      const Gap(6),
+                      Text('EQUIPMENT RENTALS (${rentalsList.length})', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Colors.grey)),
+                    ],
                   ),
                 ),
-              )
-            else
+              ),
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final r = rentalsList[index];
-                      final rImages = _parseImagesList(r['images']);
-                      final currentImg = rImages.isNotEmpty
-                          ? rImages[0]
-                          : 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80';
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? ServoraColors.darkSurface : Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            GestureDetector(
-                              onTap: () => ServoraImageLightbox.show(
-                                context,
-                                title: r['title'] ?? 'Rental Equipment',
-                                images: rImages.isNotEmpty ? rImages : [currentImg],
-                              ),
-                              child: Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                                    child: SizedBox(
-                                      height: 140,
-                                      width: double.infinity,
-                                      child: Image.network(
-                                        currentImg,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
-                                          color: Colors.amber.withOpacity(0.15),
-                                          child: const Center(child: Icon(Icons.handyman_rounded, color: Colors.amber, size: 40)),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.7),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.zoom_in_rounded, size: 12, color: Colors.white),
-                                          const Gap(3),
-                                          Text(
-                                            rImages.length > 1 ? '📸 ${rImages.length} Photos' : 'Full Photo',
-                                            style: const TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    r['title'] ?? 'Tool / Machinery Rental',
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                  ),
-                                  if (r['description'] != null) ...[
-                                    const Gap(4),
-                                    Text(
-                                      r['description'],
-                                      style: TextStyle(fontSize: 11, color: isDark ? Colors.white70 : Colors.grey[700]),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                  const Gap(10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'GH₵ ${r['dailyRate'] ?? "0.00"} / day',
-                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFFD97706)),
-                                      ),
-                                      ElevatedButton.icon(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFFD97706),
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                        ),
-                                        icon: const Icon(Icons.handyman_rounded, size: 14),
-                                        label: const Text('Rent on WhatsApp', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                        onPressed: () => WhatsAppHelper.openWhatsApp(
-                                          phone: whatsapp,
-                                          message: "Hello $name, I want to rent '${r['title']}' listed on your Servora storefront.",
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                    (context, index) => _buildRentalCard(rentalsList[index], isDark, name, whatsapp),
                     childCount: rentalsList.length,
                   ),
                 ),
               ),
-          ] else ...[
-            // SERVICES OFFERED TAB
-            if (servicesList.isEmpty)
+            ],
+
+            // 3. SERVICES OFFERED SECTION (if any match)
+            if (servicesList.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Center(
-                    child: Text(
-                      _searchQuery.isNotEmpty ? 'No services match "$_searchQuery"' : 'No custom services listed by this artisan.',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.build_circle_rounded, size: 16, color: ServoraColors.emerald600),
+                      const Gap(6),
+                      Text('SERVICES OFFERED (${servicesList.length})', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Colors.grey)),
+                    ],
                   ),
                 ),
-              )
-            else
+              ),
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final s = servicesList[index];
-                      final sPhotos = _parseImagesList(s['portfolioPhotos'] ?? s['images']);
-                      final currentImg = sPhotos.isNotEmpty ? sPhotos[0] : '';
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? ServoraColors.darkSurface : Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (currentImg.isNotEmpty)
-                              GestureDetector(
-                                onTap: () => ServoraImageLightbox.show(
-                                  context,
-                                  title: s['name'] ?? 'Service Portfolio',
-                                  images: sPhotos,
-                                ),
-                                child: Stack(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                                      child: SizedBox(
-                                        height: 140,
-                                        width: double.infinity,
-                                        child: Image.network(
-                                          currentImg,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      bottom: 8,
-                                      right: 8,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.75),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          '📸 ${sPhotos.length} Work Photos',
-                                          style: const TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                            Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    s['name'] ?? 'Artisan Service',
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                  ),
-                                  if (s['description'] != null) ...[
-                                    const Gap(4),
-                                    Text(
-                                      s['description'],
-                                      style: TextStyle(fontSize: 11.5, color: isDark ? Colors.white70 : Colors.grey[700]),
-                                    ),
-                                  ],
-                                  const Gap(10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        s['startingPrice'] != null
-                                            ? 'Starting: GH₵ ${s['startingPrice']}'
-                                            : 'Custom Estimate',
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
-                                      ),
-                                      ElevatedButton.icon(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: ServoraColors.emerald600,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                        ),
-                                        icon: const Icon(Icons.send_rounded, size: 13),
-                                        label: const Text('Request Quote', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                        onPressed: () => WhatsAppHelper.openWhatsApp(
-                                          phone: whatsapp,
-                                          message: "Hello $name, I would like to request a quote for '${s['name']}' via Servora.",
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                    (context, index) => _buildServiceCard(servicesList[index], isDark, name, whatsapp),
                     childCount: servicesList.length,
                   ),
                 ),
               ),
+            ],
+          ] else ...[
+            // 3-Tab Segment Selector (Products, Equipment Rentals, Services Offered)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: isDark ? ServoraColors.darkSurface : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      _buildSegmentTab(0, 'Products', productsList.length, isDark),
+                      _buildSegmentTab(1, 'Equipment Rentals', rentalsList.length, isDark),
+                      _buildSegmentTab(2, 'Services Offered', servicesList.length, isDark),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Tab Content Area
+            if (_activeTabIndex == 0) ...[
+              // PRODUCTS TAB
+              if (productsList.isEmpty)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Text('No products listed by this merchant.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  sliver: SliverToBoxAdapter(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left Column
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (int i = 0; i < productsList.length; i += 2)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: _buildStorefrontProductCard(
+                                    context: context,
+                                    p: productsList[i] is Map ? Map<String, dynamic>.from(productsList[i]) : <String, dynamic>{},
+                                    index: i,
+                                    isDark: isDark,
+                                    storeData: data,
+                                    name: name,
+                                    phone: phone,
+                                    whatsapp: whatsapp,
+                                    zone: zone,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const Gap(10),
+                        // Right Column
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (int i = 1; i < productsList.length; i += 2)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: _buildStorefrontProductCard(
+                                    context: context,
+                                    p: productsList[i] is Map ? Map<String, dynamic>.from(productsList[i]) : <String, dynamic>{},
+                                    index: i,
+                                    isDark: isDark,
+                                    storeData: data,
+                                    name: name,
+                                    phone: phone,
+                                    whatsapp: whatsapp,
+                                    zone: zone,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ] else if (_activeTabIndex == 1) ...[
+              // EQUIPMENT RENTALS TAB
+              if (rentalsList.isEmpty)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Text('No equipment rentals listed by this merchant.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildRentalCard(rentalsList[index], isDark, name, whatsapp),
+                      childCount: rentalsList.length,
+                    ),
+                  ),
+                ),
+            ] else ...[
+              // SERVICES OFFERED TAB
+              if (servicesList.isEmpty)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Text('No custom services listed by this artisan.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildServiceCard(servicesList[index], isDark, name, whatsapp),
+                      childCount: servicesList.length,
+                    ),
+                  ),
+                ),
+            ],
           ],
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRentalCard(dynamic r, bool isDark, String name, String whatsapp) {
+    final rImages = _parseImagesList(r['images']);
+    final currentImg = rImages.isNotEmpty
+        ? rImages[0]
+        : 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: isDark ? ServoraColors.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: () => ServoraImageLightbox.show(
+              context,
+              title: r['title'] ?? 'Rental Equipment',
+              images: rImages.isNotEmpty ? rImages : [currentImg],
+            ),
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                  child: SizedBox(
+                    height: 140,
+                    width: double.infinity,
+                    child: Image.network(
+                      currentImg,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.amber.withOpacity(0.15),
+                        child: const Center(child: Icon(Icons.handyman_rounded, color: Colors.amber, size: 40)),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.zoom_in_rounded, size: 12, color: Colors.white),
+                        const Gap(3),
+                        Text(
+                          rImages.length > 1 ? '📸 ${rImages.length} Photos' : 'Full Photo',
+                          style: const TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  r['title'] ?? 'Tool / Machinery Rental',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                if (r['description'] != null) ...[
+                  const Gap(4),
+                  Text(
+                    r['description'],
+                    style: TextStyle(fontSize: 11, color: isDark ? Colors.white70 : Colors.grey[700]),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const Gap(10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'GH₵ ${r['dailyRate'] ?? "0.00"} / day',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFFD97706)),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD97706),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      icon: const Icon(Icons.handyman_rounded, size: 14),
+                      label: const Text('Rent on WhatsApp', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      onPressed: () => WhatsAppHelper.openWhatsApp(
+                        phone: whatsapp,
+                        message: "Hello $name, I want to rent '${r['title']}' listed on your Servora storefront.",
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceCard(dynamic s, bool isDark, String name, String whatsapp) {
+    final sPhotos = _parseImagesList(s['portfolioPhotos'] ?? s['images']);
+    final currentImg = sPhotos.isNotEmpty ? sPhotos[0] : '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: isDark ? ServoraColors.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (currentImg.isNotEmpty)
+            GestureDetector(
+              onTap: () => ServoraImageLightbox.show(
+                context,
+                title: s['name'] ?? 'Service Portfolio',
+                images: sPhotos,
+              ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                    child: SizedBox(
+                      height: 140,
+                      width: double.infinity,
+                      child: Image.network(
+                        currentImg,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '📸 ${sPhotos.length} Work Photos',
+                        style: const TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s['name'] ?? 'Artisan Service',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                if (s['description'] != null) ...[
+                  const Gap(4),
+                  Text(
+                    s['description'],
+                    style: TextStyle(fontSize: 11.5, color: isDark ? Colors.white70 : Colors.grey[700]),
+                  ),
+                ],
+                const Gap(10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      s['startingPrice'] != null
+                          ? 'Starting: GH₵ ${s['startingPrice']}'
+                          : 'Custom Estimate',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ServoraColors.emerald600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      icon: const Icon(Icons.send_rounded, size: 13),
+                      label: const Text('Request Quote', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      onPressed: () => WhatsAppHelper.openWhatsApp(
+                        phone: whatsapp,
+                        message: "Hello $name, I would like to request a quote for '${s['name']}' via Servora.",
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

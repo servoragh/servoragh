@@ -5,6 +5,7 @@ class ServoraConstants {
   // Base Backend API URL - Live Production Vercel Database & REST Server
   static const String baseUrl = 'https://servoragh-inky.vercel.app/api';
   static const String localBaseUrl = 'http://localhost:3000/api';
+  static const String webBaseUrl = 'https://servoragh-inky.vercel.app';
 
   static const List<String> northernNeighborhoods = [
     'All Northern Ghana',
