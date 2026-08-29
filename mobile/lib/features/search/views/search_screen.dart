@@ -250,7 +250,13 @@ class _SearchScreenState extends State<SearchScreen> {
         final provider = item['provider'] ?? {};
 
         return GestureDetector(
-          onTap: () => context.push('/products/detail', extra: item),
+          onTap: () {
+            final slug = item['slug']?.toString() ?? item['id']?.toString() ?? '';
+            context.push(
+              slug.isNotEmpty ? '/products/$slug' : '/products/detail',
+              extra: Map<String, dynamic>.from(item),
+            );
+          },
           child: ServoraCard(
             padding: const EdgeInsets.all(14),
             child: Row(

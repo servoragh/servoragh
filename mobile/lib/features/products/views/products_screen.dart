@@ -2,13 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../app/theme/servora_colors.dart';
-import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/servora_dropdown_sheet.dart';
-import '../../../shared/widgets/servora_shimmer_skeleton.dart';
-import '../../../core/utils/whatsapp_helper.dart';
 import '../../../core/services/marketplace_api_service.dart';
+import '../../../shared/widgets/servora_product_card.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -276,198 +273,46 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         ),
                       ),
                     )
-                  : LayoutBuilder(
-                      builder: (context, constraints) {
-                        final double itemWidth = (constraints.maxWidth - 44) / 2;
-                        final double dynamicAspectRatio = (itemWidth / 268.0).clamp(0.60, 0.68);
-                        final double imgHeight = (itemWidth * 0.55).clamp(86.0, 102.0);
-
-                        return GridView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: dynamicAspectRatio,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
+                  : SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Left column (even indices)
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                for (int i = 0; i < filtered.length; i += 2)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: ServoraProductCard(
+                                      product: Map<String, dynamic>.from(filtered[i]),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                          itemCount: filtered.length,
-                        itemBuilder: (context, index) {
-                          final p = filtered[index];
-                          final imageUrl = p['image'] as String?;
-
-                          final double price = (p['price'] is num) ? (p['price'] as num).toDouble() : 0.0;
-                          final double? originalPrice = (p['originalPrice'] is num) ? (p['originalPrice'] as num).toDouble() : null;
-
-                          final hasDiscount = originalPrice != null && originalPrice > price;
-                          final discountPct = hasDiscount ? (((originalPrice - price) / originalPrice) * 100).round() : 0;
-
-                          return GestureDetector(
-                            onTap: () => context.push('/products/detail', extra: p),
-                            child: ServoraCard(
-                              padding: EdgeInsets.zero,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Stack(
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                        child: imageUrl != null && imageUrl.isNotEmpty
-                                            ? CachedNetworkImage(
-                                                imageUrl: imageUrl,
-                                                height: imgHeight,
-                                                width: double.infinity,
-                                                fit: BoxFit.cover,
-                                                placeholder: (_, __) => ServoraShimmerSkeleton(
-                                                    width: double.infinity, height: imgHeight, borderRadius: 0),
-                                                errorWidget: (_, __, ___) => Container(
-                                                  height: imgHeight,
-                                                  color: ServoraColors.emerald600.withOpacity(0.1),
-                                                  child: const Center(
-                                                    child: Icon(Icons.inventory_2_rounded,
-                                                        size: 32, color: ServoraColors.emerald600),
-                                                  ),
-                                                ),
-                                              )
-                                            : Container(
-                                                height: imgHeight,
-                                                color: ServoraColors.emerald600.withOpacity(0.1),
-                                                child: const Center(
-                                                  child: Icon(Icons.inventory_2_rounded,
-                                                      size: 32, color: ServoraColors.emerald600),
-                                                ),
-                                              ),
-                                      ),
-
-                                  if (hasDiscount)
-                                    Positioned(
-                                      top: 6,
-                                      right: 6,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: ServoraColors.amberGold,
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Text(
-                                          '$discountPct% OFF',
-                                          style: const TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w900,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                      ),
+                          const Gap(12),
+                          // Right column (odd indices)
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                for (int i = 1; i < filtered.length; i += 2)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: ServoraProductCard(
+                                      product: Map<String, dynamic>.from(filtered[i]),
                                     ),
-                                ],
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: ServoraColors.emerald600.withOpacity(0.12),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        p['category'],
-                                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const Gap(4),
-                                    Text(
-                                      p['title'],
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, height: 1.15),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const Gap(4),
-
-                                    Wrap(
-                                      crossAxisAlignment: WrapCrossAlignment.center,
-                                      spacing: 6,
-                                      children: [
-                                        Text(
-                                          'GH₵ ${price.toStringAsFixed(0)}',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w900,
-                                            color: ServoraColors.emerald600,
-                                          ),
-                                        ),
-                                        if (hasDiscount)
-                                          Text(
-                                            'GH₵ ${originalPrice.toStringAsFixed(0)}',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.grey[500],
-                                              decoration: TextDecoration.lineThrough,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    const Gap(2),
-                                    Text(
-                                      '${p['seller']} • ${p['location']}',
-                                      style: TextStyle(fontSize: 9, color: Colors.grey[600]),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const Gap(8),
-
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: ElevatedButton.icon(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: ServoraColors.emerald600,
-                                              foregroundColor: Colors.white,
-                                              padding: const EdgeInsets.symmetric(vertical: 6),
-                                              minimumSize: Size.zero,
-                                            ),
-                                            icon: const Icon(Icons.shopping_cart_rounded, size: 12),
-                                            label: const Text('Buy', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                            onPressed: () {
-                                              WhatsAppHelper.openWhatsApp(
-                                                phone: p['phone'],
-                                                message: 'Hello, I want to purchase "${p['title']}" listed on Servora.gh app.',
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                        const Gap(4),
-                                        GestureDetector(
-                                          onTap: () => context.push('/escrow'),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(6),
-                                            decoration: BoxDecoration(
-                                              color: ServoraColors.amberLight,
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: const Icon(Icons.shield_rounded, size: 16, color: ServoraColors.amberDark),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+                        ],
+                      ),
+                    ),
             ),
           ),
         ],
