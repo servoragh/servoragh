@@ -142,6 +142,11 @@ class _AdminVerificationViewState extends State<AdminVerificationView> {
                     const Gap(4),
                     Text('Owner: ${p['user']?['name'] ?? "Artisan"} • Phone: ${p['user']?['phone'] ?? "N/A"}', style: TextStyle(fontSize: 10.5, color: isDark ? Colors.white60 : Colors.grey[700])),
                     Text('Service Area: ${p['serviceArea'] ?? "Tamale Central"}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                    if (p['idNumber'] != null || p['idCardNumber'] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text('Ghana Card ID: ${p['idNumber'] ?? p['idCardNumber']}', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                      ),
                     const Gap(10),
 
                     Row(

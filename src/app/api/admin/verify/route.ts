@@ -230,6 +230,13 @@ export async function POST(request: Request) {
       });
       userIdToNotify = business.userId;
       entityName = business.businessName;
+
+      if (status === "VERIFIED" && business.userId) {
+        await prisma.customerProfile.updateMany({
+          where: { userId: business.userId },
+          data: { verificationTier: "TIER_2_IDENTITY" },
+        });
+      }
     }
 
     // 4. Target: General User Verification Request
@@ -249,6 +256,18 @@ export async function POST(request: Request) {
         await prisma.user.update({
           where: { id: req.userId },
           data: { isPhoneVerified: true },
+        });
+        await prisma.customerProfile.updateMany({
+          where: { userId: req.userId },
+          data: { verificationTier: "TIER_2_IDENTITY" },
+        });
+        await prisma.businessProfile.updateMany({
+          where: { userId: req.userId },
+          data: { verificationStatus: "TIER_2_VERIFIED_ARTISAN" },
+        });
+        await prisma.providerProfile.updateMany({
+          where: { userId: req.userId },
+          data: { verificationStatus: "VERIFIED" },
         });
       }
       userIdToNotify = req.userId;

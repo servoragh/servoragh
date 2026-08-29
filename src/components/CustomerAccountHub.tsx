@@ -83,6 +83,16 @@ export default function CustomerAccountHub() {
   const [preferredPayment, setPreferredPayment] = useState("MOMO_ESCROW");
   const [profileVisibility, setProfileVisibility] = useState("RESTRICTED");
 
+  // Ghana Card Verification State
+  const [ghanaCardNumber, setGhanaCardNumber] = useState("");
+  const [fullNameOnId, setFullNameOnId] = useState("");
+  const [idCardPhotoUrl, setIdCardPhotoUrl] = useState("");
+  const [idCardBackPhotoUrl, setIdCardBackPhotoUrl] = useState("");
+  const [businessCertUrl, setBusinessCertUrl] = useState("");
+  const [verificationTier, setVerificationTier] = useState("TIER_1_BASIC");
+  const [submittingVerification, setSubmittingVerification] = useState(false);
+  const [verificationSuccessMsg, setVerificationSuccessMsg] = useState("");
+
   // Toggles
   const [notifyInApp, setNotifyInApp] = useState(true);
   const [notifyWhatsApp, setNotifyWhatsApp] = useState(true);
@@ -144,6 +154,18 @@ export default function CustomerAccountHub() {
         const authMeData = await authMeRes.json();
         currentUser = authMeData.user;
       }
+
+      // Fetch Verification Status
+      try {
+        const verRes = await fetch("/api/account/verification");
+        const verData = await verRes.json();
+        if (verData.success) {
+          setGhanaCardNumber(verData.ghanaCardNumber || "");
+          setIdCardPhotoUrl(verData.documentUrl || "");
+          setBusinessCertUrl(verData.businessCertUrl || "");
+          setVerificationTier(verData.tier || "TIER_1_BASIC");
+        }
+      } catch {}
 
       if (currentUser) {
         setUser(currentUser);
@@ -220,6 +242,43 @@ export default function CustomerAccountHub() {
       alert(err.message || "Failed to update profile settings.");
     } finally {
       setSavingSettings(false);
+    }
+  }
+
+  async function handleSubmitGhanaCard(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ghanaCardNumber.trim()) {
+      alert("Please enter your Ghana Card PIN number (e.g. GHA-123456789-0)");
+      return;
+    }
+    if (!idCardPhotoUrl.trim()) {
+      alert("Please provide your Ghana Card front photo URL or upload");
+      return;
+    }
+
+    try {
+      setSubmittingVerification(true);
+      const res = await fetch("/api/account/verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idNumber: ghanaCardNumber.trim(),
+          fullNameOnId: fullNameOnId.trim() || name,
+          documentUrl: idCardPhotoUrl.trim(),
+          backDocumentUrl: idCardBackPhotoUrl.trim(),
+          businessCertUrl: businessCertUrl.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to submit Ghana Card.");
+
+      setVerificationTier("PENDING_REVIEW");
+      setVerificationSuccessMsg("✓ Ghana Card submitted successfully! Status: Under Review by Servora Admin Queue.");
+      fetchCustomerHubData();
+    } catch (err: any) {
+      alert(err.message || "Failed to submit Ghana Card.");
+    } finally {
+      setSubmittingVerification(false);
     }
   }
 
@@ -1002,6 +1061,118 @@ export default function CustomerAccountHub() {
         {/* ========================================================================= */}
         {activeTab === "settings" && (
           <div className="space-y-6">
+            {/* 1. Ghana Card ID Verification Card */}
+            <div className="bg-gradient-to-br from-emerald-950 via-stone-900 to-stone-900 border border-emerald-500/30 rounded-3xl p-6 shadow-xl text-white space-y-4 relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 shrink-0">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                      Ghana Card National ID Verification
+                      {verificationTier === "TIER_2_VERIFIED" || verificationTier === "TIER_3_GOLD" ? (
+                        <span className="px-2.5 py-0.5 bg-emerald-500/20 border border-emerald-500 text-emerald-300 rounded-full text-[10px] font-black">
+                          ✓ VERIFIED
+                        </span>
+                      ) : verificationTier === "PENDING_REVIEW" ? (
+                        <span className="px-2.5 py-0.5 bg-amber-500/20 border border-amber-500 text-amber-300 rounded-full text-[10px] font-black">
+                          ⏳ UNDER ADMIN REVIEW
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 bg-white/10 border border-white/20 text-stone-300 rounded-full text-[10px] font-black">
+                          TIER 1 (PHONE VERIFIED)
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-xs text-stone-400 mt-0.5">
+                      Verify your identity with your National Ghana Card to unlock Tier 2 Verified Artisan badges, Escrow limits, and storefront trust scores.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {verificationSuccessMsg && (
+                <div className="p-3.5 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl text-emerald-300 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>{verificationSuccessMsg}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmitGhanaCard} className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-300 mb-1">
+                      Ghana Card PIN Number *
+                    </label>
+                    <input
+                      type="text"
+                      value={ghanaCardNumber}
+                      onChange={(e) => setGhanaCardNumber(e.target.value)}
+                      placeholder="GHA-712345678-9"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-white/20 bg-black/40 text-white text-xs font-mono placeholder:text-stone-500 focus:border-emerald-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-300 mb-1">
+                      Full Legal Name as on Ghana Card *
+                    </label>
+                    <input
+                      type="text"
+                      value={fullNameOnId || name}
+                      onChange={(e) => setFullNameOnId(e.target.value)}
+                      placeholder="e.g. Ibrahim Mohammed Yakubu"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-white/20 bg-black/40 text-white text-xs placeholder:text-stone-500 focus:border-emerald-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-300 mb-1">
+                      Ghana Card Front Photo URL / Cloudinary *
+                    </label>
+                    <input
+                      type="text"
+                      value={idCardPhotoUrl}
+                      onChange={(e) => setIdCardPhotoUrl(e.target.value)}
+                      placeholder="https://res.cloudinary.com/... or media link"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-white/20 bg-black/40 text-white text-xs placeholder:text-stone-500 focus:border-emerald-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-300 mb-1">
+                      Business Registration / Association Letter (Optional for Gold)
+                    </label>
+                    <input
+                      type="text"
+                      value={businessCertUrl}
+                      onChange={(e) => setBusinessCertUrl(e.target.value)}
+                      placeholder="https://res.cloudinary.com/... (RGD / Guild Cert)"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-white/20 bg-black/40 text-white text-xs placeholder:text-stone-500 focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-[11px] text-stone-400">
+                    🔒 Documents are encrypted and reviewed by verified Tamale operations admins.
+                  </span>
+                  <button
+                    type="submit"
+                    disabled={submittingVerification}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg transition cursor-pointer"
+                  >
+                    {submittingVerification ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                    Submit for Admin Verification ➔
+                  </button>
+                </div>
+              </form>
+            </div>
+
             <form onSubmit={handleSaveSettings} className="space-y-6">
               {/* Personal Info & Privacy */}
               <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-6 shadow-xs space-y-4">

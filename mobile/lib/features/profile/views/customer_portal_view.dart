@@ -1336,9 +1336,80 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
   // TAB 8: SETTINGS & SAVED ADDRESSES
   // ==========================================
   Widget _buildSettingsTab(bool isDark) {
+    final tier = _profile?['verificationTier'] ?? 'TIER_1_BASIC';
+    final isVerified = tier == 'TIER_2_VERIFIED' || tier == 'TIER_3_GOLD';
+    final isPending = tier == 'PENDING_REVIEW';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // 1. Ghana Card ID Verification Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF064E3B), Color(0xFF065F46), Color(0xFF0F172A)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(color: const Color(0xFF059669).withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.verified_user_rounded, color: Colors.white, size: 20),
+                      Gap(8),
+                      Text('Ghana Card Verification', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Colors.white)),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isVerified
+                          ? const Color(0xFF10B981)
+                          : (isPending ? const Color(0xFFF59E0B) : Colors.white24),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isVerified ? 'VERIFIED ✓' : (isPending ? 'UNDER REVIEW' : 'TIER 1 (BASIC)'),
+                      style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              const Gap(6),
+              const Text(
+                'Submit your National Ghana Card to get the Verified Badge, increase Escrow transaction limits, and establish high merchant trust.',
+                style: TextStyle(fontSize: 11, color: Colors.white70, height: 1.3),
+              ),
+              const Gap(12),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF064E3B),
+                  minimumSize: const Size(double.infinity, 38),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: Icon(isVerified ? Icons.check_circle_rounded : Icons.upload_file_rounded, size: 16),
+                label: Text(
+                  isVerified ? 'Ghana Card Verified (Tier 2)' : (isPending ? 'Update Ghana Card Submission' : 'Upload Ghana Card ID ➔'),
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+                onPressed: _openGhanaCardVerificationModal,
+              ),
+            ],
+          ),
+        ),
+        const Gap(16),
+
         // Saved GPS Addresses
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1395,6 +1466,144 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
           ),
         ),
       ],
+    );
+  }
+
+  void _openGhanaCardVerificationModal() {
+    final userModel = authNotifier.state.user;
+    final idNumberCtrl = TextEditingController();
+    final nameCtrl = TextEditingController(text: _user?['name'] ?? userModel?.name ?? '');
+    final frontUrlCtrl = TextEditingController();
+    final certUrlCtrl = TextEditingController();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(top: 20, left: 20, right: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0F172A) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.verified_user_rounded, color: ServoraColors.emerald600, size: 22),
+                        Gap(8),
+                        Text('Ghana Card ID Verification', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+                    IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close_rounded)),
+                  ],
+                ),
+                const Text(
+                  'Submit your National Ghana Card to unlock Tier 2 Verified status, Escrow hold limits, and storefront trust ratings.',
+                  style: TextStyle(fontSize: 11, color: Colors.grey, height: 1.35),
+                ),
+                const Gap(16),
+                TextField(
+                  controller: idNumberCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Ghana Card PIN Number *',
+                    hintText: 'GHA-712345678-9',
+                    prefixIcon: Icon(Icons.credit_card_rounded, size: 18),
+                  ),
+                ),
+                const Gap(12),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Legal Name on Ghana Card *',
+                    hintText: 'e.g. Ibrahim Mohammed',
+                    prefixIcon: Icon(Icons.badge_rounded, size: 18),
+                  ),
+                ),
+                const Gap(12),
+                TextField(
+                  controller: frontUrlCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Ghana Card Front Photo URL / Cloudinary *',
+                    hintText: 'https://res.cloudinary.com/...',
+                    prefixIcon: Icon(Icons.add_photo_alternate_rounded, size: 18),
+                  ),
+                ),
+                const Gap(12),
+                TextField(
+                  controller: certUrlCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Business Reg Cert / Association Letter (Optional)',
+                    hintText: 'https://res.cloudinary.com/...',
+                    prefixIcon: Icon(Icons.business_center_rounded, size: 18),
+                  ),
+                ),
+                const Gap(20),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ServoraColors.emerald600,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 46),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: isSubmitting
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.send_rounded, size: 16),
+                  label: Text(
+                    isSubmitting ? 'Submitting to Admin Queue...' : 'Submit Ghana Card for Verification ➔',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (idNumberCtrl.text.trim().isEmpty || frontUrlCtrl.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please enter your Ghana Card number and Front Photo URL.')),
+                            );
+                            return;
+                          }
+                          setModalState(() => isSubmitting = true);
+                          try {
+                            final token = await authNotifier.storage.getToken();
+                            await _dio.post('/account/verification', data: {
+                              'idNumber': idNumberCtrl.text.trim(),
+                              'fullNameOnId': nameCtrl.text.trim(),
+                              'documentUrl': frontUrlCtrl.text.trim(),
+                              'businessCertUrl': certUrlCtrl.text.trim(),
+                            }, options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}));
+                            if (mounted) {
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  backgroundColor: ServoraColors.emerald600,
+                                  content: Text('Ghana Card submitted to Admin Queue! Status: Under Review.'),
+                                ),
+                              );
+                              _fetchLiveCustomerData();
+                            }
+                          } catch (e) {
+                            setModalState(() => isSubmitting = false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(backgroundColor: Colors.red[700], content: Text('Submission failed: ${e.toString()}')),
+                              );
+                            }
+                          }
+                        },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

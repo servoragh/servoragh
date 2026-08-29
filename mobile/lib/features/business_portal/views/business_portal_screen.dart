@@ -315,6 +315,147 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   }
 
   // ==========================================
+  // GHANA CARD VERIFICATION MODAL
+  // ==========================================
+  void _openGhanaCardVerificationModal() {
+    final userModel = authNotifier.state.user;
+    final idNumberCtrl = TextEditingController(text: _profile?['idCardNumber'] ?? '');
+    final nameCtrl = TextEditingController(text: _profile?['businessName'] ?? userModel?.name ?? '');
+    final frontUrlCtrl = TextEditingController(text: _profile?['idCardPhotoUrl'] ?? '');
+    final certUrlCtrl = TextEditingController(text: _profile?['businessCertUrl'] ?? '');
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(top: 20, left: 20, right: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0F172A) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.verified_user_rounded, color: ServoraColors.emerald600, size: 22),
+                        Gap(8),
+                        Text('Business Ghana Card Verification', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+                    IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close_rounded)),
+                  ],
+                ),
+                const Text(
+                  'Submit your National Ghana Card and Business Registration Certificate to receive the Tier 2 / Tier 3 Verified Enterprise Badge.',
+                  style: TextStyle(fontSize: 11, color: Colors.grey, height: 1.35),
+                ),
+                const Gap(16),
+                TextField(
+                  controller: idNumberCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Ghana Card PIN Number *',
+                    hintText: 'GHA-712345678-9',
+                    prefixIcon: Icon(Icons.credit_card_rounded, size: 18),
+                  ),
+                ),
+                const Gap(12),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Store / Legal Owner Name *',
+                    hintText: 'e.g. Ibrahim Mohammed',
+                    prefixIcon: Icon(Icons.badge_rounded, size: 18),
+                  ),
+                ),
+                const Gap(12),
+                TextField(
+                  controller: frontUrlCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Ghana Card Front Photo URL / Cloudinary *',
+                    hintText: 'https://res.cloudinary.com/...',
+                    prefixIcon: Icon(Icons.add_photo_alternate_rounded, size: 18),
+                  ),
+                ),
+                const Gap(12),
+                TextField(
+                  controller: certUrlCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Business Reg Cert / Association Letter (Optional for Gold)',
+                    hintText: 'https://res.cloudinary.com/...',
+                    prefixIcon: Icon(Icons.business_center_rounded, size: 18),
+                  ),
+                ),
+                const Gap(20),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ServoraColors.emerald600,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 46),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: isSubmitting
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.send_rounded, size: 16),
+                  label: Text(
+                    isSubmitting ? 'Submitting to Admin Queue...' : 'Submit Ghana Card to Admin ➔',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (idNumberCtrl.text.trim().isEmpty || frontUrlCtrl.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please enter your Ghana Card number and Front Photo URL.')),
+                            );
+                            return;
+                          }
+                          setModalState(() => isSubmitting = true);
+                          try {
+                            final token = await authNotifier.storage.getToken();
+                            await _dio.post('/account/verification', data: {
+                              'idNumber': idNumberCtrl.text.trim(),
+                              'fullNameOnId': nameCtrl.text.trim(),
+                              'documentUrl': frontUrlCtrl.text.trim(),
+                              'businessCertUrl': certUrlCtrl.text.trim(),
+                            }, options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}));
+                            if (mounted) {
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  backgroundColor: ServoraColors.emerald600,
+                                  content: Text('Ghana Card submitted to Admin Queue! Status: Under Review.'),
+                                ),
+                              );
+                              _fetchLivePortalData();
+                            }
+                          } catch (e) {
+                            setModalState(() => isSubmitting = false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(backgroundColor: Colors.red[700], content: Text('Submission failed: ${e.toString()}')),
+                              );
+                            }
+                          }
+                        },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
   // REPLY TO CUSTOMER REVIEW MODAL
   // ==========================================
   void _openReplyReviewModal(Map<String, dynamic> review) {
@@ -1345,11 +1486,11 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: const Icon(Icons.open_in_new_rounded, size: 13),
-                  label: const Text('View Storefront', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                  label: const Text('Storefront', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                   onPressed: () => context.push('/biz/$slug'),
                 ),
               ),
-              const Gap(8),
+              const Gap(6),
               Expanded(
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
@@ -1358,9 +1499,9 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  icon: const Icon(Icons.edit_note_rounded, size: 14),
-                  label: const Text('Edit Store Setup', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                  onPressed: () => context.push('/biz/$slug'),
+                  icon: const Icon(Icons.verified_user_rounded, size: 13),
+                  label: const Text('Ghana Card ID', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  onPressed: _openGhanaCardVerificationModal,
                 ),
               ),
             ],
@@ -2105,29 +2246,44 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              ...List.generate(
-                                5,
-                                (i) => Icon(
-                                  Icons.star_rounded,
-                                  size: 14,
-                                  color: i < (r['rating'] ?? 5) ? const Color(0xFFF59E0B) : Colors.grey[300],
+                          Flexible(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ...List.generate(
+                                  5,
+                                  (i) => Icon(
+                                    Icons.star_rounded,
+                                    size: 13,
+                                    color: i < (r['rating'] ?? 5) ? const Color(0xFFF59E0B) : Colors.grey[300],
+                                  ),
                                 ),
-                              ),
-                              const Gap(8),
-                              Text(r['authorName'] ?? 'Customer', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900)),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: ServoraColors.emerald600.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(6),
+                                const Gap(6),
+                                Flexible(
+                                  child: Text(
+                                    r['authorName'] ?? 'Customer',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
-                            child: Text(
-                              r['productTitle'] ?? 'Product',
-                              style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                          ),
+                          const Gap(8),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: ServoraColors.emerald600.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                r['productTitle'] ?? 'Product',
+                                style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
                         ],
@@ -2165,7 +2321,7 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: ServoraColors.emerald600,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
                           icon: const Icon(Icons.reply_rounded, size: 14),
@@ -2198,16 +2354,28 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Q: ${q['askerName'] ?? 'Customer'}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2563EB).withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
+                          Flexible(
                             child: Text(
-                              q['productTitle'] ?? 'Product',
-                              style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                              'Q: ${q['askerName'] ?? 'Customer'}',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Gap(8),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2563EB).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                q['productTitle'] ?? 'Product',
+                                style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
                         ],
