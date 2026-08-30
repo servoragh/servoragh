@@ -2177,6 +2177,26 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
           Row(
             children: [
               Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.18),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(Icons.edit_note_rounded, size: 15),
+                  label: const Text('Edit Profile', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  onPressed: () async {
+                    final res = await context.push('/business/profile/edit');
+                    if (res == true) {
+                      _fetchLivePortalData();
+                    }
+                  },
+                ),
+              ),
+              const Gap(6),
+              Expanded(
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     backgroundColor: Colors.white.withOpacity(0.08),
@@ -2200,8 +2220,13 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: const Icon(Icons.verified_user_rounded, size: 13),
-                  label: const Text('Ghana Card ID', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                  onPressed: _openGhanaCardVerificationModal,
+                  label: const Text('Ghana Card', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  onPressed: () async {
+                    final res = await context.push('/business/profile/edit');
+                    if (res == true) {
+                      _fetchLivePortalData();
+                    }
+                  },
                 ),
               ),
             ],

@@ -659,7 +659,7 @@ export async function PATCH(
       select: { id: true },
     });
 
-    const isAdmin = session.role === "ADMIN" || session.role === "SUPER_ADMIN";
+    const isAdmin = session.role === "ADMIN" || (session as any).role === "SUPER_ADMIN";
 
     const existing = await prisma.productListing.findFirst({
       where: {
@@ -671,12 +671,9 @@ export async function PATCH(
         ],
         ...(isAdmin
           ? {}
-          : {
-              OR: [
-                ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
-                { sellerId: session.id },
-              ],
-            }),
+          : businessProfile
+          ? { businessId: businessProfile.id }
+          : { sellerId: session.id }),
       },
     });
 
@@ -692,12 +689,9 @@ export async function PATCH(
           ],
           ...(isAdmin
             ? {}
-            : {
-                OR: [
-                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
-                  { sellerId: session.id },
-                ],
-              }),
+            : providerProfile
+            ? { providerId: providerProfile.id }
+            : { id: "none" }),
         },
       });
 
@@ -733,7 +727,7 @@ export async function PATCH(
       updateData.stockQuantity = stockNum;
       updateData.inventoryStatus = stockNum === 0 ? "SOLD_OUT" : stockNum < 3 ? "LOW_STOCK" : "IN_STOCK";
     }
-    if (body.images !== undefined) updateData.images = Array.isArray(body.images) ? JSON.stringify(body.images) : body.images;
+    if (body.images !== undefined) updateData.images = Array.isArray(body.images) ? body.images : [body.images];
     if (body.videoUrl !== undefined) updateData.videoUrl = body.videoUrl;
     if (body.condition !== undefined) updateData.condition = body.condition;
     if (body.status !== undefined) updateData.status = body.status;
@@ -755,7 +749,7 @@ export async function DELETE(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const session = await getSession();
+    const session = await getSession(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
     }
@@ -772,7 +766,7 @@ export async function DELETE(
       select: { id: true },
     });
 
-    const isAdmin = session.role === "ADMIN" || session.role === "SUPER_ADMIN";
+    const isAdmin = session.role === "ADMIN" || (session as any).role === "SUPER_ADMIN";
 
     await prisma.productListing.deleteMany({
       where: {
@@ -784,12 +778,9 @@ export async function DELETE(
         ],
         ...(isAdmin
           ? {}
-          : {
-              OR: [
-                ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
-                { sellerId: session.id },
-              ],
-            }),
+          : businessProfile
+          ? { businessId: businessProfile.id }
+          : { sellerId: session.id }),
       },
     });
 
@@ -803,12 +794,9 @@ export async function DELETE(
         ],
         ...(isAdmin
           ? {}
-          : {
-              OR: [
-                ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
-                { sellerId: session.id },
-              ],
-            }),
+          : providerProfile
+          ? { providerId: providerProfile.id }
+          : { id: "none" }),
       },
     });
 

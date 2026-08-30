@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
+    const session = await getSession(req);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
     }
@@ -19,15 +19,14 @@ export async function PATCH(
       title,
       description,
       category,
-      images,
-      videoUrl,
       sku,
+      videoUrl,
+      images,
       price,
       originalPrice,
       stockQuantity,
       inventoryStatus,
       isAvailable,
-      isActive,
       dailyRate,
       weeklyRate,
       securityDeposit,
@@ -36,6 +35,7 @@ export async function PATCH(
       startingPrice,
       estimatedDuration,
       portfolioPhotos,
+      isActive,
     } = body;
 
     const businessProfile = await prisma.businessProfile.findUnique({
@@ -47,7 +47,7 @@ export async function PATCH(
       select: { id: true },
     });
 
-    const isAdmin = session.role === "ADMIN" || session.role === "SUPER_ADMIN";
+    const isAdmin = session.role === "ADMIN" || (session as any).role === "SUPER_ADMIN";
 
     if (itemType === "product" || !itemType) {
       const existing = await prisma.productListing.findFirst({
@@ -55,28 +55,21 @@ export async function PATCH(
           id,
           ...(isAdmin
             ? {}
-            : {
-                OR: [
-                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
-                  { sellerId: session.id },
-                ],
-              }),
+            : businessProfile
+            ? { businessId: businessProfile.id }
+            : { sellerId: session.id }),
         },
       });
 
       if (!existing) {
-        // Fallback to check standard Product table if applicable
         const existingProduct = await prisma.product.findFirst({
           where: {
             id,
             ...(isAdmin
               ? {}
-              : {
-                  OR: [
-                    ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
-                    { sellerId: session.id },
-                  ],
-                }),
+              : providerProfile
+              ? { providerId: providerProfile.id }
+              : { id: "none" }),
           },
         });
 
@@ -88,7 +81,7 @@ export async function PATCH(
           if (price !== undefined) updateData.price = parseFloat(price);
           if (originalPrice !== undefined) updateData.originalPrice = originalPrice ? parseFloat(originalPrice) : null;
           if (stockQuantity !== undefined) updateData.stockQuantity = parseInt(stockQuantity);
-          if (images !== undefined) updateData.images = Array.isArray(images) ? JSON.stringify(images) : images;
+          if (images !== undefined) updateData.images = Array.isArray(images) ? images : [images];
 
           const updatedProd = await prisma.product.update({
             where: { id },
@@ -106,7 +99,7 @@ export async function PATCH(
       if (category !== undefined) updateData.category = category;
       if (sku !== undefined) updateData.sku = sku;
       if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
-      if (images !== undefined) updateData.images = Array.isArray(images) ? JSON.stringify(images) : images;
+      if (images !== undefined) updateData.images = Array.isArray(images) ? images : [images];
       if (price !== undefined) updateData.price = parseFloat(price);
       if (originalPrice !== undefined) updateData.originalPrice = originalPrice ? parseFloat(originalPrice) : null;
       if (stockQuantity !== undefined) {
@@ -131,17 +124,13 @@ export async function PATCH(
           id,
           ...(isAdmin
             ? {}
-            : {
-                OR: [
-                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
-                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
-                ],
-              }),
+            : businessProfile
+            ? { businessId: businessProfile.id }
+            : { id: "none" }),
         },
       });
 
       if (!existing) {
-        // Fallback to RentalTool model
         const existingRentalTool = await prisma.rentalTool.findFirst({
           where: {
             id,
@@ -155,7 +144,7 @@ export async function PATCH(
           if (description !== undefined) updateData.description = description;
           if (category !== undefined) updateData.category = category;
           if (dailyRate !== undefined || price !== undefined) updateData.dailyRate = parseFloat(dailyRate || price);
-          if (images !== undefined) updateData.images = Array.isArray(images) ? JSON.stringify(images) : images;
+          if (images !== undefined) updateData.images = Array.isArray(images) ? images : [images];
 
           const updatedTool = await prisma.rentalTool.update({
             where: { id },
@@ -175,7 +164,7 @@ export async function PATCH(
       if (weeklyRate !== undefined) updateData.weeklyRate = weeklyRate ? parseFloat(weeklyRate) : null;
       if (securityDeposit !== undefined) updateData.securityDeposit = securityDeposit ? parseFloat(securityDeposit) : null;
       if (operatorIncluded !== undefined) updateData.operatorIncluded = Boolean(operatorIncluded);
-      if (images !== undefined) updateData.images = Array.isArray(images) ? JSON.stringify(images) : images;
+      if (images !== undefined) updateData.images = Array.isArray(images) ? images : [images];
       if (inventoryStatus !== undefined) updateData.status = inventoryStatus;
       if (isAvailable !== undefined) updateData.isAvailable = Boolean(isAvailable);
 
@@ -191,12 +180,9 @@ export async function PATCH(
           id,
           ...(isAdmin
             ? {}
-            : {
-                OR: [
-                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
-                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
-                ],
-              }),
+            : businessProfile
+            ? { businessId: businessProfile.id }
+            : { id: "none" }),
         },
       });
 
@@ -210,9 +196,7 @@ export async function PATCH(
       if (price !== undefined || startingPrice !== undefined) updateData.startingPrice = parseFloat(price || startingPrice);
       if (estimatedDuration !== undefined) updateData.estimatedDuration = estimatedDuration;
       if (portfolioPhotos !== undefined || images !== undefined) {
-        updateData.portfolioPhotos = Array.isArray(portfolioPhotos || images)
-          ? JSON.stringify(portfolioPhotos || images)
-          : (portfolioPhotos || images);
+        updateData.portfolioPhotos = portfolioPhotos || images;
       }
       if (isActive !== undefined) updateData.isActive = Boolean(isActive);
 
@@ -236,7 +220,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
+    const session = await getSession(req);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
     }
@@ -254,7 +238,7 @@ export async function DELETE(
       select: { id: true },
     });
 
-    const isAdmin = session.role === "ADMIN" || session.role === "SUPER_ADMIN";
+    const isAdmin = session.role === "ADMIN" || (session as any).role === "SUPER_ADMIN";
 
     if (itemType === "product") {
       await prisma.productListing.deleteMany({
@@ -262,27 +246,20 @@ export async function DELETE(
           id,
           ...(isAdmin
             ? {}
-            : {
-                OR: [
-                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
-                  { sellerId: session.id },
-                ],
-              }),
+            : businessProfile
+            ? { businessId: businessProfile.id }
+            : { sellerId: session.id }),
         },
       });
 
-      // Also attempt cleanup on Product table if needed
       await prisma.product.deleteMany({
         where: {
           id,
           ...(isAdmin
             ? {}
-            : {
-                OR: [
-                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
-                  { sellerId: session.id },
-                ],
-              }),
+            : providerProfile
+            ? { providerId: providerProfile.id }
+            : { id: "none" }),
         },
       });
     } else if (itemType === "rental") {
@@ -291,12 +268,9 @@ export async function DELETE(
           id,
           ...(isAdmin
             ? {}
-            : {
-                OR: [
-                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
-                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
-                ],
-              }),
+            : businessProfile
+            ? { businessId: businessProfile.id }
+            : { id: "none" }),
         },
       });
 
@@ -312,12 +286,9 @@ export async function DELETE(
           id,
           ...(isAdmin
             ? {}
-            : {
-                OR: [
-                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
-                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
-                ],
-              }),
+            : businessProfile
+            ? { businessId: businessProfile.id }
+            : { id: "none" }),
         },
       });
     }

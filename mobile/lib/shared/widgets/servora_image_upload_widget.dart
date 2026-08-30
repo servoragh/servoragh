@@ -206,6 +206,7 @@ class _ServoraImageUploadWidgetState extends State<ServoraImageUploadWidget> {
 
     try {
       final token = await authNotifier.storage.getToken();
+      final user = authNotifier.state.user;
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
           xFile.path,
@@ -220,6 +221,8 @@ class _ServoraImageUploadWidgetState extends State<ServoraImageUploadWidget> {
           headers: {
             'Content-Type': 'multipart/form-data',
             if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+            if (user?.phone != null && user!.phone.isNotEmpty) 'x-user-phone': user.phone,
+            if (user?.id != null && user!.id.isNotEmpty) 'x-user-id': user.id,
           },
         ),
       );

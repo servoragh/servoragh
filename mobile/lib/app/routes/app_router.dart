@@ -13,6 +13,7 @@ import '../../features/profile/views/profile_screen.dart';
 import '../../features/auth/views/login_screen.dart';
 import '../../features/products/views/product_detail_screen.dart';
 import '../../features/businesses/views/businesses_screen.dart';
+import '../../features/business_portal/views/edit_business_profile_screen.dart';
 import '../../shared/widgets/main_shell_scaffold.dart';
 
 /// Helper to wrap screens in native iOS CupertinoPage with smooth swipe-to-back animations
@@ -167,6 +168,20 @@ final appRouter = GoRouter(
         final slug = state.pathParameters['slug'] ?? 'kwame-electrical-tamale';
         return _iosPage(state: state, child: ArtisanStorefrontScreen(slug: slug));
       },
+    ),
+    GoRoute(
+      path: '/business/profile/edit',
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const EditBusinessProfileScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/business/edit-profile',
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const EditBusinessProfileScreen(),
+      ),
     ),
     GoRoute(
       path: '/escrow',
