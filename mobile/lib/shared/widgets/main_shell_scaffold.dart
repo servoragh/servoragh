@@ -18,7 +18,6 @@ class _MainShellScaffoldState extends State<MainShellScaffold> {
   int _lastIndex = 0;
   double _slideDirection = 1.0; // 1.0 for right-to-left (forward), -1.0 for left-to-right (backward)
 
-  final List<int> _tabIndices = [0, 1, 3, 4];
 
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
@@ -53,15 +52,6 @@ class _MainShellScaffoldState extends State<MainShellScaffold> {
       case 4:
         context.go('/account');
         break;
-    }
-  }
-
-  void _swipeTab(int currentIndex, int step, BuildContext context) {
-    final currentPos = _tabIndices.indexOf(currentIndex);
-    if (currentPos == -1) return;
-    final nextPos = currentPos + step;
-    if (nextPos >= 0 && nextPos < _tabIndices.length) {
-      _onItemTapped(_tabIndices[nextPos], context);
     }
   }
 
@@ -146,42 +136,28 @@ class _MainShellScaffoldState extends State<MainShellScaffold> {
             _handleBackPress(context, selectedIndex);
           },
           child: Scaffold(
-            body: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onHorizontalDragEnd: (DragEndDetails details) {
-                final velocity = details.primaryVelocity ?? 0;
-                // Swipe left (fast gesture to the left) -> move to next tab
-                if (velocity < -400) {
-                  _swipeTab(selectedIndex, 1, context);
-                }
-                // Swipe right (fast gesture to the right) -> move to previous tab
-                else if (velocity > 400) {
-                  _swipeTab(selectedIndex, -1, context);
-                }
-              },
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 280),
-                reverseDuration: const Duration(milliseconds: 280),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  final inOffset = Tween<Offset>(
-                    begin: Offset(_slideDirection * 0.25, 0.0),
-                    end: Offset.zero,
-                  ).animate(animation);
+            body: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              reverseDuration: const Duration(milliseconds: 200),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                final inOffset = Tween<Offset>(
+                  begin: Offset(_slideDirection * 0.15, 0.0),
+                  end: Offset.zero,
+                ).animate(animation);
 
-                  return SlideTransition(
-                    position: inOffset,
-                    child: FadeTransition(
-                      opacity: animation,
-                      child: child,
-                    ),
-                  );
-                },
-                child: KeyedSubtree(
-                  key: ValueKey<int>(selectedIndex),
-                  child: widget.child,
-                ),
+                return SlideTransition(
+                  position: inOffset,
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey<int>(selectedIndex),
+                child: widget.child,
               ),
             ),
             bottomNavigationBar: NavigationBar(

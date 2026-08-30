@@ -23,6 +23,14 @@ Page<dynamic> _iosPage({required GoRouterState state, required Widget child}) {
   );
 }
 
+/// Helper for bottom tabs to avoid nested route animation overhead
+Page<dynamic> _tabNavPage({required GoRouterState state, required Widget child}) {
+  return NoTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+  );
+}
+
 final appRouter = GoRouter(
   initialLocation: '/home',
   routes: [
@@ -34,49 +42,49 @@ final appRouter = GoRouter(
       routes: [
         GoRoute(
           path: '/home',
-          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
             state: state,
             child: const HomeScreen(),
           ),
         ),
         GoRoute(
           path: '/products',
-          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
             state: state,
             child: const ProductsScreen(),
           ),
         ),
         GoRoute(
           path: '/community',
-          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
             state: state,
             child: const CommunityScreen(),
           ),
         ),
         GoRoute(
           path: '/notice-board',
-          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
             state: state,
             child: const CommunityScreen(),
           ),
         ),
         GoRoute(
           path: '/businesses',
-          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
             state: state,
             child: const BusinessesScreen(),
           ),
         ),
         GoRoute(
           path: '/profile',
-          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
             state: state,
             child: const ProfileScreen(),
           ),
         ),
         GoRoute(
           path: '/account',
-          pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
             state: state,
             child: const ProfileScreen(),
           ),

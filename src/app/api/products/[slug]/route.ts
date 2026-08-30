@@ -635,3 +635,186 @@ export async function GET(
     return NextResponse.json({ error: error?.message || "Failed to load product details." }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
+    const { slug } = await params;
+    const body = await request.json();
+    const cleanIdOrSlug = slug.replace(/^(leg-prod-|prod-)/, "");
+
+    const businessProfile = await prisma.businessProfile.findUnique({
+      where: { userId: session.id },
+      select: { id: true },
+    });
+    const providerProfile = await prisma.providerProfile.findFirst({
+      where: { userId: session.id },
+      select: { id: true },
+    });
+
+    const isAdmin = session.role === "ADMIN" || session.role === "SUPER_ADMIN";
+
+    const existing = await prisma.productListing.findFirst({
+      where: {
+        OR: [
+          { slug: { equals: slug, mode: "insensitive" } },
+          { id: slug },
+          { slug: { equals: cleanIdOrSlug, mode: "insensitive" } },
+          { id: cleanIdOrSlug },
+        ],
+        ...(isAdmin
+          ? {}
+          : {
+              OR: [
+                ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
+                { sellerId: session.id },
+              ],
+            }),
+      },
+    });
+
+    if (!existing) {
+      // Fallback check on Product table
+      const existingProd = await prisma.product.findFirst({
+        where: {
+          OR: [
+            { slug: { equals: slug, mode: "insensitive" } },
+            { id: slug },
+            { slug: { equals: cleanIdOrSlug, mode: "insensitive" } },
+            { id: cleanIdOrSlug },
+          ],
+          ...(isAdmin
+            ? {}
+            : {
+                OR: [
+                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
+                  { sellerId: session.id },
+                ],
+              }),
+        },
+      });
+
+      if (existingProd) {
+        const updateData: any = {};
+        if (body.title !== undefined) updateData.title = body.title;
+        if (body.description !== undefined) updateData.description = body.description;
+        if (body.category !== undefined) updateData.category = body.category;
+        if (body.price !== undefined) updateData.price = parseFloat(body.price);
+        if (body.originalPrice !== undefined) updateData.originalPrice = body.originalPrice ? parseFloat(body.originalPrice) : null;
+        if (body.stockQuantity !== undefined) updateData.stockQuantity = parseInt(body.stockQuantity);
+        if (body.images !== undefined) updateData.images = Array.isArray(body.images) ? JSON.stringify(body.images) : body.images;
+
+        const updated = await prisma.product.update({
+          where: { id: existingProd.id },
+          data: updateData,
+        });
+
+        return NextResponse.json({ success: true, product: updated });
+      }
+
+      return NextResponse.json({ error: "Product not found or unauthorized." }, { status: 404 });
+    }
+
+    const updateData: any = {};
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.category !== undefined) updateData.category = body.category;
+    if (body.price !== undefined) updateData.price = parseFloat(body.price);
+    if (body.originalPrice !== undefined) updateData.originalPrice = body.originalPrice ? parseFloat(body.originalPrice) : null;
+    if (body.stockQuantity !== undefined) {
+      const stockNum = parseInt(body.stockQuantity);
+      updateData.stockQuantity = stockNum;
+      updateData.inventoryStatus = stockNum === 0 ? "SOLD_OUT" : stockNum < 3 ? "LOW_STOCK" : "IN_STOCK";
+    }
+    if (body.images !== undefined) updateData.images = Array.isArray(body.images) ? JSON.stringify(body.images) : body.images;
+    if (body.videoUrl !== undefined) updateData.videoUrl = body.videoUrl;
+    if (body.condition !== undefined) updateData.condition = body.condition;
+    if (body.status !== undefined) updateData.status = body.status;
+
+    const updated = await prisma.productListing.update({
+      where: { id: existing.id },
+      data: updateData,
+    });
+
+    return NextResponse.json({ success: true, product: updated });
+  } catch (error: any) {
+    console.error("PATCH Product Error:", error);
+    return NextResponse.json({ error: error?.message || "Failed to update product." }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
+    const { slug } = await params;
+    const cleanIdOrSlug = slug.replace(/^(leg-prod-|prod-)/, "");
+
+    const businessProfile = await prisma.businessProfile.findUnique({
+      where: { userId: session.id },
+      select: { id: true },
+    });
+    const providerProfile = await prisma.providerProfile.findFirst({
+      where: { userId: session.id },
+      select: { id: true },
+    });
+
+    const isAdmin = session.role === "ADMIN" || session.role === "SUPER_ADMIN";
+
+    await prisma.productListing.deleteMany({
+      where: {
+        OR: [
+          { slug: { equals: slug, mode: "insensitive" } },
+          { id: slug },
+          { slug: { equals: cleanIdOrSlug, mode: "insensitive" } },
+          { id: cleanIdOrSlug },
+        ],
+        ...(isAdmin
+          ? {}
+          : {
+              OR: [
+                ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
+                { sellerId: session.id },
+              ],
+            }),
+      },
+    });
+
+    await prisma.product.deleteMany({
+      where: {
+        OR: [
+          { slug: { equals: slug, mode: "insensitive" } },
+          { id: slug },
+          { slug: { equals: cleanIdOrSlug, mode: "insensitive" } },
+          { id: cleanIdOrSlug },
+        ],
+        ...(isAdmin
+          ? {}
+          : {
+              OR: [
+                ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
+                { sellerId: session.id },
+              ],
+            }),
+      },
+    });
+
+    return NextResponse.json({ success: true, message: "Product deleted successfully." });
+  } catch (error: any) {
+    console.error("DELETE Product Error:", error);
+    return NextResponse.json({ error: error?.message || "Failed to delete product." }, { status: 500 });
+  }
+}

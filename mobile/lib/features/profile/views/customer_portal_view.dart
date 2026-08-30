@@ -8,6 +8,7 @@ import '../../../core/constants/constants.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/servora_shimmer_skeleton.dart';
+import '../../../shared/widgets/servora_image_upload_widget.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../core/utils/location_helper.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -1474,8 +1475,8 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
     final userModel = authNotifier.state.user;
     final idNumberCtrl = TextEditingController();
     final nameCtrl = TextEditingController(text: _user?['name'] ?? userModel?.name ?? '');
-    final frontUrlCtrl = TextEditingController();
-    final certUrlCtrl = TextEditingController();
+    String frontUrl = '';
+    String certUrl = '';
     bool isSubmitting = false;
 
     showModalBottomSheet(
@@ -1529,25 +1530,36 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
                     prefixIcon: Icon(Icons.badge_rounded, size: 18),
                   ),
                 ),
-                const Gap(12),
-                TextField(
-                  controller: frontUrlCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Ghana Card Front Photo URL / Cloudinary *',
-                    hintText: 'https://res.cloudinary.com/...',
-                    prefixIcon: Icon(Icons.add_photo_alternate_rounded, size: 18),
-                  ),
+                const Gap(16),
+
+                // Native Ghana Card Front Photo Upload
+                ServoraImageUploadWidget(
+                  initialImages: frontUrl.isNotEmpty ? [frontUrl] : [],
+                  isSingleImage: true,
+                  label: 'GHANA CARD FRONT PHOTO *',
+                  helperText: 'Take a clear photo of the front side of your Ghana Card ID from camera or gallery.',
+                  onImagesChanged: (imgs) {
+                    setModalState(() {
+                      frontUrl = imgs.isNotEmpty ? imgs[0] : '';
+                    });
+                  },
                 ),
-                const Gap(12),
-                TextField(
-                  controller: certUrlCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Business Reg Cert / Association Letter (Optional)',
-                    hintText: 'https://res.cloudinary.com/...',
-                    prefixIcon: Icon(Icons.business_center_rounded, size: 18),
-                  ),
+                const Gap(16),
+
+                // Native Business Certificate Upload
+                ServoraImageUploadWidget(
+                  initialImages: certUrl.isNotEmpty ? [certUrl] : [],
+                  isSingleImage: true,
+                  label: 'BUSINESS REG CERT / ASSOCIATION LETTER (OPTIONAL)',
+                  helperText: 'Upload your business certificate or association endorsement letter for Verified Gold badge.',
+                  onImagesChanged: (imgs) {
+                    setModalState(() {
+                      certUrl = imgs.isNotEmpty ? imgs[0] : '';
+                    });
+                  },
                 ),
                 const Gap(20),
+
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ServoraColors.emerald600,
@@ -1565,9 +1577,9 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
                   onPressed: isSubmitting
                       ? null
                       : () async {
-                          if (idNumberCtrl.text.trim().isEmpty || frontUrlCtrl.text.trim().isEmpty) {
+                          if (idNumberCtrl.text.trim().isEmpty || frontUrl.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please enter your Ghana Card number and Front Photo URL.')),
+                              const SnackBar(content: Text('Please enter your Ghana Card number and upload Front Photo.')),
                             );
                             return;
                           }
@@ -1577,8 +1589,8 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
                             await _dio.post('/account/verification', data: {
                               'idNumber': idNumberCtrl.text.trim(),
                               'fullNameOnId': nameCtrl.text.trim(),
-                              'documentUrl': frontUrlCtrl.text.trim(),
-                              'businessCertUrl': certUrlCtrl.text.trim(),
+                              'documentUrl': frontUrl.trim(),
+                              'businessCertUrl': certUrl.trim(),
                             }, options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}));
                             if (mounted) {
                               Navigator.pop(ctx);

@@ -14,26 +14,99 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
-    const { itemType, price, originalPrice, stockQuantity, inventoryStatus, isAvailable, isActive, dailyRate, weeklyRate } = body;
+    const {
+      itemType,
+      title,
+      description,
+      category,
+      images,
+      videoUrl,
+      sku,
+      price,
+      originalPrice,
+      stockQuantity,
+      inventoryStatus,
+      isAvailable,
+      isActive,
+      dailyRate,
+      weeklyRate,
+      securityDeposit,
+      operatorIncluded,
+      serviceName,
+      startingPrice,
+      estimatedDuration,
+      portfolioPhotos,
+    } = body;
 
-    const profile = await prisma.businessProfile.findUnique({
+    const businessProfile = await prisma.businessProfile.findUnique({
+      where: { userId: session.id },
+      select: { id: true },
+    });
+    const providerProfile = await prisma.providerProfile.findFirst({
       where: { userId: session.id },
       select: { id: true },
     });
 
-    if (!profile) {
-      return NextResponse.json({ error: "Business profile not found." }, { status: 404 });
-    }
+    const isAdmin = session.role === "ADMIN" || session.role === "SUPER_ADMIN";
 
-    if (itemType === "product") {
+    if (itemType === "product" || !itemType) {
       const existing = await prisma.productListing.findFirst({
-        where: { id, businessId: profile.id },
+        where: {
+          id,
+          ...(isAdmin
+            ? {}
+            : {
+                OR: [
+                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
+                  { sellerId: session.id },
+                ],
+              }),
+        },
       });
+
       if (!existing) {
-        return NextResponse.json({ error: "Product not found." }, { status: 404 });
+        // Fallback to check standard Product table if applicable
+        const existingProduct = await prisma.product.findFirst({
+          where: {
+            id,
+            ...(isAdmin
+              ? {}
+              : {
+                  OR: [
+                    ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
+                    { sellerId: session.id },
+                  ],
+                }),
+          },
+        });
+
+        if (existingProduct) {
+          const updateData: any = {};
+          if (title !== undefined) updateData.title = title;
+          if (description !== undefined) updateData.description = description;
+          if (category !== undefined) updateData.category = category;
+          if (price !== undefined) updateData.price = parseFloat(price);
+          if (originalPrice !== undefined) updateData.originalPrice = originalPrice ? parseFloat(originalPrice) : null;
+          if (stockQuantity !== undefined) updateData.stockQuantity = parseInt(stockQuantity);
+          if (images !== undefined) updateData.images = Array.isArray(images) ? JSON.stringify(images) : images;
+
+          const updatedProd = await prisma.product.update({
+            where: { id },
+            data: updateData,
+          });
+          return NextResponse.json({ success: true, item: updatedProd });
+        }
+
+        return NextResponse.json({ error: "Product not found or unauthorized." }, { status: 404 });
       }
 
       const updateData: any = {};
+      if (title !== undefined) updateData.title = title;
+      if (description !== undefined) updateData.description = description;
+      if (category !== undefined) updateData.category = category;
+      if (sku !== undefined) updateData.sku = sku;
+      if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
+      if (images !== undefined) updateData.images = Array.isArray(images) ? JSON.stringify(images) : images;
       if (price !== undefined) updateData.price = parseFloat(price);
       if (originalPrice !== undefined) updateData.originalPrice = originalPrice ? parseFloat(originalPrice) : null;
       if (stockQuantity !== undefined) {
@@ -54,15 +127,55 @@ export async function PATCH(
       return NextResponse.json({ success: true, item: updated });
     } else if (itemType === "rental") {
       const existing = await prisma.toolRentalListing.findFirst({
-        where: { id, businessId: profile.id },
+        where: {
+          id,
+          ...(isAdmin
+            ? {}
+            : {
+                OR: [
+                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
+                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
+                ],
+              }),
+        },
       });
+
       if (!existing) {
+        // Fallback to RentalTool model
+        const existingRentalTool = await prisma.rentalTool.findFirst({
+          where: {
+            id,
+            ...(isAdmin ? {} : providerProfile ? { providerId: providerProfile.id } : { id: "none" }),
+          },
+        });
+
+        if (existingRentalTool) {
+          const updateData: any = {};
+          if (title !== undefined) updateData.title = title;
+          if (description !== undefined) updateData.description = description;
+          if (category !== undefined) updateData.category = category;
+          if (dailyRate !== undefined || price !== undefined) updateData.dailyRate = parseFloat(dailyRate || price);
+          if (images !== undefined) updateData.images = Array.isArray(images) ? JSON.stringify(images) : images;
+
+          const updatedTool = await prisma.rentalTool.update({
+            where: { id },
+            data: updateData,
+          });
+          return NextResponse.json({ success: true, item: updatedTool });
+        }
+
         return NextResponse.json({ error: "Tool rental item not found." }, { status: 404 });
       }
 
       const updateData: any = {};
-      if (dailyRate !== undefined) updateData.dailyRate = parseFloat(dailyRate);
+      if (title !== undefined) updateData.title = title;
+      if (description !== undefined) updateData.description = description;
+      if (category !== undefined) updateData.category = category;
+      if (dailyRate !== undefined || price !== undefined) updateData.dailyRate = parseFloat(dailyRate || price);
       if (weeklyRate !== undefined) updateData.weeklyRate = weeklyRate ? parseFloat(weeklyRate) : null;
+      if (securityDeposit !== undefined) updateData.securityDeposit = securityDeposit ? parseFloat(securityDeposit) : null;
+      if (operatorIncluded !== undefined) updateData.operatorIncluded = Boolean(operatorIncluded);
+      if (images !== undefined) updateData.images = Array.isArray(images) ? JSON.stringify(images) : images;
       if (inventoryStatus !== undefined) updateData.status = inventoryStatus;
       if (isAvailable !== undefined) updateData.isAvailable = Boolean(isAvailable);
 
@@ -74,14 +187,33 @@ export async function PATCH(
       return NextResponse.json({ success: true, item: updated });
     } else if (itemType === "service") {
       const existing = await prisma.businessService.findFirst({
-        where: { id, businessId: profile.id },
+        where: {
+          id,
+          ...(isAdmin
+            ? {}
+            : {
+                OR: [
+                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
+                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
+                ],
+              }),
+        },
       });
+
       if (!existing) {
         return NextResponse.json({ error: "Service item not found." }, { status: 404 });
       }
 
       const updateData: any = {};
-      if (price !== undefined) updateData.startingPrice = parseFloat(price);
+      if (serviceName !== undefined || title !== undefined) updateData.serviceName = serviceName || title;
+      if (description !== undefined) updateData.description = description;
+      if (price !== undefined || startingPrice !== undefined) updateData.startingPrice = parseFloat(price || startingPrice);
+      if (estimatedDuration !== undefined) updateData.estimatedDuration = estimatedDuration;
+      if (portfolioPhotos !== undefined || images !== undefined) {
+        updateData.portfolioPhotos = Array.isArray(portfolioPhotos || images)
+          ? JSON.stringify(portfolioPhotos || images)
+          : (portfolioPhotos || images);
+      }
       if (isActive !== undefined) updateData.isActive = Boolean(isActive);
 
       const updated = await prisma.businessService.update({
@@ -113,32 +245,86 @@ export async function DELETE(
     const { searchParams } = new URL(req.url);
     const itemType = searchParams.get("itemType") || "product";
 
-    const profile = await prisma.businessProfile.findUnique({
+    const businessProfile = await prisma.businessProfile.findUnique({
+      where: { userId: session.id },
+      select: { id: true },
+    });
+    const providerProfile = await prisma.providerProfile.findFirst({
       where: { userId: session.id },
       select: { id: true },
     });
 
-    if (!profile) {
-      return NextResponse.json({ error: "Business profile not found." }, { status: 404 });
-    }
+    const isAdmin = session.role === "ADMIN" || session.role === "SUPER_ADMIN";
 
     if (itemType === "product") {
       await prisma.productListing.deleteMany({
-        where: { id, businessId: profile.id },
+        where: {
+          id,
+          ...(isAdmin
+            ? {}
+            : {
+                OR: [
+                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
+                  { sellerId: session.id },
+                ],
+              }),
+        },
+      });
+
+      // Also attempt cleanup on Product table if needed
+      await prisma.product.deleteMany({
+        where: {
+          id,
+          ...(isAdmin
+            ? {}
+            : {
+                OR: [
+                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
+                  { sellerId: session.id },
+                ],
+              }),
+        },
       });
     } else if (itemType === "rental") {
       await prisma.toolRentalListing.deleteMany({
-        where: { id, businessId: profile.id },
+        where: {
+          id,
+          ...(isAdmin
+            ? {}
+            : {
+                OR: [
+                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
+                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
+                ],
+              }),
+        },
+      });
+
+      await prisma.rentalTool.deleteMany({
+        where: {
+          id,
+          ...(isAdmin ? {} : providerProfile ? { providerId: providerProfile.id } : { id: "none" }),
+        },
       });
     } else if (itemType === "service") {
       await prisma.businessService.deleteMany({
-        where: { id, businessId: profile.id },
+        where: {
+          id,
+          ...(isAdmin
+            ? {}
+            : {
+                OR: [
+                  ...(businessProfile ? [{ businessId: businessProfile.id }] : []),
+                  ...(providerProfile ? [{ providerId: providerProfile.id }] : []),
+                ],
+              }),
+        },
       });
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("DELETE Business Catalog Item Error:", error);
-    return NextResponse.json({ error: "Failed to delete catalog item." }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Failed to delete catalog item." }, { status: 500 });
   }
 }

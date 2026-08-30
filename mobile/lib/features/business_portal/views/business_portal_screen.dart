@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../../../core/constants/constants.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_card.dart';
+import '../../../shared/widgets/servora_image_upload_widget.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../core/storage/local_storage_service.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -18,6 +19,7 @@ class BusinessPortalView extends StatefulWidget {
   @override
   State<BusinessPortalView> createState() => _BusinessPortalViewState();
 }
+
 
 class _BusinessPortalViewState extends State<BusinessPortalView> {
   String _activeTab = 'catalogs'; // 'catalogs' | 'escrow' | 'reviews' | 'messages' | 'leads'
@@ -321,8 +323,8 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     final userModel = authNotifier.state.user;
     final idNumberCtrl = TextEditingController(text: _profile?['idCardNumber'] ?? '');
     final nameCtrl = TextEditingController(text: _profile?['businessName'] ?? userModel?.name ?? '');
-    final frontUrlCtrl = TextEditingController(text: _profile?['idCardPhotoUrl'] ?? '');
-    final certUrlCtrl = TextEditingController(text: _profile?['businessCertUrl'] ?? '');
+    String frontUrl = _profile?['idCardPhotoUrl'] ?? '';
+    String certUrl = _profile?['businessCertUrl'] ?? '';
     bool isSubmitting = false;
 
     showModalBottomSheet(
@@ -376,25 +378,36 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                     prefixIcon: Icon(Icons.badge_rounded, size: 18),
                   ),
                 ),
-                const Gap(12),
-                TextField(
-                  controller: frontUrlCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Ghana Card Front Photo URL / Cloudinary *',
-                    hintText: 'https://res.cloudinary.com/...',
-                    prefixIcon: Icon(Icons.add_photo_alternate_rounded, size: 18),
-                  ),
+                const Gap(16),
+
+                // Native Ghana Card Front Photo Upload
+                ServoraImageUploadWidget(
+                  initialImages: frontUrl.isNotEmpty ? [frontUrl] : [],
+                  isSingleImage: true,
+                  label: 'GHANA CARD FRONT PHOTO *',
+                  helperText: 'Take a clear photo of the front side of your Ghana Card ID from camera or gallery.',
+                  onImagesChanged: (imgs) {
+                    setModalState(() {
+                      frontUrl = imgs.isNotEmpty ? imgs[0] : '';
+                    });
+                  },
                 ),
-                const Gap(12),
-                TextField(
-                  controller: certUrlCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Business Reg Cert / Association Letter (Optional for Gold)',
-                    hintText: 'https://res.cloudinary.com/...',
-                    prefixIcon: Icon(Icons.business_center_rounded, size: 18),
-                  ),
+                const Gap(16),
+
+                // Native Business Certificate Upload
+                ServoraImageUploadWidget(
+                  initialImages: certUrl.isNotEmpty ? [certUrl] : [],
+                  isSingleImage: true,
+                  label: 'BUSINESS REG CERT / ASSOCIATION LETTER (OPTIONAL)',
+                  helperText: 'Upload your business certificate or association endorsement letter for Verified Gold badge.',
+                  onImagesChanged: (imgs) {
+                    setModalState(() {
+                      certUrl = imgs.isNotEmpty ? imgs[0] : '';
+                    });
+                  },
                 ),
                 const Gap(20),
+
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ServoraColors.emerald600,
@@ -412,9 +425,9 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                   onPressed: isSubmitting
                       ? null
                       : () async {
-                          if (idNumberCtrl.text.trim().isEmpty || frontUrlCtrl.text.trim().isEmpty) {
+                          if (idNumberCtrl.text.trim().isEmpty || frontUrl.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please enter your Ghana Card number and Front Photo URL.')),
+                              const SnackBar(content: Text('Please enter your Ghana Card number and upload Front Photo.')),
                             );
                             return;
                           }
@@ -424,8 +437,8 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                             await _dio.post('/account/verification', data: {
                               'idNumber': idNumberCtrl.text.trim(),
                               'fullNameOnId': nameCtrl.text.trim(),
-                              'documentUrl': frontUrlCtrl.text.trim(),
-                              'businessCertUrl': certUrlCtrl.text.trim(),
+                              'documentUrl': frontUrl.trim(),
+                              'businessCertUrl': certUrl.trim(),
                             }, options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}));
                             if (mounted) {
                               Navigator.pop(ctx);
@@ -922,7 +935,7 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   }
 
   // ==========================================
-  // ADD PRODUCT MODAL
+  // ADD PRODUCT MODAL (With Native Device Upload)
   // ==========================================
   void _openAddProductModal() {
     final titleCtrl = TextEditingController();
@@ -931,10 +944,8 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     final originalPriceCtrl = TextEditingController();
     final stockCtrl = TextEditingController(text: '5');
     final categoryCtrl = TextEditingController(text: 'Agriculture & Produce');
-    final photoUrlCtrl = TextEditingController();
-
-    String condition = 'BRAND_NEW';
-    final List<String> images = [];
+    List<String> selectedImages = [];
+    bool isSubmitting = false;
 
     final categoryPresets = [
       'Agriculture & Produce',
@@ -1100,55 +1111,20 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
                   ),
-                  const Gap(12),
+                  const Gap(16),
 
-                  const Text('ADD PHOTO URL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
-                  const Gap(4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: photoUrlCtrl,
-                          decoration: InputDecoration(
-                            hintText: 'https://images.unsplash.com/...',
-                            filled: true,
-                            fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          ),
-                        ),
-                      ),
-                      const Gap(8),
-                      IconButton.filled(
-                        style: IconButton.styleFrom(backgroundColor: ServoraColors.emerald600),
-                        icon: const Icon(Icons.add_photo_alternate_rounded, size: 18, color: Colors.white),
-                        onPressed: () {
-                          final url = photoUrlCtrl.text.trim();
-                          if (url.isNotEmpty && images.length < 5) {
-                            setModalState(() {
-                              images.add(url);
-                              photoUrlCtrl.clear();
-                            });
-                          }
-                        },
-                      ),
-                    ],
+                  // Native Photo Upload Component (Zero URL typing)
+                  ServoraImageUploadWidget(
+                    initialImages: selectedImages,
+                    maxImages: 6,
+                    label: 'PRODUCT PHOTOS *',
+                    helperText: 'Tap to pick from Camera or Gallery. 1st image will be the Cover Photo.',
+                    onImagesChanged: (imgs) {
+                      setModalState(() {
+                        selectedImages = imgs;
+                      });
+                    },
                   ),
-                  if (images.isNotEmpty) ...[
-                    const Gap(8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: images
-                          .map(
-                            (img) => Chip(
-                              avatar: ClipOval(child: Image.network(img, width: 16, height: 16, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 14))),
-                              label: Text(img.length > 20 ? '${img.substring(0, 18)}...' : img, style: const TextStyle(fontSize: 10)),
-                              onDeleted: () => setModalState(() => images.remove(img)),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ],
                   const Gap(20),
 
                   Row(
@@ -1159,7 +1135,7 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          onPressed: () => Navigator.pop(ctx),
+                          onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
                           child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
@@ -1172,45 +1148,370 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          onPressed: () async {
-                            final title = titleCtrl.text.trim();
-                            final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
-                            if (title.isEmpty || price <= 0) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Please enter a valid title and price.')),
-                              );
-                              return;
-                            }
+                          onPressed: isSubmitting
+                              ? null
+                              : () async {
+                                  final title = titleCtrl.text.trim();
+                                  final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
+                                  if (title.isEmpty || price <= 0) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Please enter a valid title and price.')),
+                                    );
+                                    return;
+                                  }
 
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('✓ Product listing published to digital storefront!'),
-                                backgroundColor: ServoraColors.emerald600,
+                                  setModalState(() => isSubmitting = true);
+
+                                  final payload = {
+                                    'itemType': 'product',
+                                    'title': title,
+                                    'price': price,
+                                    'originalPrice': double.tryParse(originalPriceCtrl.text.trim()),
+                                    'category': categoryCtrl.text,
+                                    'stockQuantity': int.tryParse(stockCtrl.text.trim()) ?? 1,
+                                    'description': descCtrl.text.trim(),
+                                    'images': selectedImages.isNotEmpty
+                                        ? selectedImages
+                                        : ['https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&q=80'],
+                                  };
+
+                                  try {
+                                    final token = await authNotifier.storage.getToken();
+                                    await _dio.post(
+                                      '/business/catalogs',
+                                      data: payload,
+                                      options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                                    );
+                                  } catch (_) {}
+
+                                  final newProd = {
+                                    'id': 'prod-${DateTime.now().millisecondsSinceEpoch}',
+                                    'title': title,
+                                    'price': price,
+                                    'originalPrice': double.tryParse(originalPriceCtrl.text.trim()),
+                                    'category': categoryCtrl.text,
+                                    'stockQuantity': int.tryParse(stockCtrl.text.trim()) ?? 1,
+                                    'description': descCtrl.text.trim(),
+                                    'images': selectedImages.isNotEmpty
+                                        ? selectedImages
+                                        : ['https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&q=80'],
+                                    'condition': 'BRAND_NEW',
+                                    'likesCount': 0,
+                                    'viewsCount': 0,
+                                    'inquiriesCount': 0,
+                                    'createdAt': DateTime.now().toIso8601String(),
+                                  };
+
+                                  if (mounted) {
+                                    Navigator.pop(ctx);
+                                    setState(() {
+                                      _products.insert(0, newProd);
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('✓ Product listing published to digital storefront!'),
+                                        backgroundColor: ServoraColors.emerald600,
+                                      ),
+                                    );
+                                    _fetchLivePortalData();
+                                  }
+                                },
+                          child: isSubmitting
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Publish Product ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ==========================================
+  // EDIT PRODUCT MODAL
+  // ==========================================
+  void _openEditProductModal(Map<String, dynamic> product) {
+    final titleCtrl = TextEditingController(text: product['title'] ?? '');
+    final descCtrl = TextEditingController(text: product['description'] ?? '');
+    final priceCtrl = TextEditingController(text: product['price']?.toString() ?? '');
+    final originalPriceCtrl = TextEditingController(text: product['originalPrice']?.toString() ?? '');
+    final stockCtrl = TextEditingController(text: (product['stockQuantity'] ?? 1).toString());
+    final categoryCtrl = TextEditingController(text: product['category'] ?? 'Agriculture & Produce');
+
+    List<String> currentImages = [];
+    final rawImgs = product['images'];
+    if (rawImgs is List) {
+      currentImages = rawImgs.map((e) => e.toString()).toList();
+    } else if (rawImgs is String && rawImgs.startsWith('http')) {
+      currentImages = [rawImgs];
+    }
+    bool isSaving = false;
+
+    final categoryPresets = [
+      'Agriculture & Produce',
+      'Electronics',
+      'Solar & Inverters',
+      'Agro-Processing',
+      'Fugu Smocks',
+      'Building Supplies',
+      'Automotive',
+      'Food & Catering',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+
+          return Container(
+            padding: EdgeInsets.only(
+              top: 20,
+              left: 20,
+              right: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? ServoraColors.darkSurface : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.9),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const Gap(16),
+                  const Row(
+                    children: [
+                      Icon(Icons.edit_note_rounded, color: ServoraColors.emerald600, size: 22),
+                      Gap(8),
+                      Text('Edit Product Listing', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                  const Gap(4),
+                  const Text('Update product details, pricing, stock, and photos.', style: TextStyle(fontSize: 11.5, color: Colors.grey)),
+                  const Divider(height: 24),
+
+                  const Text('PRODUCT TITLE *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(4),
+                  TextField(
+                    controller: titleCtrl,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const Gap(12),
+
+                  const Text('CATEGORY *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(4),
+                  DropdownButtonFormField<String>(
+                    value: categoryPresets.contains(categoryCtrl.text) ? categoryCtrl.text : categoryPresets[0],
+                    dropdownColor: isDark ? ServoraColors.darkSurface : Colors.white,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    items: categoryPresets
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13))))
+                        .toList(),
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => categoryCtrl.text = val);
+                    },
+                  ),
+                  const Gap(12),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('PRICE (GH₵) *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                            const Gap(4),
+                            TextField(
+                              controller: priceCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                               ),
-                            );
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('ORIGINAL PRICE (GH₵)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                            const Gap(4),
+                            TextField(
+                              controller: originalPriceCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(12),
 
-                            final newProd = {
-                              'id': 'prod-${DateTime.now().millisecondsSinceEpoch}',
-                              'title': title,
-                              'price': price,
-                              'originalPrice': double.tryParse(originalPriceCtrl.text.trim()),
-                              'category': categoryCtrl.text,
-                              'stockQuantity': int.tryParse(stockCtrl.text.trim()) ?? 1,
-                              'description': descCtrl.text.trim(),
-                              'images': images.isNotEmpty ? images : ['https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&q=80'],
-                              'condition': condition,
-                              'likesCount': 0,
-                              'viewsCount': 0,
-                              'inquiriesCount': 0,
-                              'createdAt': DateTime.now().toIso8601String(),
-                            };
+                  const Text('STOCK QUANTITY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(4),
+                  TextField(
+                    controller: stockCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const Gap(12),
 
-                            setState(() {
-                              _products.insert(0, newProd);
-                            });
-                          },
-                          child: const Text('Publish Product ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('DESCRIPTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(4),
+                  TextField(
+                    controller: descCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const Gap(16),
+
+                  // Native Photo Upload Component (Zero URL typing)
+                  ServoraImageUploadWidget(
+                    initialImages: currentImages,
+                    maxImages: 6,
+                    label: 'MANAGE PHOTOS',
+                    helperText: 'Add new photos or remove existing ones.',
+                    onImagesChanged: (imgs) {
+                      setModalState(() {
+                        currentImages = imgs;
+                      });
+                    },
+                  ),
+                  const Gap(20),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: isSaving ? null : () => Navigator.pop(ctx),
+                          child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ServoraColors.emerald600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: isSaving
+                              ? null
+                              : () async {
+                                  final title = titleCtrl.text.trim();
+                                  final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
+                                  if (title.isEmpty || price <= 0) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Please enter a valid title and price.')),
+                                    );
+                                    return;
+                                  }
+
+                                  setModalState(() => isSaving = true);
+                                  final pId = product['id']?.toString() ?? '';
+
+                                  final payload = {
+                                    'itemType': 'product',
+                                    'title': title,
+                                    'price': price,
+                                    'originalPrice': double.tryParse(originalPriceCtrl.text.trim()),
+                                    'category': categoryCtrl.text,
+                                    'stockQuantity': int.tryParse(stockCtrl.text.trim()) ?? 1,
+                                    'description': descCtrl.text.trim(),
+                                    'images': currentImages,
+                                  };
+
+                                  try {
+                                    final token = await authNotifier.storage.getToken();
+                                    await _dio.patch(
+                                      '/business/catalogs/$pId',
+                                      data: payload,
+                                      options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                                    );
+                                  } catch (_) {
+                                    try {
+                                      final token = await authNotifier.storage.getToken();
+                                      await _dio.patch(
+                                        '/products/$pId',
+                                        data: payload,
+                                        options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                                      );
+                                    } catch (_) {}
+                                  }
+
+                                  if (mounted) {
+                                    Navigator.pop(ctx);
+                                    setState(() {
+                                      final idx = _products.indexWhere((item) => item['id'] == pId);
+                                      if (idx != -1) {
+                                        _products[idx] = {
+                                          ..._products[idx],
+                                          ...payload,
+                                        };
+                                      }
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('✓ Product updated successfully!'),
+                                        backgroundColor: ServoraColors.emerald600,
+                                      ),
+                                    );
+                                    _fetchLivePortalData();
+                                  }
+                                },
+                          child: isSaving
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Save Changes ➔', style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
@@ -1231,50 +1532,201 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     final titleCtrl = TextEditingController();
     final rateCtrl = TextEditingController();
     final categoryCtrl = TextEditingController(text: 'Power Tools');
+    List<String> selectedImages = [];
+    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: EdgeInsets.only(top: 20, left: 20, right: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
-        decoration: BoxDecoration(
-          color: Theme.of(ctx).brightness == Brightness.dark ? ServoraColors.darkSurface : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(top: 20, left: 20, right: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).brightness == Brightness.dark ? ServoraColors.darkSurface : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.build_rounded, color: Color(0xFFD97706), size: 20),
-                Gap(8),
-                Text('Add Equipment Rental', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                const Row(
+                  children: [
+                    Icon(Icons.build_rounded, color: Color(0xFFD97706), size: 20),
+                    Gap(8),
+                    Text('Add Equipment Rental', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+                const Gap(14),
+                TextField(controller: titleCtrl, decoration: const InputDecoration(hintText: 'e.g., Heavy Duty Concrete Mixer')),
+                const Gap(10),
+                TextField(controller: rateCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'Daily Rate in GH₵')),
+                const Gap(14),
+
+                // Native Media Upload
+                ServoraImageUploadWidget(
+                  initialImages: selectedImages,
+                  maxImages: 4,
+                  label: 'RENTAL MACHINERY PHOTOS',
+                  helperText: 'Upload clear photos of the power tool or machine.',
+                  onImagesChanged: (imgs) {
+                    setModalState(() {
+                      selectedImages = imgs;
+                    });
+                  },
+                ),
+                const Gap(16),
+
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 44)),
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (titleCtrl.text.trim().isEmpty) return;
+                          setModalState(() => isSubmitting = true);
+
+                          final rate = double.tryParse(rateCtrl.text.trim()) ?? 100.0;
+                          final payload = {
+                            'itemType': 'rental',
+                            'title': titleCtrl.text.trim(),
+                            'dailyRate': rate,
+                            'category': categoryCtrl.text,
+                            'images': selectedImages,
+                          };
+
+                          try {
+                            final token = await authNotifier.storage.getToken();
+                            await _dio.post(
+                              '/business/catalogs',
+                              data: payload,
+                              options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                            );
+                          } catch (_) {}
+
+                          if (mounted) {
+                            Navigator.pop(ctx);
+                            setState(() {
+                              _rentals.insert(0, {
+                                'id': 'rent-${DateTime.now().millisecondsSinceEpoch}',
+                                ...payload,
+                              });
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('✓ Rental equipment added to catalog!'), backgroundColor: Color(0xFFD97706)),
+                            );
+                            _fetchLivePortalData();
+                          }
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Add Rental ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
               ],
             ),
-            const Gap(14),
-            TextField(controller: titleCtrl, decoration: InputDecoration(hintText: 'e.g., Heavy Duty Concrete Mixer')),
-            const Gap(10),
-            TextField(controller: rateCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(hintText: 'Daily Rate in GH₵')),
-            const Gap(16),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 44)),
-              onPressed: () {
-                if (titleCtrl.text.isNotEmpty) {
-                  Navigator.pop(ctx);
-                  setState(() {
-                    _rentals.insert(0, {
-                      'title': titleCtrl.text,
-                      'dailyRate': double.tryParse(rateCtrl.text) ?? 100.0,
-                      'category': categoryCtrl.text,
-                    });
-                  });
-                }
-              },
-              child: const Text('Add Rental ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // EDIT RENTAL MODAL
+  // ==========================================
+  void _openEditRentalModal(Map<String, dynamic> rental) {
+    final titleCtrl = TextEditingController(text: rental['title'] ?? '');
+    final rateCtrl = TextEditingController(text: (rental['dailyRate'] ?? 100).toString());
+    final categoryCtrl = TextEditingController(text: rental['category'] ?? 'Power Tools');
+    List<String> currentImages = [];
+    final rawImgs = rental['images'];
+    if (rawImgs is List) currentImages = rawImgs.map((e) => e.toString()).toList();
+    bool isSaving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(top: 20, left: 20, right: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).brightness == Brightness.dark ? ServoraColors.darkSurface : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.edit_note_rounded, color: Color(0xFFD97706), size: 20),
+                    Gap(8),
+                    Text('Edit Equipment Rental', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+                const Gap(14),
+                TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Rental Title')),
+                const Gap(10),
+                TextField(controller: rateCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Daily Rate in GH₵')),
+                const Gap(14),
+
+                ServoraImageUploadWidget(
+                  initialImages: currentImages,
+                  maxImages: 4,
+                  label: 'MANAGE PHOTOS',
+                  onImagesChanged: (imgs) => setModalState(() => currentImages = imgs),
+                ),
+                const Gap(16),
+
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 44)),
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          if (titleCtrl.text.trim().isEmpty) return;
+                          setModalState(() => isSaving = true);
+                          final rId = rental['id']?.toString() ?? '';
+                          final rate = double.tryParse(rateCtrl.text.trim()) ?? 100.0;
+
+                          final payload = {
+                            'itemType': 'rental',
+                            'title': titleCtrl.text.trim(),
+                            'dailyRate': rate,
+                            'category': categoryCtrl.text,
+                            'images': currentImages,
+                          };
+
+                          try {
+                            final token = await authNotifier.storage.getToken();
+                            await _dio.patch(
+                              '/business/catalogs/$rId',
+                              data: payload,
+                              options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                            );
+                          } catch (_) {}
+
+                          if (mounted) {
+                            Navigator.pop(ctx);
+                            setState(() {
+                              final idx = _rentals.indexWhere((item) => item['id'] == rId);
+                              if (idx != -1) {
+                                _rentals[idx] = {..._rentals[idx], ...payload};
+                              }
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('✓ Rental equipment updated!'), backgroundColor: Color(0xFFD97706)),
+                            );
+                            _fetchLivePortalData();
+                          }
+                        },
+                  child: isSaving
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Save Rental Changes ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1286,53 +1738,275 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   void _openAddServiceModal() {
     final nameCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
+    List<String> selectedImages = [];
+    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: EdgeInsets.only(top: 20, left: 20, right: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
-        decoration: BoxDecoration(
-          color: Theme.of(ctx).brightness == Brightness.dark ? ServoraColors.darkSurface : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(top: 20, left: 20, right: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).brightness == Brightness.dark ? ServoraColors.darkSurface : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.layers_rounded, color: Color(0xFF2563EB), size: 20),
-                Gap(8),
-                Text('Add Trade Service', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                const Row(
+                  children: [
+                    Icon(Icons.layers_rounded, color: Color(0xFF2563EB), size: 20),
+                    Gap(8),
+                    Text('Add Trade Service', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+                const Gap(14),
+                TextField(controller: nameCtrl, decoration: const InputDecoration(hintText: 'e.g., Solar Inverter Installation')),
+                const Gap(10),
+                TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'Starting Price in GH₵')),
+                const Gap(14),
+
+                ServoraImageUploadWidget(
+                  initialImages: selectedImages,
+                  maxImages: 4,
+                  label: 'SERVICE PORTFOLIO PHOTOS',
+                  helperText: 'Upload pictures of your completed installations, repairs, or tailoring jobs.',
+                  onImagesChanged: (imgs) => setModalState(() => selectedImages = imgs),
+                ),
+                const Gap(16),
+
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 44)),
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (nameCtrl.text.trim().isEmpty) return;
+                          setModalState(() => isSubmitting = true);
+                          final price = double.tryParse(priceCtrl.text.trim()) ?? 150.0;
+
+                          final payload = {
+                            'itemType': 'service',
+                            'serviceName': nameCtrl.text.trim(),
+                            'startingPrice': price,
+                            'portfolioPhotos': selectedImages,
+                          };
+
+                          try {
+                            final token = await authNotifier.storage.getToken();
+                            await _dio.post(
+                              '/business/catalogs',
+                              data: payload,
+                              options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                            );
+                          } catch (_) {}
+
+                          if (mounted) {
+                            Navigator.pop(ctx);
+                            setState(() {
+                              _services.insert(0, {
+                                'id': 'srv-${DateTime.now().millisecondsSinceEpoch}',
+                                ...payload,
+                              });
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('✓ Trade service listed in catalog!'), backgroundColor: Color(0xFF2563EB)),
+                            );
+                            _fetchLivePortalData();
+                          }
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Add Service ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
               ],
             ),
-            const Gap(14),
-            TextField(controller: nameCtrl, decoration: InputDecoration(hintText: 'e.g., Solar Inverter Installation')),
-            const Gap(10),
-            TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(hintText: 'Starting Price in GH₵')),
-            const Gap(16),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 44)),
-              onPressed: () {
-                if (nameCtrl.text.isNotEmpty) {
-                  Navigator.pop(ctx);
-                  setState(() {
-                    _services.insert(0, {
-                      'serviceName': nameCtrl.text,
-                      'startingPrice': double.tryParse(priceCtrl.text) ?? 150.0,
-                    });
-                  });
-                }
-              },
-              child: const Text('Add Service ➔', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
+
+  // ==========================================
+  // EDIT SERVICE MODAL
+  // ==========================================
+  void _openEditServiceModal(Map<String, dynamic> service) {
+    final nameCtrl = TextEditingController(text: service['serviceName'] ?? service['name'] ?? '');
+    final priceCtrl = TextEditingController(text: (service['startingPrice'] ?? service['price'] ?? 150).toString());
+    List<String> currentImages = [];
+    final rawImgs = service['portfolioPhotos'] ?? service['images'];
+    if (rawImgs is List) currentImages = rawImgs.map((e) => e.toString()).toList();
+    bool isSaving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(top: 20, left: 20, right: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).brightness == Brightness.dark ? ServoraColors.darkSurface : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.edit_note_rounded, color: Color(0xFF2563EB), size: 20),
+                    Gap(8),
+                    Text('Edit Trade Service', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+                const Gap(14),
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Service Name')),
+                const Gap(10),
+                TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Starting Price in GH₵')),
+                const Gap(14),
+
+                ServoraImageUploadWidget(
+                  initialImages: currentImages,
+                  maxImages: 4,
+                  label: 'MANAGE PORTFOLIO PHOTOS',
+                  onImagesChanged: (imgs) => setModalState(() => currentImages = imgs),
+                ),
+                const Gap(16),
+
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 44)),
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          if (nameCtrl.text.trim().isEmpty) return;
+                          setModalState(() => isSaving = true);
+                          final sId = service['id']?.toString() ?? '';
+                          final price = double.tryParse(priceCtrl.text.trim()) ?? 150.0;
+
+                          final payload = {
+                            'itemType': 'service',
+                            'serviceName': nameCtrl.text.trim(),
+                            'startingPrice': price,
+                            'portfolioPhotos': currentImages,
+                          };
+
+                          try {
+                            final token = await authNotifier.storage.getToken();
+                            await _dio.patch(
+                              '/business/catalogs/$sId',
+                              data: payload,
+                              options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                            );
+                          } catch (_) {}
+
+                          if (mounted) {
+                            Navigator.pop(ctx);
+                            setState(() {
+                              final idx = _services.indexWhere((item) => item['id'] == sId);
+                              if (idx != -1) {
+                                _services[idx] = {..._services[idx], ...payload};
+                              }
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('✓ Service details updated!'), backgroundColor: Color(0xFF2563EB)),
+                            );
+                            _fetchLivePortalData();
+                          }
+                        },
+                  child: isSaving
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Save Service Changes ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // CONFIRM DELETE CATALOG ITEM DIALOG
+  // ==========================================
+  void _confirmDeleteCatalogItem(String id, String itemType, String title) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
+            const Gap(8),
+            const Text('Delete Listing?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently remove "$title" from your store catalog?',
+          style: const TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+
+              try {
+                final token = await authNotifier.storage.getToken();
+                await _dio.delete(
+                  '/business/catalogs/$id',
+                  queryParameters: {'itemType': itemType},
+                  options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                );
+              } catch (_) {
+                try {
+                  final token = await authNotifier.storage.getToken();
+                  await _dio.delete(
+                    '/products/$id',
+                    options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                  );
+                } catch (_) {}
+              }
+
+              if (mounted) {
+                setState(() {
+                  if (itemType == 'product') {
+                    _products.removeWhere((item) => item['id'] == id);
+                  } else if (itemType == 'rental') {
+                    _rentals.removeWhere((item) => item['id'] == id);
+                  } else if (itemType == 'service') {
+                    _services.removeWhere((item) => item['id'] == id);
+                  }
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('✓ Removed "$title" from catalog.'),
+                    backgroundColor: const Color(0xFF1E293B),
+                  ),
+                );
+                _fetchLivePortalData();
+              }
+            },
+            child: const Text('Delete Listing', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   // ==========================================
   // MAIN BUILD VIEW
@@ -1867,89 +2541,125 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
 
         return ServoraCard(
           padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: CachedNetworkImage(
-                  imageUrl: img,
-                  width: 78,
-                  height: 78,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => Container(
-                    width: 78,
-                    height: 78,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.shopping_bag_outlined, color: Colors.grey),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: img,
+                      width: 78,
+                      height: 78,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => Container(
+                        width: 78,
+                        height: 78,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.shopping_bag_outlined, color: Colors.grey),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const Gap(12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  const Gap(12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: ServoraColors.emerald600.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            p['category'] ?? 'General',
-                            style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: ServoraColors.emerald600.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                p['category'] ?? 'General',
+                                style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                              ),
+                            ),
+                            _buildStockPill(stock > 2 ? 'IN_STOCK' : (stock > 0 ? 'LOW_STOCK' : 'OUT_OF_STOCK'), stock),
+                          ],
                         ),
-                        _buildStockPill(stock > 2 ? 'IN_STOCK' : (stock > 0 ? 'LOW_STOCK' : 'OUT_OF_STOCK'), stock),
-                      ],
-                    ),
-                    const Gap(4),
-                    Text(p['title'] ?? 'Product Title', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900), maxLines: 2),
-                    const Gap(4),
-                    Text('GH₵ ${price.toStringAsFixed(2)}', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
-                    const Gap(6),
-                    // Likes & Views Engagement Pills
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444).withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.favorite_rounded, size: 11, color: Color(0xFFEF4444)),
-                              const Gap(3),
-                              Text('$likes Likes', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFFEF4444))),
-                            ],
-                          ),
-                        ),
+                        const Gap(4),
+                        Text(p['title'] ?? 'Product Title', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900), maxLines: 2),
+                        const Gap(4),
+                        Text('GH₵ ${price.toStringAsFixed(2)}', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: ServoraColors.emerald600)),
                         const Gap(6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.visibility_rounded, size: 11, color: Colors.grey),
-                              const Gap(3),
-                              Text('$views Views', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
-                            ],
-                          ),
+                        // Likes & Views Engagement Pills
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.favorite_rounded, size: 11, color: Color(0xFFEF4444)),
+                                  const Gap(3),
+                                  Text('$likes Likes', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFFEF4444))),
+                                ],
+                              ),
+                            ),
+                            const Gap(6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.visibility_rounded, size: 11, color: Colors.grey),
+                                  const Gap(3),
+                                  Text('$views Views', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+              const Gap(10),
+              const Divider(height: 1),
+              const Gap(8),
+              // Catalog Action Controls (Edit & Delete)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      visualDensity: VisualDensity.compact,
+                      side: BorderSide(color: isDark ? Colors.white24 : const Color(0xFFCBD5E1)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.edit_rounded, size: 14, color: ServoraColors.emerald600),
+                    label: const Text('Edit', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                    onPressed: () => _openEditProductModal(p),
+                  ),
+                  const Gap(8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      visualDensity: VisualDensity.compact,
+                      side: BorderSide(color: Colors.red.withOpacity(0.3)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 14, color: Colors.red),
+                    label: const Text('Delete', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.red)),
+                    onPressed: () => _confirmDeleteCatalogItem(p['id']?.toString() ?? '', 'product', p['title'] ?? 'Product'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1974,29 +2684,64 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
 
         return ServoraCard(
           padding: const EdgeInsets.all(12),
-          child: Row(
+          child: Column(
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD97706).withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.build_rounded, color: Color(0xFFD97706), size: 28),
+              Row(
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD97706).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.build_rounded, color: Color(0xFFD97706), size: 28),
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(r['category'] ?? 'Equipment Rental', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFD97706))),
+                        const Gap(2),
+                        Text(r['title'] ?? 'Rental Machinery', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+                        const Gap(2),
+                        Text('GH₵ ${rate.toStringAsFixed(0)} / day', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFFD97706))),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const Gap(12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(r['category'] ?? 'Equipment Rental', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFD97706))),
-                    const Gap(2),
-                    Text(r['title'] ?? 'Rental Machinery', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
-                    const Gap(2),
-                    Text('GH₵ ${rate.toStringAsFixed(0)} / day', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFFD97706))),
-                  ],
-                ),
+              const Gap(10),
+              const Divider(height: 1),
+              const Gap(8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      visualDensity: VisualDensity.compact,
+                      side: BorderSide(color: isDark ? Colors.white24 : const Color(0xFFCBD5E1)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.edit_rounded, size: 14, color: Color(0xFFD97706)),
+                    label: const Text('Edit', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFFD97706))),
+                    onPressed: () => _openEditRentalModal(r),
+                  ),
+                  const Gap(8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      visualDensity: VisualDensity.compact,
+                      side: BorderSide(color: Colors.red.withOpacity(0.3)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 14, color: Colors.red),
+                    label: const Text('Delete', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.red)),
+                    onPressed: () => _confirmDeleteCatalogItem(r['id']?.toString() ?? '', 'rental', r['title'] ?? 'Rental'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -2021,27 +2766,62 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
 
         return ServoraCard(
           padding: const EdgeInsets.all(12),
-          child: Row(
+          child: Column(
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB).withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.layers_rounded, color: Color(0xFF2563EB), size: 28),
+              Row(
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.layers_rounded, color: Color(0xFF2563EB), size: 28),
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(s['serviceName'] ?? 'Trade Service', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+                        const Gap(2),
+                        Text('Starting at GH₵ ${price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF2563EB))),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const Gap(12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s['serviceName'] ?? 'Trade Service', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
-                    const Gap(2),
-                    Text('Starting at GH₵ ${price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF2563EB))),
-                  ],
-                ),
+              const Gap(10),
+              const Divider(height: 1),
+              const Gap(8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      visualDensity: VisualDensity.compact,
+                      side: BorderSide(color: isDark ? Colors.white24 : const Color(0xFFCBD5E1)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.edit_rounded, size: 14, color: Color(0xFF2563EB)),
+                    label: const Text('Edit', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                    onPressed: () => _openEditServiceModal(s),
+                  ),
+                  const Gap(8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      visualDensity: VisualDensity.compact,
+                      side: BorderSide(color: Colors.red.withOpacity(0.3)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 14, color: Colors.red),
+                    label: const Text('Delete', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.red)),
+                    onPressed: () => _confirmDeleteCatalogItem(s['id']?.toString() ?? '', 'service', s['serviceName'] ?? s['name'] ?? 'Service'),
+                  ),
+                ],
               ),
             ],
           ),
