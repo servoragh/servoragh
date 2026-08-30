@@ -319,6 +319,57 @@ export async function GET(
       }).catch(() => null);
     }
 
+    // Fetch real customer reviews for this business
+    let reviews: any[] = [];
+    if (profile?.userId || profile?.id) {
+      const directReviews = profile.userId ? await prisma.review.findMany({
+        where: { targetId: profile.userId },
+        include: {
+          author: {
+            select: { name: true, avatarUrl: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }).catch(() => []) : [];
+
+      const pReviews = profile.id ? await prisma.productReview.findMany({
+        where: { product: { businessId: profile.id } },
+        include: {
+          user: { select: { name: true, avatarUrl: true } },
+          product: { select: { title: true, slug: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }).catch(() => []) : [];
+
+      reviews = [
+        ...directReviews.map((r: any) => ({
+          id: r.id,
+          userName: r.author?.name || "Verified Customer",
+          userAvatar: r.author?.avatarUrl,
+          rating: r.rating,
+          comment: r.comment,
+          category: r.category,
+          isVerified: r.isVerified ?? true,
+          createdAt: r.createdAt,
+        })),
+        ...pReviews.map((pr: any) => ({
+          id: pr.id,
+          userName: pr.user?.name || "Verified Buyer",
+          userAvatar: pr.user?.avatarUrl,
+          rating: pr.rating,
+          title: pr.title,
+          comment: pr.comment,
+          photos: pr.photos,
+          isVerified: pr.isVerified ?? true,
+          productTitle: pr.product?.title,
+          sellerReply: pr.sellerReply,
+          createdAt: pr.createdAt,
+        })),
+      ];
+    }
+
     // Fetch related community posts for this area/zone or business
     const communityPosts = profile?.userId ? await prisma.communityPost.findMany({
       where: {
@@ -329,7 +380,10 @@ export async function GET(
     }).catch(() => []) : [];
 
     return NextResponse.json({
-      profile,
+      profile: {
+        ...profile,
+        reviews,
+      },
       communityPosts,
     });
   } catch (error: any) {
