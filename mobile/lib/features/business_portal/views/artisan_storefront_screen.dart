@@ -1087,7 +1087,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                   ),
                   SliverToBoxAdapter(
                     child: SizedBox(
-                      height: 260,
+                      height: 300,
                       child: ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         scrollDirection: Axis.horizontal,

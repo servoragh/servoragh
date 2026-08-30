@@ -9,6 +9,7 @@ import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/servora_image_upload_widget.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../core/storage/local_storage_service.dart';
+import '../../../core/services/marketplace_api_service.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class BusinessPortalView extends StatefulWidget {
@@ -1177,12 +1178,20 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
 
                                   try {
                                     final token = await authNotifier.storage.getToken();
+                                    final user = authNotifier.state.user;
                                     await _dio.post(
                                       '/business/catalogs',
                                       data: payload,
-                                      options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                                      options: Options(headers: {
+                                        if (token != null) 'Authorization': 'Bearer $token',
+                                        if (user?.phone != null) 'x-user-phone': user!.phone,
+                                        if (user?.id != null) 'x-user-id': user!.id,
+                                      }),
                                     );
-                                  } catch (_) {}
+                                    MarketplaceApiService.clearCache();
+                                  } catch (_) {
+                                    MarketplaceApiService.clearCache();
+                                  }
 
                                   final newProd = {
                                     'id': 'prod-${DateTime.now().millisecondsSinceEpoch}',
@@ -1473,20 +1482,32 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
 
                                   try {
                                     final token = await authNotifier.storage.getToken();
+                                    final user = authNotifier.state.user;
                                     await _dio.patch(
                                       '/business/catalogs/$pId',
                                       data: payload,
-                                      options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                                      options: Options(headers: {
+                                        if (token != null) 'Authorization': 'Bearer $token',
+                                        if (user?.phone != null) 'x-user-phone': user!.phone,
+                                        if (user?.id != null) 'x-user-id': user!.id,
+                                      }),
                                     );
+                                    MarketplaceApiService.clearCache();
                                   } catch (_) {
                                     try {
                                       final token = await authNotifier.storage.getToken();
+                                      final user = authNotifier.state.user;
                                       await _dio.patch(
                                         '/products/$pId',
                                         data: payload,
-                                        options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                                        options: Options(headers: {
+                                          if (token != null) 'Authorization': 'Bearer $token',
+                                          if (user?.phone != null) 'x-user-phone': user!.phone,
+                                          if (user?.id != null) 'x-user-id': user!.id,
+                                        }),
                                       );
                                     } catch (_) {}
+                                    MarketplaceApiService.clearCache();
                                   }
 
                                   if (mounted) {
@@ -1597,12 +1618,20 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
 
                           try {
                             final token = await authNotifier.storage.getToken();
+                            final user = authNotifier.state.user;
                             await _dio.post(
                               '/business/catalogs',
                               data: payload,
-                              options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                              options: Options(headers: {
+                                if (token != null) 'Authorization': 'Bearer $token',
+                                if (user?.phone != null) 'x-user-phone': user!.phone,
+                                if (user?.id != null) 'x-user-id': user!.id,
+                              }),
                             );
-                          } catch (_) {}
+                            MarketplaceApiService.clearCache();
+                          } catch (_) {
+                            MarketplaceApiService.clearCache();
+                          }
 
                           if (mounted) {
                             Navigator.pop(ctx);
@@ -1699,12 +1728,20 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
 
                           try {
                             final token = await authNotifier.storage.getToken();
+                            final user = authNotifier.state.user;
                             await _dio.patch(
                               '/business/catalogs/$rId',
                               data: payload,
-                              options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                              options: Options(headers: {
+                                if (token != null) 'Authorization': 'Bearer $token',
+                                if (user?.phone != null) 'x-user-phone': user!.phone,
+                                if (user?.id != null) 'x-user-id': user!.id,
+                              }),
                             );
-                          } catch (_) {}
+                            MarketplaceApiService.clearCache();
+                          } catch (_) {
+                            MarketplaceApiService.clearCache();
+                          }
 
                           if (mounted) {
                             Navigator.pop(ctx);
@@ -1797,12 +1834,20 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
 
                           try {
                             final token = await authNotifier.storage.getToken();
+                            final user = authNotifier.state.user;
                             await _dio.post(
                               '/business/catalogs',
                               data: payload,
-                              options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                              options: Options(headers: {
+                                if (token != null) 'Authorization': 'Bearer $token',
+                                if (user?.phone != null) 'x-user-phone': user!.phone,
+                                if (user?.id != null) 'x-user-id': user!.id,
+                              }),
                             );
-                          } catch (_) {}
+                            MarketplaceApiService.clearCache();
+                          } catch (_) {
+                            MarketplaceApiService.clearCache();
+                          }
 
                           if (mounted) {
                             Navigator.pop(ctx);
@@ -1897,12 +1942,20 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
 
                           try {
                             final token = await authNotifier.storage.getToken();
+                            final user = authNotifier.state.user;
                             await _dio.patch(
                               '/business/catalogs/$sId',
                               data: payload,
-                              options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                              options: Options(headers: {
+                                if (token != null) 'Authorization': 'Bearer $token',
+                                if (user?.phone != null) 'x-user-phone': user!.phone,
+                                if (user?.id != null) 'x-user-id': user!.id,
+                              }),
                             );
-                          } catch (_) {}
+                            MarketplaceApiService.clearCache();
+                          } catch (_) {
+                            MarketplaceApiService.clearCache();
+                          }
 
                           if (mounted) {
                             Navigator.pop(ctx);
@@ -1965,18 +2018,30 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
 
               try {
                 final token = await authNotifier.storage.getToken();
+                final user = authNotifier.state.user;
                 await _dio.delete(
                   '/business/catalogs/$id',
                   queryParameters: {'itemType': itemType},
-                  options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                  options: Options(headers: {
+                    if (token != null) 'Authorization': 'Bearer $token',
+                    if (user?.phone != null) 'x-user-phone': user!.phone,
+                    if (user?.id != null) 'x-user-id': user!.id,
+                  }),
                 );
+                MarketplaceApiService.clearCache();
               } catch (_) {
                 try {
                   final token = await authNotifier.storage.getToken();
+                  final user = authNotifier.state.user;
                   await _dio.delete(
                     '/products/$id',
-                    options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                    options: Options(headers: {
+                      if (token != null) 'Authorization': 'Bearer $token',
+                      if (user?.phone != null) 'x-user-phone': user!.phone,
+                      if (user?.id != null) 'x-user-id': user!.id,
+                    }),
                   );
+                  MarketplaceApiService.clearCache();
                 } catch (_) {}
               }
 
