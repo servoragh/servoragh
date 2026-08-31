@@ -20,7 +20,7 @@ import '../../shared/widgets/main_shell_scaffold.dart';
 /// Helper to wrap screens in native iOS CupertinoPage with smooth swipe-to-back animations
 Page<dynamic> _iosPage({required GoRouterState state, required Widget child}) {
   return CupertinoPage<void>(
-    key: state.pageKey,
+    key: ValueKey('${state.uri}_${state.pageKey.value}'),
     child: child,
   );
 }
@@ -28,7 +28,7 @@ Page<dynamic> _iosPage({required GoRouterState state, required Widget child}) {
 /// Helper for bottom tabs to avoid nested route animation overhead
 Page<dynamic> _tabNavPage({required GoRouterState state, required Widget child}) {
   return NoTransitionPage<void>(
-    key: state.pageKey,
+    key: ValueKey('${state.uri}_${state.pageKey.value}'),
     child: child,
   );
 }
@@ -130,13 +130,6 @@ final appRouter = GoRouter(
       pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
         state: state,
         child: const DeliveryScreen(),
-      ),
-    ),
-    GoRoute(
-      path: '/businesses',
-      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
-        state: state,
-        child: const BusinessesScreen(),
       ),
     ),
     GoRoute(
