@@ -9,8 +9,8 @@
 
 ### The Problem
 Finding reliable, trustworthy, and skilled service providers (artisans) in Tamale, Ghana is currently a high-friction, risky, and informal process.
-* **For Customers:** Discovering an electrician, phone repairer, plumber, or tailor usually relies on word-of-mouth recommendations or unverified listings on social platforms (Facebook groups, WhatsApp status, Jiji Ghana). Scams, overcharging, poor workmanship, and no-shows are common, with zero recourse or rating history.
-* **For Service Providers (Artisans):** Skilled mechanics, tailors, phone technicians, and electricians struggle with inconsistent customer flow. Classified sites (Jiji, Tonaton) charge listing fees without guaranteeing lead quality, and social media posts disappear in fast-moving feeds.
+* **For Customers:** Discovering an electrician, phone repairer, plumber, or tailor usually relies on word-of-mouth recommendations or unverified listings on social platforms (Facebook groups, WhatsApp status, general classifieds). Scams, overcharging, poor workmanship, and no-shows are common, with zero recourse or rating history.
+* **For Service Providers (Artisans):** Skilled mechanics, tailors, phone technicians, and electricians struggle with inconsistent customer flow. Generic classified sites charge listing fees without guaranteeing lead quality, and social media posts disappear in fast-moving feeds.
 
 ### The Servora Solution
 **Servora** bridges this trust gap with a zero-cost, mobile-first service marketplace tailored specifically for Tamale:
@@ -38,7 +38,7 @@ Finding reliable, trustworthy, and skilled service providers (artisans) in Tamal
 
 | Platform / Channel | Strengths | Major Weaknesses | Servora Advantage |
 | :--- | :--- | :--- | :--- |
-| **Jiji Ghana / Tonaton** | National brand recognition, high web traffic | National focus (too broad), high listing fees for artisans, no service request flow, unverified profiles, high scam rate | 100% free artisan onboarding, hyper-local Tamale neighborhoods, mandatory verification badges, structured request quotes |
+| **Generic Classified Sites** | National brand recognition, high web traffic | National focus (too broad), high listing fees for artisans, no service request flow, unverified profiles, high scam rate | 100% free artisan onboarding, hyper-local Tamale neighborhoods, mandatory verification badges, structured request quotes |
 | **Facebook Groups & WhatsApp** | Widely used, zero entry cost | Unorganized, posts get buried, no searchable ratings/reviews, zero fraud protection | Permanent shareable profile URLs (`/provider/kwame-repairs`), WhatsApp-integrated sharing, verified review history |
 | **Word of Mouth / Informal** | Trusted referrals | Extremely limited reach, slow when urgent help is needed | Digital referral system built on verified community reviews |
 

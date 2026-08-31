@@ -5,11 +5,21 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_dropdown_sheet.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/services/marketplace_api_service.dart';
+import '../../../core/utils/taxonomy_resolver.dart';
 import '../../../shared/widgets/servora_product_card.dart';
+import '../../../shared/widgets/category_picker_sheet.dart';
 
 class ProductsScreen extends StatefulWidget {
-  const ProductsScreen({super.key});
+  final String? initialCategory;
+  final String? initialSubCategory;
+
+  const ProductsScreen({
+    super.key,
+    this.initialCategory,
+    this.initialSubCategory,
+  });
 
   @override
   State<ProductsScreen> createState() => _ProductsScreenState();
@@ -17,20 +27,12 @@ class ProductsScreen extends StatefulWidget {
 
 class _ProductsScreenState extends State<ProductsScreen> {
   String _selectedCategory = 'All';
+  String? _selectedSubCategory;
   String _selectedZone = 'All Northern Ghana';
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   List<Map<String, dynamic>> _apiProducts = [];
-
-  final List<String> _categories = [
-    'All',
-    'Solar & Tech',
-    'Fugu Smocks',
-    'Heavy Tools',
-    'Agribusiness',
-    'Auto Parts',
-  ];
 
   final List<Map<String, dynamic>> _productsList = [
     {
@@ -105,7 +107,27 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialCategory != null && widget.initialCategory!.isNotEmpty) {
+      _selectedCategory = widget.initialCategory!;
+    }
+    if (widget.initialSubCategory != null && widget.initialSubCategory!.isNotEmpty) {
+      _selectedSubCategory = widget.initialSubCategory!;
+    }
     _fetchLiveProducts();
+  }
+
+  @override
+  void didUpdateWidget(ProductsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialCategory != oldWidget.initialCategory ||
+        widget.initialSubCategory != oldWidget.initialSubCategory) {
+      setState(() {
+        if (widget.initialCategory != null && widget.initialCategory!.isNotEmpty) {
+          _selectedCategory = widget.initialCategory!;
+        }
+        _selectedSubCategory = widget.initialSubCategory;
+      });
+    }
   }
 
   @override
@@ -114,9 +136,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchLiveProducts() async {
-    setState(() => _isLoading = true);
-    final results = await MarketplaceApiService.fetchProducts();
+  Future<void> _fetchLiveProducts({bool forceRefresh = false}) async {
+    if (_apiProducts.isEmpty) {
+      setState(() => _isLoading = true);
+    }
+    final results = await MarketplaceApiService.fetchProducts(forceRefresh: forceRefresh);
     if (mounted && results.isNotEmpty) {
       setState(() {
         _apiProducts = results.map((p) {
@@ -159,6 +183,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             'id': p['id'] ?? 'prod',
             'title': p['title'] ?? 'Product',
             'category': p['category'] ?? 'General',
+            'subCategory': p['subCategory'] ?? p['subcategory'] ?? '',
             'price': priceNum,
             'originalPrice': originalPriceNum,
             'description': p['description'] ?? 'No detailed description provided by seller.',
@@ -171,6 +196,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             'escrow': true,
             'image': mainImage,
             'images': imageList,
+            'createdAt': p['createdAt'],
           };
         }).toList();
       });
@@ -201,7 +227,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final dataset = _apiProducts.isNotEmpty ? _apiProducts : _productsList;
     final query = _searchQuery.trim().toLowerCase();
     final filtered = dataset.where((p) {
-      final matchesCategory = _selectedCategory == 'All' || p['category'] == _selectedCategory;
+      final matchesTaxonomy = TaxonomyResolver.matchProductTaxonomy(
+        product: p,
+        selectedCategoryInput: _selectedCategory,
+        selectedSubcategoryInput: _selectedSubCategory,
+      );
       final locationStr = (p['location'] ?? p['area'] ?? '').toString();
       final matchesZone = _selectedZone == 'All Northern Ghana' || locationStr.contains(_selectedZone);
       final titleStr = (p['title'] ?? '').toString().toLowerCase();
@@ -211,7 +241,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           titleStr.contains(query) ||
           descStr.contains(query) ||
           sellerStr.contains(query);
-      return matchesCategory && matchesZone && matchesSearch;
+      return matchesTaxonomy && matchesZone && matchesSearch;
     }).toList();
 
     return Scaffold(
@@ -301,32 +331,85 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
           ),
 
-          // 2. Category Filter Pills
+          // 2. Category Filter Pills (with Category Explorer Button)
           SizedBox(
             height: 44,
-            child: ListView.builder(
+            child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final cat = _categories[index];
-                final isSelected = cat == _selectedCategory;
-                return Padding(
+              children: [
+                Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(cat),
-                    selected: isSelected,
+                    label: const Text('All Categories'),
+                    selected: _selectedCategory == 'All' && _selectedSubCategory == null,
                     selectedColor: ServoraColors.emerald600,
                     backgroundColor: isDark ? ServoraColors.darkSurface : const Color(0xFFF1F5F9),
                     labelStyle: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : (isDark ? Colors.grey[300] : Colors.black87),
+                      color: (_selectedCategory == 'All' && _selectedSubCategory == null) ? Colors.white : (isDark ? Colors.grey[300] : Colors.black87),
                     ),
-                    onSelected: (_) => setState(() => _selectedCategory = cat),
+                    onSelected: (_) => setState(() {
+                      _selectedCategory = 'All';
+                      _selectedSubCategory = null;
+                    }),
                   ),
-                ).animate().fadeIn(delay: (index * 30).ms, duration: 250.ms).scale(begin: const Offset(0.92, 0.92), end: const Offset(1, 1), curve: Curves.easeOutCubic);
-              },
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ActionChip(
+                    avatar: const Icon(Icons.layers_rounded, color: ServoraColors.emerald600, size: 16),
+                    label: Text(
+                      _selectedCategory != 'All'
+                          ? 'Vertical: $_selectedCategory ${_selectedSubCategory != null ? '› $_selectedSubCategory' : ''}'
+                          : 'Explore All 17 Categories ⚡',
+                    ),
+                    backgroundColor: isDark ? ServoraColors.darkSurface : const Color(0xFFECFDF5),
+                    labelStyle: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: ServoraColors.emerald700,
+                    ),
+                    onPressed: () {
+                      CategoryPickerSheet.show(
+                        context,
+                        selectedCategory: _selectedCategory != 'All' ? _selectedCategory : 'Vehicles',
+                        selectedSubCategory: _selectedSubCategory,
+                        onSelect: (cat, sub) {
+                          setState(() {
+                            _selectedCategory = cat;
+                            _selectedSubCategory = sub;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+                ...ServoraConstants.classifiedCategories.map((c) {
+                  final catName = c['name'].toString();
+                  final isSelected = _selectedCategory == catName;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      avatar: Text(c['icon'].toString(), style: const TextStyle(fontSize: 14)),
+                      label: Text(catName),
+                      selected: isSelected,
+                      selectedColor: ServoraColors.emerald600,
+                      backgroundColor: isDark ? ServoraColors.darkSurface : const Color(0xFFF1F5F9),
+                      labelStyle: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? Colors.white : (isDark ? Colors.grey[300] : Colors.black87),
+                      ),
+                      onSelected: (_) => setState(() {
+                        _selectedCategory = catName;
+                        _selectedSubCategory = null;
+                      }),
+                    ),
+                  );
+                }),
+              ],
             ),
           ),
           const Divider(height: 1),

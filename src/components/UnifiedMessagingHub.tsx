@@ -49,6 +49,17 @@ export function UnifiedMessagingHub({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    async function sendHeartbeat() {
+      try {
+        await fetch("/api/presence/heartbeat", { method: "POST" });
+      } catch (_) {}
+    }
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     fetchRooms();
   }, [activeScopeFilter]);
 

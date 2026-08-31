@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Tag, MapPin, Star, ShoppingBag, Eye, CheckCircle2, Play } from "lucide-react";
 import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
 import { formatGHS, parseJsonArray } from "@/lib/utils";
+import { formatRelativeTime } from "@/lib/timeFormatter";
 
 export interface ProductCardProps {
   product: {
@@ -19,6 +20,7 @@ export interface ProductCardProps {
     category: string;
     images?: string | string[];
     videoUrl?: string | null;
+    createdAt?: string | Date;
     provider?: {
       businessName: string;
       slug: string;
@@ -88,6 +90,13 @@ export function ProductCard({ product }: ProductCardProps) {
               </div>
             )}
           </div>
+
+          {/* Product Posted Date Overlay (Bottom Right of Image) */}
+          {product.createdAt && (
+            <div className="absolute bottom-2 right-2 bg-stone-950/80 backdrop-blur-md text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-lg border border-white/15 shadow-sm">
+              🕒 {formatRelativeTime(product.createdAt)}
+            </div>
+          )}
         </div>
 
         {/* Product Details */}

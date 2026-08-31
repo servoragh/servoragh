@@ -10,6 +10,7 @@ import '../../../shared/widgets/servora_image_upload_widget.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../core/storage/local_storage_service.dart';
 import '../../../core/services/marketplace_api_service.dart';
+import '../../../shared/widgets/category_picker_sheet.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class BusinessPortalView extends StatefulWidget {
@@ -944,20 +945,10 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     final priceCtrl = TextEditingController();
     final originalPriceCtrl = TextEditingController();
     final stockCtrl = TextEditingController(text: '5');
-    final categoryCtrl = TextEditingController(text: 'Agriculture & Produce');
+    final categoryCtrl = TextEditingController(text: 'Food, Agriculture & Farming');
+    String? subCategoryVal;
     List<String> selectedImages = [];
     bool isSubmitting = false;
-
-    final categoryPresets = [
-      'Agriculture & Produce',
-      'Electronics',
-      'Solar & Inverters',
-      'Agro-Processing',
-      'Fugu Smocks',
-      'Building Supplies',
-      'Automotive',
-      'Food & Catering',
-    ];
 
     showModalBottomSheet(
       context: context,
@@ -1022,22 +1013,60 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                   ),
                   const Gap(12),
 
-                  const Text('CATEGORY *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Text('INDUSTRY CATEGORY & SUBCATEGORY *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                   const Gap(4),
-                  DropdownButtonFormField<String>(
-                    value: categoryCtrl.text,
-                    dropdownColor: isDark ? ServoraColors.darkSurface : Colors.white,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                    items: categoryPresets
-                        .map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13))))
-                        .toList(),
-                    onChanged: (val) {
-                      if (val != null) setModalState(() => categoryCtrl.text = val);
+                  InkWell(
+                    onTap: () {
+                      CategoryPickerSheet.show(
+                        ctx,
+                        selectedCategory: categoryCtrl.text,
+                        selectedSubCategory: subCategoryVal,
+                        onSelect: (cat, sub) {
+                          setModalState(() {
+                            categoryCtrl.text = cat;
+                            subCategoryVal = sub;
+                          });
+                        },
+                      );
                     },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: ServoraColors.emerald600.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.layers_rounded, color: ServoraColors.emerald600, size: 20),
+                          const Gap(10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  categoryCtrl.text.isNotEmpty ? categoryCtrl.text : 'Select Category',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1C1917)),
+                                ),
+                                Text(
+                                  subCategoryVal != null ? 'Subcategory: $subCategoryVal' : 'Tap to pick subcategory',
+                                  style: const TextStyle(fontSize: 10, color: ServoraColors.emerald600, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: ServoraColors.emerald600,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text('Choose', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const Gap(12),
 
@@ -1169,6 +1198,7 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                                     'price': price,
                                     'originalPrice': double.tryParse(originalPriceCtrl.text.trim()),
                                     'category': categoryCtrl.text,
+                                    'subCategory': subCategoryVal,
                                     'stockQuantity': int.tryParse(stockCtrl.text.trim()) ?? 1,
                                     'description': descCtrl.text.trim(),
                                     'images': selectedImages.isNotEmpty
@@ -3168,17 +3198,35 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                           ),
                           const Gap(8),
                           Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: ServoraColors.emerald600.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                r['productTitle'] ?? 'Product',
-                                style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            child: InkWell(
+                              onTap: () {
+                                final pSlug = (r['productSlug'] ?? r['product']?['slug'] ?? '').toString();
+                                if (pSlug.isNotEmpty) {
+                                  context.push('/products/$pSlug');
+                                } else {
+                                  context.push('/products');
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: ServoraColors.emerald600.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      r['productTitle'] ?? 'Product',
+                                      style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const Gap(2),
+                                    const Icon(Icons.open_in_new_rounded, size: 10, color: ServoraColors.emerald600),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -3188,8 +3236,48 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                       Text('"${r['comment'] ?? ''}"', style: const TextStyle(fontSize: 12.5, height: 1.3)),
                       const Gap(10),
 
+                      // Actions Row: View Review & Photos + Reply
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: ServoraColors.emerald600,
+                              side: const BorderSide(color: ServoraColors.emerald600, width: 1.2),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            icon: const Icon(Icons.photo_library_rounded, size: 14),
+                            label: const Text('View Review & Photos 👁️', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              final pSlug = (r['productSlug'] ?? r['product']?['slug'] ?? '').toString();
+                              if (pSlug.isNotEmpty) {
+                                context.push('/products/$pSlug');
+                              } else {
+                                context.push('/products');
+                              }
+                            },
+                          ),
+
+                          if (!hasReply)
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: ServoraColors.emerald600,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.reply_rounded, size: 14),
+                              label: const Text('Reply to Review', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              onPressed: () => _openReplyReviewModal(r),
+                            ),
+                        ],
+                      ),
+
                       // Seller Reply Section
-                      if (hasReply)
+                      if (hasReply) ...[
+                        const Gap(8),
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
@@ -3211,19 +3299,8 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                               Text(r['sellerReply'], style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
                             ],
                           ),
-                        )
-                      else
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ServoraColors.emerald600,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          icon: const Icon(Icons.reply_rounded, size: 14),
-                          label: const Text('Reply to Review', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          onPressed: () => _openReplyReviewModal(r),
                         ),
+                      ],
                     ],
                   ),
                 );

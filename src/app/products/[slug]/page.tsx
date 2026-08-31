@@ -36,6 +36,8 @@ import {
 } from "lucide-react";
 import { EscrowDealModal } from "@/components/EscrowDealModal";
 import { TrustBadge } from "@/components/TrustBadge";
+import { PresenceBadge } from "@/components/PresenceBadge";
+import { formatExactDateTime } from "@/lib/timeFormatter";
 import { formatGHS } from "@/lib/utils";
 
 export default function ProductDetailPage() {
@@ -183,6 +185,31 @@ export default function ProductDetailPage() {
       `Hello ${product.seller?.businessName || product.seller?.name},\n\nI saw your listing on Servora.gh: *${product.title}* (GH₵ ${Number(product.price).toLocaleString("en-US", { minimumFractionDigits: 2 })}).\n\nI would like to order this item / arrange delivery in ${product.area}.\nItem link: ${url}`
     );
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, "_blank");
+  }
+
+  async function handleStartNativeChat() {
+    if (!product) return;
+    try {
+      const recipientId = product.seller?.id || product.provider?.id;
+      const res = await fetch("/api/chat/rooms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scope: "C2B",
+          recipientId,
+          productId: product.id,
+          title: `Inquiry: ${product.title}`,
+        }),
+      });
+      const data = await res.json();
+      if (data.room?.id) {
+        router.push(`/messages?roomId=${data.room.id}`);
+      } else {
+        router.push("/messages");
+      }
+    } catch (_) {
+      router.push("/messages");
+    }
   }
 
   // Question Submission
@@ -501,10 +528,17 @@ export default function ProductDetailPage() {
                   </span>
                 </div>
 
-                {/* Bold Primary Title */}
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white leading-tight">
-                  {product.title}
-                </h1>
+                {/* Bold Primary Title & Exact Timestamp */}
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white leading-tight">
+                    {product.title}
+                  </h1>
+                  {product.createdAt && (
+                    <p className="text-xs font-semibold text-stone-400 dark:text-stone-500 mt-1">
+                      📅 {formatExactDateTime(product.createdAt)}
+                    </p>
+                  )}
+                </div>
 
                 {/* Price Block */}
                 <div className="p-4 bg-stone-50 dark:bg-stone-800/60 rounded-2xl border border-stone-200/80 dark:border-stone-700/80 flex flex-wrap items-baseline justify-between gap-2">
@@ -578,7 +612,16 @@ export default function ProductDetailPage() {
                           {product.seller?.businessName || product.seller?.name}
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 fill-current text-white dark:text-stone-900" />
                         </h4>
-                        <p className="text-xs text-stone-500 flex items-center gap-1 mt-0.5">
+                        <div className="mt-1">
+                          <PresenceBadge
+                            businessSlug={product.seller?.slug}
+                            userId={product.seller?.id}
+                            initialIsOnline={product.seller?.isOnline}
+                            initialLastSeen={product.seller?.lastSeen}
+                            businessHours={product.seller?.businessHours}
+                          />
+                        </div>
+                        <p className="text-xs text-stone-500 flex items-center gap-1 mt-1">
                           <MapPin className="w-3 h-3" />
                           <span>{product.seller?.zone || product.area}</span>
                         </p>
@@ -617,13 +660,13 @@ export default function ProductDetailPage() {
                   </button>
                 </div>
 
-                {/* Direct Chat with Seller */}
+                {/* Direct Native Servora Chat with Seller */}
                 <button
-                  onClick={handleOrderWhatsApp}
-                  className="w-full py-2.5 px-4 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-2"
+                  onClick={handleStartNativeChat}
+                  className="w-full py-3 px-4 bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white font-bold rounded-2xl text-xs transition-all shadow-md flex items-center justify-center gap-2"
                 >
-                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>💬 Chat with Seller</span>
+                  <MessageCircle className="w-4 h-4 text-emerald-400" />
+                  <span>💬 Chat on Servora (Ask about this item)</span>
                 </button>
               </div>
             </div>
@@ -861,8 +904,7 @@ export default function ProductDetailPage() {
                     </div>
                   </div>
 
-                  {rev.title && <h4 className="font-bold text-sm text-stone-900 dark:text-white">{rev.title}</h4>}
-                  <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed">{rev.comment}</p>
+                  <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed mt-2">{rev.comment}</p>
 
                   {/* Review Photos Gallery */}
                   {rev.photos && rev.photos.length > 0 && (
@@ -1108,18 +1150,6 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              {/* Title */}
-              <div>
-                <label className="text-xs font-bold text-stone-500 block mb-1">Review Title</label>
-                <input
-                  type="text"
-                  value={newReviewTitle}
-                  onChange={(e) => setNewReviewTitle(e.target.value)}
-                  placeholder="e.g. Excellent service, arrived in 30 mins!"
-                  className="w-full px-3 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs"
-                />
-              </div>
-
               {/* Detailed Comment */}
               <div>
                 <label className="text-xs font-bold text-stone-500 block mb-1">Your Experience</label>
@@ -1129,43 +1159,55 @@ export default function ProductDetailPage() {
                   value={newReviewComment}
                   onChange={(e) => setNewReviewComment(e.target.value)}
                   placeholder="Describe item quality, packaging, delivery speed, or communication..."
-                  className="w-full px-3 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs"
+                  className="w-full px-3 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
-              {/* Photo URLs */}
+              {/* Photo Upload Attachment */}
               <div>
-                <label className="text-xs font-bold text-stone-500 block mb-1">Photo Attachment (Optional Image URL)</label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={newPhotoInput}
-                    onChange={(e) => setNewPhotoInput(e.target.value)}
-                    placeholder="https://..."
-                    className="flex-1 px-3 py-2 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (newPhotoInput.trim()) {
-                        setNewReviewPhotos((prev) => [...prev, newPhotoInput.trim()]);
-                        setNewPhotoInput("");
-                      }
-                    }}
-                    className="px-3 py-2 bg-stone-200 dark:bg-stone-700 font-bold text-xs rounded-xl"
-                  >
-                    + Add
-                  </button>
+                <label className="text-xs font-bold text-stone-500 block mb-1">Attach Review Photos (Optional)</label>
+                <div className="space-y-2">
+                  <label className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700/80 border border-dashed border-stone-300 dark:border-stone-700 rounded-2xl cursor-pointer transition">
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">📷 Choose Photo Files</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                          Array.from(files).forEach((file) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              if (reader.result) {
+                                setNewReviewPhotos((prev) => [...prev, reader.result as string]);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          });
+                        }
+                      }}
+                    />
+                  </label>
+
+                  {newReviewPhotos.length > 0 && (
+                    <div className="flex gap-2 flex-wrap pt-1">
+                      {newReviewPhotos.map((p, idx) => (
+                        <div key={idx} className="relative group w-14 h-14 rounded-xl overflow-hidden border border-stone-200 dark:border-stone-700">
+                          <img src={p} alt="Review upload" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setNewReviewPhotos((prev) => prev.filter((_, i) => i !== idx))}
+                            className="absolute top-0.5 right-0.5 bg-stone-900/80 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black hover:bg-rose-600 transition"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {newReviewPhotos.length > 0 && (
-                  <div className="flex gap-2 mt-2">
-                    {newReviewPhotos.map((p, idx) => (
-                      <span key={idx} className="text-[10px] bg-stone-100 dark:bg-stone-800 px-2 py-1 rounded-md truncate max-w-[120px]">
-                        Photo {idx + 1}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <button

@@ -14,6 +14,7 @@ import '../../features/auth/views/login_screen.dart';
 import '../../features/products/views/product_detail_screen.dart';
 import '../../features/businesses/views/businesses_screen.dart';
 import '../../features/business_portal/views/edit_business_profile_screen.dart';
+import '../../features/chat/views/chat_screen.dart';
 import '../../shared/widgets/main_shell_scaffold.dart';
 
 /// Helper to wrap screens in native iOS CupertinoPage with smooth swipe-to-back animations
@@ -50,10 +51,14 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: '/products',
-          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
-            state: state,
-            child: const ProductsScreen(),
-          ),
+          pageBuilder: (BuildContext context, GoRouterState state) {
+            final cat = state.uri.queryParameters['category'];
+            final subCat = state.uri.queryParameters['subCategory'];
+            return _tabNavPage(
+              state: state,
+              child: ProductsScreen(initialCategory: cat, initialSubCategory: subCat),
+            );
+          },
         ),
         GoRoute(
           path: '/community',
@@ -189,6 +194,24 @@ final appRouter = GoRouter(
         state: state,
         child: const EscrowDealScreen(),
       ),
+    ),
+    GoRoute(
+      path: '/messages',
+      pageBuilder: (BuildContext context, GoRouterState state) {
+        final roomId = state.uri.queryParameters['roomId'];
+        final recipientId = state.uri.queryParameters['recipientId'];
+        final productId = state.uri.queryParameters['productId'];
+        final title = state.uri.queryParameters['title'];
+        return _iosPage(
+          state: state,
+          child: ChatScreen(
+            initialRoomId: roomId,
+            recipientId: recipientId,
+            productId: productId,
+            title: title,
+          ),
+        );
+      },
     ),
     GoRoute(
       path: '/activity',

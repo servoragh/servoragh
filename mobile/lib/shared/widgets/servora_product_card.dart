@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../app/theme/servora_colors.dart';
 import '../../core/utils/whatsapp_helper.dart';
+import '../../core/utils/time_formatter.dart';
 import 'servora_image_lightbox.dart';
 import 'servora_shimmer_skeleton.dart';
 
@@ -72,6 +73,8 @@ class ServoraProductCard extends StatelessWidget {
     final String location = p['location']?.toString() ?? p['area']?.toString() ?? 'Tamale';
     final String phone = p['phone']?.toString() ?? '+233240000000';
     final String slug = p['slug']?.toString() ?? p['id']?.toString() ?? '';
+
+    final rawDate = p['createdAt'] ?? p['postedAt'] ?? p['created_at'] ?? p['date'] ?? p['timestamp'];
 
     return GestureDetector(
       onTap: onTap ??
@@ -155,29 +158,54 @@ class ServoraProductCard extends StatelessWidget {
                     ),
                   ),
 
-                // Photo Zoom Pill (Bottom Right)
+                // Posted Date & Zoom Overlay (Bottom Right of Product Image)
                 Positioned(
                   bottom: 6,
                   right: 6,
-                  child: GestureDetector(
-                    onTap: () {
-                      ServoraImageLightbox.show(
-                        context,
-                        title: title,
-                        images: pImages.isNotEmpty ? pImages : (imageUrl != null ? [imageUrl] : []),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.75),
-                        borderRadius: BorderRadius.circular(7),
-                      ),
-                      child: Text(
-                        pImages.length > 1 ? '📸 ${pImages.length}' : '🔍 Zoom',
-                        style: const TextStyle(fontSize: 8.5, color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (rawDate != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(7),
+                            border: Border.all(color: Colors.white12),
+                          ),
+                          child: Text(
+                            TimeFormatter.formatRelativeTime(rawDate),
+                            style: const TextStyle(
+                              fontSize: 8.5,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      if (pImages.length > 1) ...[
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () {
+                            ServoraImageLightbox.show(
+                              context,
+                              title: title,
+                              images: pImages.isNotEmpty ? pImages : (imageUrl != null ? [imageUrl] : []),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.75),
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: Text(
+                              '📸 ${pImages.length}',
+                              style: const TextStyle(fontSize: 8.5, color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
@@ -253,15 +281,32 @@ class ServoraProductCard extends StatelessWidget {
                   ),
                   const Gap(2),
 
-                  // Seller Subtitle
-                  Text(
-                    '$sellerName • $location',
-                    style: TextStyle(
-                      fontSize: 8.5,
-                      color: isDark ? Colors.white54 : Colors.grey[600],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  // Seller Subtitle & Posting Time
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '$sellerName • $location',
+                          style: TextStyle(
+                            fontSize: 8.5,
+                            color: isDark ? Colors.white54 : Colors.grey[600],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (p['createdAt'] != null) ...[
+                        const Gap(4),
+                        Text(
+                          TimeFormatter.formatRelativeTime(p['createdAt']),
+                          style: const TextStyle(
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w600,
+                            color: ServoraColors.emerald600,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const Gap(6),
 

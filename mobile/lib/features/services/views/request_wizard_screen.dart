@@ -58,7 +58,7 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
   }
 
   Future<void> _openCategoryPicker() async {
-    final catNames = ServoraConstants.categories.map((c) => c['name']!).toList();
+    final catNames = ServoraConstants.classifiedCategories.map((c) => c['name'].toString()).toList();
     final result = await ServoraBottomSheetPicker.show(
       context: context,
       title: 'Select Service Category 🛠️',

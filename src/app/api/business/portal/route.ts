@@ -11,14 +11,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Please log in to access your business portal." }, { status: 401 });
     }
 
+    const cleanSessionPhone = (session.phone || "").trim();
+    const sessionPhoneVariants = cleanSessionPhone
+      ? [
+          { phone: cleanSessionPhone },
+          { phone: cleanSessionPhone.replace("+233", "0") },
+          { phone: "+233" + cleanSessionPhone.replace(/^0/, "") },
+        ]
+      : [];
+
     // 1. Resolve User in Database
     let user = await prisma.user.findFirst({
       where: {
         OR: [
-          { id: session.id },
-          { phone: session.phone },
-          { phone: session.phone.replace("+233", "0") },
-          { phone: "+233" + session.phone.replace(/^0/, "") },
+          ...(session.id ? [{ id: session.id }] : []),
+          ...sessionPhoneVariants,
         ],
       },
       include: {
@@ -37,13 +44,22 @@ export async function GET(request: Request) {
     }
 
     const userId = user?.id || session.id;
+    const cleanUserPhone = (user?.phone || session.phone || "").trim();
+    const userPhoneVariants = cleanUserPhone
+      ? [
+          { user: { phone: cleanUserPhone } },
+          { phone: cleanUserPhone },
+          { phone: cleanUserPhone.replace("+233", "0") },
+          { phone: "+233" + cleanUserPhone.replace(/^0/, "") },
+        ]
+      : [];
 
     // 2. Fetch Business Profile & Catalogs
     let businessProfile = await prisma.businessProfile.findFirst({
       where: {
         OR: [
-          { userId: userId },
-          ...(user?.phone ? [{ user: { phone: user.phone } }, { phone: user.phone }] : []),
+          ...(userId ? [{ userId }] : []),
+          ...userPhoneVariants,
         ],
       },
       include: {
@@ -65,7 +81,7 @@ export async function GET(request: Request) {
       },
     });
 
-    // If no business profile found for this specific user, fallback to the default business profile so merchant features work seamlessly
+    // If no business profile found for this specific user, fallback to the default business profile
     if (!businessProfile) {
       businessProfile = await prisma.businessProfile.findFirst({
         include: {
@@ -81,22 +97,31 @@ export async function GET(request: Request) {
     const businessId = businessProfile?.id;
 
     // 3. Fetch All Product Listings owned by this business/user
-    let products = await prisma.productListing.findMany({
-      where: {
-        OR: [
-          ...(businessId ? [{ businessId }] : []),
-          { sellerId: userId },
-        ],
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    let products: any[] = [];
+    try {
+      products = await prisma.productListing.findMany({
+        where: {
+          OR: [
+            ...(businessId ? [{ businessId }] : []),
+            ...(userId ? [{ sellerId: userId }] : []),
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    } catch (_) {
+      products = [];
+    }
 
     // If still 0 products, fetch general active listings for this store
     if (products.length === 0) {
-      products = await prisma.productListing.findMany({
-        take: 12,
-        orderBy: { createdAt: "desc" },
-      });
+      try {
+        products = await prisma.productListing.findMany({
+          take: 12,
+          orderBy: { createdAt: "desc" },
+        });
+      } catch (_) {
+        products = [];
+      }
     }
 
     const productIds = products.map((p) => p.id);
@@ -180,73 +205,77 @@ export async function GET(request: Request) {
 
     // 6. Fetch Escrow Deals Where Merchant Is Provider (Or Customer)
     let escrowDeals: any[] = [];
-    try {
-      escrowDeals = await prisma.escrowDeal.findMany({
-        where: {
-          OR: [
-            { providerId: userId },
-            { customerId: userId },
-          ],
-        },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              avatarUrl: true,
+    if (userId) {
+      try {
+        escrowDeals = await prisma.escrowDeal.findMany({
+          where: {
+            OR: [
+              { providerId: userId },
+              { customerId: userId },
+            ],
+          },
+          include: {
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                avatarUrl: true,
+              },
+            },
+            provider: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                avatarUrl: true,
+              },
             },
           },
-          provider: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              avatarUrl: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      });
-    } catch {
-      escrowDeals = [];
+          orderBy: { createdAt: "desc" },
+        });
+      } catch {
+        escrowDeals = [];
+      }
     }
 
     // 7. Fetch Direct Customer In-App Chat Rooms
     let chatMemberships: any[] = [];
-    try {
-      chatMemberships = await prisma.chatParticipant.findMany({
-        where: {
-          userId: userId,
-        },
-        include: {
-          room: {
-            include: {
-              participants: {
-                include: {
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
-                      role: true,
-                      avatarUrl: true,
-                      phone: true,
+    if (userId) {
+      try {
+        chatMemberships = await prisma.chatParticipant.findMany({
+          where: {
+            userId: userId,
+          },
+          include: {
+            room: {
+              include: {
+                participants: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        role: true,
+                        avatarUrl: true,
+                        phone: true,
+                      },
                     },
                   },
                 },
-              },
-              messages: {
-                orderBy: { createdAt: "desc" },
-                take: 1,
+                messages: {
+                  orderBy: { createdAt: "desc" },
+                  take: 1,
+                },
               },
             },
           },
-        },
-        orderBy: { room: { updatedAt: "desc" } },
-        take: 20,
-      });
-    } catch {
-      chatMemberships = [];
+          orderBy: { room: { updatedAt: "desc" } },
+          take: 20,
+        });
+      } catch {
+        chatMemberships = [];
+      }
     }
 
     const chatRooms = (chatMemberships || []).map((m) => {
@@ -285,14 +314,14 @@ export async function GET(request: Request) {
       incomingRequests = [];
     }
 
-    // 9. Compute Comprehensive KPI Analytics (with safe defaults)
+    // 9. Compute Comprehensive KPI Analytics
     const totalProductLikes = products.reduce((acc, p) => acc + (p.likesCount || 0), 0);
     const totalProductViews = products.reduce((acc, p) => acc + (p.viewsCount || 0), 0);
     const activeEscrows = escrowDeals.filter((d) => d.status !== "COMPLETED" && d.status !== "REFUNDED");
     const activeEscrowsCount = activeEscrows.length;
     const totalEscrowVolumeGhs = escrowDeals.reduce((acc, d) => acc + Number(d.amount || 0), 0);
     const unreadMessagesCount = (chatMemberships || []).reduce((acc, m) => acc + (m.unreadCount || 0), 0);
-    const pendingLeadsCount = (businessProfile?.leads || []).filter((l) => l.status === "NEW_INQUIRY").length;
+    const pendingLeadsCount = (businessProfile?.leads || []).filter((l: any) => l.status === "NEW_INQUIRY").length;
 
     const kpis = {
       totalProductLikes,

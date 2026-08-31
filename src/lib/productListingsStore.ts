@@ -171,7 +171,12 @@ export async function getAllProductListings(query?: ListingFilterQuery): Promise
     }
 
     if (category && category !== "ALL") {
-      list = list.filter((l) => l.category.toLowerCase() === category.toLowerCase());
+      const catLower = category.toLowerCase();
+      list = list.filter(
+        (l) =>
+          l.category.toLowerCase().includes(catLower) ||
+          (l.subCategory && l.subCategory.toLowerCase().includes(catLower))
+      );
     }
 
     if (area && area !== "ALL") {

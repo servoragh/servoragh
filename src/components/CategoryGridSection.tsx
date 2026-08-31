@@ -1,187 +1,325 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Plus,
-  Flame,
-  Smartphone,
-  Laptop,
-  Shirt,
-  Wrench,
-  HardHat,
-  Tractor,
-  Wheat,
-  Briefcase,
-  Scissors,
-  Home,
   Sparkles,
+  ChevronRight,
+  Plus,
+  Grid,
+  Search,
   ArrowRight,
+  Tag,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
+import { CLASSIFIED_CATEGORIES, CategoryDefinition } from "@/lib/categoriesData";
 
 interface CategoryGridSectionProps {
   onPostRequestClick?: () => void;
 }
 
 export function CategoryGridSection({ onPostRequestClick }: CategoryGridSectionProps) {
-  const categories = [
-    {
-      label: "Post Job Request",
-      desc: "Get instant artisan bids",
-      icon: Plus,
-      color: "from-amber-500 to-amber-400 text-stone-950 font-black",
-      isAction: true,
-      onClick: onPostRequestClick,
-    },
-    {
-      label: "Electrical & Solar",
-      desc: "Wiring, inverters & pumps",
-      icon: HardHat,
-      color: "from-amber-500/20 to-amber-600/20 text-amber-500 border-amber-500/30",
-      href: "/services/electricians/tamale",
-    },
-    {
-      label: "Phones & Tech",
-      desc: "Mobiles, laptops & repairs",
-      icon: Smartphone,
-      color: "from-purple-500/20 to-purple-600/20 text-purple-400 border-purple-500/30",
-      href: "/products?category=Electronics",
-    },
-    {
-      label: "Fugu & Tailoring",
-      desc: "Traditional Dagbon wear",
-      icon: Shirt,
-      color: "from-pink-500/20 to-pink-600/20 text-pink-400 border-pink-500/30",
-      href: "/products?category=Fashion%20%26%20Fugu",
-    },
-    {
-      label: "Tool & Heavy Rentals",
-      desc: "Generators, drills & mixers",
-      icon: Tractor,
-      color: "from-teal-500/20 to-teal-600/20 text-teal-400 border-teal-500/30",
-      href: "/rentals",
-    },
-    {
-      label: "Agribusiness & Farm",
-      desc: "Produce, seeds & equipment",
-      icon: Wheat,
-      color: "from-lime-500/20 to-lime-600/20 text-lime-400 border-lime-500/30",
-      href: "/products?category=Agribusiness",
-    },
-    {
-      label: "Trending Requests",
-      desc: "Popular local jobs",
-      icon: Flame,
-      color: "from-rose-500/20 to-rose-600/20 text-rose-400 border-rose-500/30",
-      href: "/requests?sort=popular",
-    },
-    {
-      label: "Artisan Services",
-      desc: "Plumbers, carpenters & masons",
-      icon: Wrench,
-      color: "from-emerald-500/20 to-emerald-600/20 text-emerald-400 border-emerald-500/30",
-      href: "/requests",
-    },
-    {
-      label: "Electronics & Appliances",
-      desc: "TVs, fridges & sound",
-      icon: Laptop,
-      color: "from-blue-500/20 to-blue-600/20 text-blue-400 border-blue-500/30",
-      href: "/products?category=Electronics",
-    },
-    {
-      label: "Custom Tailoring",
-      desc: "Smock weaving & fitting",
-      icon: Scissors,
-      color: "from-fuchsia-500/20 to-fuchsia-600/20 text-fuchsia-400 border-fuchsia-500/30",
-      href: "/services/fugu-tailors/tamale",
-    },
-    {
-      label: "Property & Land Sites",
-      desc: "Real estate & plot ads",
-      icon: Home,
-      color: "from-indigo-500/20 to-indigo-600/20 text-indigo-400 border-indigo-500/30",
-      href: "/community",
-    },
-    {
-      label: "Jobs & Gigs",
-      desc: "Work opportunities",
-      icon: Briefcase,
-      color: "from-cyan-500/20 to-cyan-600/20 text-cyan-400 border-cyan-500/30",
-      href: "/community",
-    },
-  ];
+  const [categoriesList, setCategoriesList] = useState<CategoryDefinition[]>(CLASSIFIED_CATEGORIES);
+  const [activeCategory, setActiveCategory] = useState<CategoryDefinition>(CLASSIFIED_CATEGORIES[0]);
+  const [mobileExpandedSlug, setMobileExpandedSlug] = useState<string | null>(null);
+  const [showAllMobile, setShowAllMobile] = useState(false);
+
+  const [totalListings, setTotalListings] = useState<number>(0);
+
+  useEffect(() => {
+    async function loadLiveCategories() {
+      try {
+        const res = await fetch("/api/categories");
+        const data = await res.json();
+        if (data.categories && Array.isArray(data.categories)) {
+          const hydrated = data.categories.map((c: any) => {
+            const original = CLASSIFIED_CATEGORIES.find((orig) => orig.slug === c.slug);
+            return {
+              ...c,
+              icon: original ? original.icon : CLASSIFIED_CATEGORIES[0].icon,
+            };
+          });
+          setCategoriesList(hydrated);
+          if (data.totalListings !== undefined) {
+            setTotalListings(data.totalListings);
+          }
+          setActiveCategory((prev) => hydrated.find((h: any) => h.slug === prev.slug) || hydrated[0]);
+        }
+      } catch (_) {}
+    }
+    loadLiveCategories();
+  }, []);
+
+  const IconComponent = activeCategory.icon;
+  const mobileCategoriesList = showAllMobile ? categoriesList : categoriesList.slice(0, 6);
 
   return (
-    <section className="py-8 sm:py-12 bg-white dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800 transition duration-200">
+    <section className="py-6 sm:py-10 bg-stone-50 dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
+        
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h3 className="text-xl sm:text-2xl font-black text-stone-900 dark:text-white flex items-center gap-2 tracking-tight">
-              <Sparkles className="w-5 h-5 text-emerald-500" />
-              <span>Explore 18 Universal Industry Verticals</span>
-            </h3>
-            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 font-medium mt-1">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-xs font-black rounded-full border border-emerald-300 dark:border-emerald-800 mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Full Marketplace Taxonomy ({totalListings} Active Ads)</span>
+            </div>
+            <h2 className="text-xl sm:text-3xl font-black text-stone-900 dark:text-white tracking-tight">
+              Explore All Categories & Subcategories
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 font-medium mt-0.5">
               Browse products, artisan services, equipment rentals, and trade calls across Northern Ghana.
             </p>
           </div>
-          <Link
-            href="/products"
-            className="hidden sm:flex items-center gap-1.5 text-xs font-black text-emerald-600 dark:text-emerald-400 hover:underline group"
-          >
-            <span>View All Verticals</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </Link>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {onPostRequestClick && (
+              <button
+                onClick={onPostRequestClick}
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 text-stone-950 text-xs font-black rounded-2xl shadow-md hover:shadow-amber-500/20 hover:scale-102 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>Post Advert / Request</span>
+              </button>
+            )}
+            <Link
+              href="/products"
+              className="px-4 py-2.5 bg-stone-200 dark:bg-stone-800 hover:bg-stone-300 dark:hover:bg-stone-700 text-stone-900 dark:text-white text-xs font-bold rounded-2xl transition flex items-center justify-center gap-1 group"
+            >
+              <span>All Listings</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
 
-        {/* 2 columns on Mobile, 3 on Tablet, 6 on Desktop */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4">
-          {categories.map((cat, idx) => {
-            const Icon = cat.icon;
+        {/* DESKTOP 2-COLUMN CLASSIFIED PANEL (Hidden on Mobile) */}
+        <div className="hidden lg:grid grid-cols-12 gap-0 rounded-3xl overflow-hidden border border-stone-200 dark:border-stone-800 shadow-xl bg-white dark:bg-stone-900 min-h-[520px]">
+          
+          {/* Left Column: Categories List (4 Cols) */}
+          <div className="col-span-4 border-r border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-950/50 p-2 overflow-y-auto max-h-[560px] custom-scrollbar">
+            <div className="p-2.5 text-[11px] font-black uppercase tracking-wider text-stone-400 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+              <span>Main Verticals</span>
+              <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[10px]">
+                17 Categories
+              </span>
+            </div>
 
-            if (cat.isAction) {
-              return (
-                <button
-                  key={idx}
-                  onClick={cat.onClick}
-                  className="p-4 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-400 text-stone-950 shadow-lg hover:shadow-amber-500/20 hover:-translate-y-1 transition duration-200 cursor-pointer text-left flex flex-col justify-between group"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-stone-950/10 flex items-center justify-center mb-3">
-                    <Icon className="w-6 h-6 text-stone-950" />
+            <div className="space-y-1 mt-2">
+              {CLASSIFIED_CATEGORIES.map((cat) => {
+                const CatIcon = cat.icon;
+                const isActive = activeCategory.slug === cat.slug;
+
+                return (
+                  <button
+                    key={cat.slug}
+                    onMouseEnter={() => setActiveCategory(cat)}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`w-full p-3 rounded-2xl text-left flex items-center justify-between transition-all duration-150 cursor-pointer ${
+                      isActive
+                        ? "bg-white dark:bg-stone-800 shadow-md border border-emerald-500/40 text-stone-900 dark:text-white font-extrabold translate-x-1"
+                        : "text-stone-700 dark:text-stone-300 hover:bg-stone-200/60 dark:hover:bg-stone-800/50 font-medium"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                          isActive
+                            ? "bg-emerald-600 text-white border-emerald-500 shadow-sm"
+                            : `${cat.color}`
+                        }`}
+                      >
+                        <CatIcon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-xs truncate leading-tight">
+                          {cat.name}
+                        </span>
+                        <span className="block text-[10px] text-stone-400 font-semibold truncate mt-0.5">
+                          {cat.adsCountText}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight
+                      className={`w-4 h-4 shrink-0 transition-transform ${
+                        isActive
+                          ? "text-emerald-500 translate-x-1"
+                          : "text-stone-400 opacity-0 group-hover:opacity-100"
+                      }`}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right Column: Subcategories & Fast Navigation Pane (8 Cols) */}
+          <div className="col-span-8 p-6 sm:p-8 flex flex-col justify-between bg-white dark:bg-stone-900 relative">
+            <div>
+              {/* Category Header Banner */}
+              <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-5 mb-6">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-sm ${activeCategory.color}`}
+                  >
+                    <IconComponent className="w-6 h-6" />
                   </div>
                   <div>
-                    <span className="block text-sm font-black tracking-tight leading-tight">
-                      {cat.label}
-                    </span>
-                    <span className="block text-[11px] font-bold opacity-80 mt-0.5">
-                      {cat.desc}
-                    </span>
+                    <h3 className="text-xl font-black text-stone-900 dark:text-white tracking-tight flex items-center gap-2">
+                      <span>{activeCategory.name}</span>
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-500 border border-stone-200 dark:border-stone-700">
+                        {activeCategory.adsCountText}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 font-medium mt-0.5">
+                      {activeCategory.description}
+                    </p>
                   </div>
-                </button>
-              );
-            }
+                </div>
+
+                <Link
+                  href={`/products?category=${encodeURIComponent(activeCategory.name)}`}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5"
+                >
+                  <span>Browse All {activeCategory.name}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              {/* Subcategories Grid */}
+              <div className="mb-6">
+                <h4 className="text-xs font-black uppercase tracking-wider text-stone-400 mb-4 flex items-center gap-2">
+                  <Tag className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Subcategories in {activeCategory.name} ({activeCategory.subcategories.length})</span>
+                </h4>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {activeCategory.subcategories.map((sub) => (
+                    <Link
+                      key={sub.slug}
+                      href={`/products?category=${encodeURIComponent(activeCategory.name)}&subCategory=${encodeURIComponent(sub.name)}`}
+                      className="p-3.5 rounded-2xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/80 dark:border-stone-700/80 hover:border-emerald-500 hover:bg-stone-100 dark:hover:bg-stone-800 transition duration-150 group flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 group-hover:scale-125 transition-transform" />
+                        <span className="text-xs font-bold text-stone-800 dark:text-stone-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
+                          {sub.name}
+                        </span>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-stone-400 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Action Footer */}
+            <div className="bg-gradient-to-r from-emerald-950/10 via-teal-950/10 to-stone-900/10 dark:from-emerald-950/40 dark:to-stone-900/60 p-4 rounded-2xl border border-emerald-500/20 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold text-stone-700 dark:text-stone-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span>Looking for specific items in {activeCategory.name}? Filter by area or post an instant request.</span>
+              </div>
+              <Link
+                href={`/requests?category=${encodeURIComponent(activeCategory.name)}`}
+                className="text-xs font-black text-emerald-600 dark:text-emerald-400 hover:underline shrink-0 flex items-center gap-1"
+              >
+                <span>View Buyer Requests</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* MOBILE COMPACT GRID VIEW (Top 6 Featured Categories with "Show All 17 Categories" Toggle) */}
+        <div className="lg:hidden space-y-3">
+          {mobileCategoriesList.map((cat) => {
+            const CatIcon = cat.icon;
+            const isExpanded = mobileExpandedSlug === cat.slug;
 
             return (
-              <Link
-                key={idx}
-                href={cat.href || "#"}
-                className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800/80 hover:border-emerald-500/50 hover:bg-stone-100 dark:hover:bg-stone-800/80 hover:-translate-y-1 transition duration-200 text-left flex flex-col justify-between group shadow-2xs"
+              <div
+                key={cat.slug}
+                className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden shadow-xs"
               >
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${cat.color} border flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <span className="block text-sm font-extrabold text-stone-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition leading-tight">
-                    {cat.label}
-                  </span>
-                  <span className="block text-[11px] font-medium text-stone-500 dark:text-stone-400 mt-0.5 truncate">
-                    {cat.desc}
-                  </span>
-                </div>
-              </Link>
+                <button
+                  onClick={() =>
+                    setMobileExpandedSlug(isExpanded ? null : cat.slug)
+                  }
+                  className="w-full p-3.5 sm:p-4 flex items-center justify-between text-left cursor-pointer active:bg-stone-50 dark:active:bg-stone-800/80"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${cat.color}`}
+                    >
+                      <CatIcon className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="block text-sm font-extrabold text-stone-900 dark:text-white truncate">
+                        {cat.name}
+                      </span>
+                      <span className="block text-[11px] text-stone-500 dark:text-stone-400 font-medium truncate mt-0.5">
+                        {cat.adsCountText} • {cat.subcategories.length} subcategories
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight
+                    className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${
+                      isExpanded ? "rotate-90 text-emerald-500" : ""
+                    }`}
+                  />
+                </button>
+
+                {/* Subcategory Accordion Body */}
+                {isExpanded && (
+                  <div className="p-4 bg-stone-50 dark:bg-stone-950/60 border-t border-stone-100 dark:border-stone-800 space-y-2 animate-in fade-in duration-150">
+                    <p className="text-xs text-stone-500 dark:text-stone-400 font-medium mb-3">
+                      {cat.description}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {cat.subcategories.map((sub) => (
+                        <Link
+                          key={sub.slug}
+                          href={`/products?category=${encodeURIComponent(cat.name)}&subCategory=${encodeURIComponent(sub.name)}`}
+                          className="p-2.5 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-xs font-bold text-stone-800 dark:text-stone-200 flex items-center justify-between active:scale-98 transition"
+                        >
+                          <span className="truncate">{sub.name}</span>
+                          <ArrowRight className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        </Link>
+                      ))}
+                    </div>
+
+                    <div className="pt-2">
+                      <Link
+                        href={`/products?category=${encodeURIComponent(cat.name)}`}
+                        className="w-full py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow"
+                      >
+                        <span>View All {cat.name} Listings</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             );
           })}
+
+          {/* Show All / Show Fewer Categories Toggle Button on Mobile */}
+          <div className="pt-2">
+            <button
+              onClick={() => setShowAllMobile(!showAllMobile)}
+              className="w-full py-3.5 bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-900 dark:text-white font-black text-xs rounded-2xl transition border border-stone-200 dark:border-stone-800 flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-98"
+            >
+              <span>{showAllMobile ? "Collapse Categories" : `Show All ${CLASSIFIED_CATEGORIES.length} Categories`}</span>
+              {showAllMobile ? (
+                <ChevronUp className="w-4 h-4 text-emerald-500" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-emerald-500" />
+              )}
+            </button>
+          </div>
         </div>
+
       </div>
     </section>
   );

@@ -156,7 +156,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. EXPLORE NORTHERN CATEGORIES (JIJI 4-COLUMN MOBILE GRID FIRST!) */}
+      {/* 2. EXPLORE NORTHERN CATEGORIES (CLASSIFIED CATEGORY GRID) */}
       <CategoryGridSection onPostRequestClick={() => setIsWizardOpen(true)} />
 
       {/* 3. MATCH VERIFIED ARTISANS BY LOCATION */}

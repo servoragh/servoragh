@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Upload, CheckCircle, AlertCircle, ShoppingBag, Tag } from "lucide-react";
+import { CLASSIFIED_CATEGORIES } from "@/lib/categoriesData";
 
 interface PostProductModalProps {
   isOpen: boolean;
@@ -210,17 +211,11 @@ export function PostProductModal({ isOpen, onClose, onSuccess, editProduct }: Po
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-white outline-none font-semibold"
               >
-                <option value="Agribusiness & Farm">Agribusiness & Farm Produce</option>
-                <option value="Electrical & Solar">Electrical & Solar</option>
-                <option value="Phones & Tech">Phones & Tech</option>
-                <option value="Electronics & Appliances">Electronics & Appliances</option>
-                <option value="Fashion & Fugu">Fashion & Northern Fugu</option>
-                <option value="Hardware & Tools">Hardware & Tools</option>
-                <option value="Building Materials">Building Materials</option>
-                <option value="Carpentry & Woodwork">Carpentry & Woodwork</option>
-                <option value="Welding & Metal">Welding & Metal</option>
-                <option value="Auto Parts & Mechanics">Auto Parts & Mechanics</option>
-                <option value="Food & Agro-Goods">Food & Agro-Goods</option>
+                {CLASSIFIED_CATEGORIES.map((cat) => (
+                  <option key={cat.slug} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
               </select>
             </div>
 

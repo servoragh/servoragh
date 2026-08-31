@@ -31,6 +31,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { formatGHS } from "@/lib/utils";
+import { CategoryPickerModal } from "@/components/CategoryPickerModal";
 
 interface BusinessCatalogManagerProps {
   products: any[];
@@ -151,6 +152,8 @@ export function BusinessCatalogManager({
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formCategory, setFormCategory] = useState("Electronics");
+  const [formSubCategory, setFormSubCategory] = useState<string | undefined>("");
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
   const [formPrice, setFormPrice] = useState("");
   const [formOriginalPrice, setFormOriginalPrice] = useState("");
   const [formStock, setFormStock] = useState("5");
@@ -193,6 +196,8 @@ export function BusinessCatalogManager({
     setAddingType(type);
     setFormTitle("");
     setFormDescription("");
+    setFormCategory(type === "rental" ? "Commercial Equipment & Tools" : type === "service" ? "Services" : "Electronics");
+    setFormSubCategory("");
     setFormPrice("");
     setFormOriginalPrice("");
     setFormStock("5");
@@ -295,6 +300,7 @@ export function BusinessCatalogManager({
         payload.title = formTitle;
         payload.description = formDescription;
         payload.category = formCategory;
+        payload.subCategory = formSubCategory || null;
         payload.price = formPrice;
         payload.originalPrice = formOriginalPrice;
         payload.stockQuantity = formStock;
@@ -304,7 +310,8 @@ export function BusinessCatalogManager({
       } else if (addingType === "rental") {
         payload.title = formTitle;
         payload.description = formDescription;
-        payload.category = formCategory || "Heavy Machinery";
+        payload.category = formCategory || "Commercial Equipment & Tools";
+        payload.subCategory = formSubCategory || null;
         payload.dailyRate = formDailyRate;
         payload.weeklyRate = formWeeklyRate;
         payload.securityDeposit = formSecurityDeposit;
@@ -314,6 +321,8 @@ export function BusinessCatalogManager({
       } else if (addingType === "service") {
         payload.serviceName = formTitle;
         payload.description = formDescription;
+        payload.category = formCategory || "Services";
+        payload.subCategory = formSubCategory || null;
         payload.startingPrice = formPrice;
         payload.estimatedDuration = formDuration;
         payload.portfolioPhotos = formImages;
@@ -1053,34 +1062,43 @@ export function BusinessCatalogManager({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">Category (Type custom or pick preset)</label>
+                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">Stock Quantity</label>
                     <input
-                      type="text"
-                      value={formCategory}
-                      onChange={(e) => setFormCategory(e.target.value)}
-                      placeholder="e.g. Electronics, Solar, Gold Bars..."
-                      className="w-full px-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-sm font-semibold text-stone-900 dark:text-white"
+                      type="number"
+                      value={formStock}
+                      onChange={(e) => setFormStock(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-900 dark:text-white"
                     />
                   </div>
                 </div>
 
-                {/* Preset Category Pills */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase mr-1">Category Presets:</span>
-                  {categoryPresets.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setFormCategory(cat)}
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${
-                        formCategory === cat
-                          ? "bg-emerald-600 text-white"
-                          : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200"
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
+                {/* Modern Category & Subcategory Selection Card */}
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    Industry Category & Subcategory *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryPickerOpen(true)}
+                    className="w-full p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl text-left flex items-center justify-between cursor-pointer hover:border-emerald-500 hover:bg-stone-100 dark:hover:bg-stone-700/60 transition group shadow-2xs"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                        <Layers className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-xs font-black text-stone-900 dark:text-white truncate">
+                          {formCategory || "Select Primary Category"}
+                        </span>
+                        <span className="block text-[11px] text-emerald-600 dark:text-emerald-400 font-bold truncate mt-0.5">
+                          {formSubCategory ? `Subcategory: ${formSubCategory}` : "Tap to pick exact subcategory"}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-black rounded-xl shrink-0 group-hover:bg-emerald-700 transition shadow">
+                      Choose Category
+                    </span>
+                  </button>
                 </div>
               </>
             )}
@@ -1403,6 +1421,18 @@ export function BusinessCatalogManager({
           )}
         </div>
       )}
+
+      {/* Modern Visual Category Picker Modal */}
+      <CategoryPickerModal
+        isOpen={isCategoryPickerOpen}
+        onClose={() => setIsCategoryPickerOpen(false)}
+        selectedCategory={formCategory}
+        selectedSubCategory={formSubCategory}
+        onSelect={(cat, sub) => {
+          setFormCategory(cat);
+          setFormSubCategory(sub);
+        }}
+      />
     </div>
   );
 }

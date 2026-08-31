@@ -12,6 +12,7 @@ import '../../../shared/widgets/servora_dropdown_sheet.dart';
 import '../../../shared/widgets/servora_live_ticker_bar.dart';
 import '../../../shared/widgets/servora_provider_card.dart';
 import '../../../shared/widgets/servora_product_card.dart';
+import '../../../shared/widgets/category_picker_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,18 +24,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedLocation = 'Sakasaka, Tamale';
   bool _isLoadingLiveApi = false;
+  bool _showAllHomeCategories = false;
   List<Map<String, dynamic>> _liveProducts = [];
   List<Map<String, dynamic>> _liveMerchants = [];
-
-  final List<Map<String, String>> _discoveryCategories = [
-    {'name': 'Electrical & Solar', 'icon': '⚡', 'subtitle': 'Wiring & inverters'},
-    {'name': 'Plumbing & Borehole', 'icon': '🚰', 'subtitle': 'Pumps & piping'},
-    {'name': 'Fugu & Weaving', 'icon': '🧵', 'subtitle': 'Dagbon smocks'},
-    {'name': 'Automotive Mechanic', 'icon': '🔧', 'subtitle': 'Car & truck repairs'},
-    {'name': 'Building & Masonry', 'icon': '🧱', 'subtitle': 'Plots & masons'},
-    {'name': 'Tool Heavy Rentals', 'icon': '🚜', 'subtitle': 'Generators & drills'},
-    {'name': 'Delivery & Haulage', 'icon': '🚚', 'subtitle': 'Express dispatch'},
-  ];
 
   final List<Map<String, dynamic>> _fallbackProducts = [
     {
@@ -311,6 +303,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 'phone': provider['user']?['phone'] ?? '+233240000000',
                 'image': mainImage,
                 'images': imageList,
+                'createdAt': p['createdAt'] ?? p['postedAt'] ?? p['created_at'],
               };
             }).toList();
           }
@@ -381,6 +374,18 @@ class _HomeScreenState extends State<HomeScreen> {
     if (result != null && mounted) {
       setState(() => _selectedLocation = result);
     }
+  }
+
+  int _getCategoryAdCount(String catName) {
+    final norm = catName.trim().toLowerCase();
+    int count = 0;
+    for (final p in _liveProducts) {
+      final pCat = (p['category'] ?? '').toString().trim().toLowerCase();
+      if (pCat.isNotEmpty && (pCat.contains(norm) || norm.contains(pCat))) {
+        count++;
+      }
+    }
+    return count;
   }
 
   @override
@@ -583,61 +588,152 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // 4. CONTEXTUAL CATEGORY DISCOVERY (HORIZONTAL CAROUSEL)
+                // 4. CONTEXTUAL CATEGORY DISCOVERY GRID (Top 6 Featured with Expand Toggle)
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Discover Marketplace Services', style: ServoraTypography.titleLarge(isDark))
-                          .animate().fadeIn(duration: 250.ms),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Explore Marketplace Categories', style: ServoraTypography.titleLarge(isDark))
+                                  .animate().fadeIn(duration: 250.ms),
+                              Text(
+                                'Browse all 17 verticals across Northern Ghana',
+                                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: ServoraColors.emerald600.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '17 Verticals • ${_liveProducts.length} Ads',
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                            ),
+                          ),
+                        ],
+                      ),
                       const Gap(12),
 
-                      SizedBox(
-                        height: 100,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _discoveryCategories.length,
-                          itemBuilder: (context, index) {
-                            final cat = _discoveryCategories[index];
-                            return GestureDetector(
-                              onTap: () => context.push('/search'),
-                              child: Container(
-                                width: 140,
-                                margin: const EdgeInsets.only(right: 10),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: cardBg,
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(
+                      // Category Cards List / Grid
+                      Builder(builder: (context) {
+                        final catsList = _showAllHomeCategories
+                            ? ServoraConstants.classifiedCategories
+                            : ServoraConstants.classifiedCategories.sublist(0, 6);
+
+                        return Column(
+                          children: [
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 2.3,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                              ),
+                              itemCount: catsList.length,
+                              itemBuilder: (context, index) {
+                                final cat = catsList[index];
+                                final List subs = cat['subcategories'] ?? [];
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    CategoryPickerSheet.show(
+                                      context,
+                                      selectedCategory: cat['name'].toString(),
+                                      onSelect: (c, s) {
+                                        final catParam = Uri.encodeComponent(c);
+                                        final subParam = s != null && s.isNotEmpty ? Uri.encodeComponent(s) : '';
+                                        context.push('/products?category=$catParam&subCategory=$subParam');
+                                      },
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: cardBg,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Text(cat['icon'].toString(), style: const TextStyle(fontSize: 20)),
+                                        const Gap(8),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                cat['name'].toString(),
+                                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              Text(
+                                                '${subs.length} subs • ${_getCategoryAdCount(cat['name'].toString())} ads',
+                                                style: TextStyle(fontSize: 9, color: Colors.grey[500]),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            const Gap(12),
+                            // Show All 17 Categories Toggle Button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 44,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
                                     color: isDark ? ServoraColors.darkCardBorder : ServoraColors.lightBorder,
                                   ),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(cat['icon']!, style: const TextStyle(fontSize: 22)),
-                                    const Gap(6),
-                                    Text(
-                                      cat['name']!,
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      cat['subtitle']!,
-                                      style: TextStyle(fontSize: 9, color: Colors.grey[500]),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
+                                icon: Icon(
+                                  _showAllHomeCategories
+                                      ? Icons.keyboard_arrow_up_rounded
+                                      : Icons.keyboard_arrow_down_rounded,
+                                  color: ServoraColors.emerald600,
+                                  size: 20,
                                 ),
+                                label: Text(
+                                  _showAllHomeCategories
+                                      ? 'Collapse Categories'
+                                      : 'Show All ${ServoraConstants.classifiedCategories.length} Categories',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? Colors.white : const Color(0xFF1C1917),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  setState(() => _showAllHomeCategories = !_showAllHomeCategories);
+                                },
                               ),
-                            ).animate().fadeIn(delay: (index * 45).ms, duration: 300.ms).slideX(begin: 0.15, end: 0, curve: Curves.easeOutCubic);
-                          },
-                        ),
-                      ),
+                            ),
+                          ],
+                        );
+                      }),
                     ],
                   ),
                 ),

@@ -20,6 +20,8 @@ model User {
   isPhoneVerified  Boolean           @default(false)
   referralCode     String?           @unique
   referredByCode   String?
+  isOnline         Boolean           @default(false)
+  lastSeen         DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -721,6 +723,8 @@ model ProductListing {
   description      String               @db.Text
   category         String
   subCategory      String?
+  categoryId       String?
+  subCategoryId    String?
   condition        ItemCondition        @default(USED_GOOD)
   
   // Pricing
@@ -985,6 +989,8 @@ model BusinessProfile {
   whatsappNumber    String
   email             String?
   businessHours     Json?              // { monday: { open: "08:00", close: "18:00", closed: false }, emergencyCallout: true }
+  isOnline          Boolean            @default(false)
+  lastSeen          DateTime?
   
   // Trust & Verification
   verificationStatus VerificationStatus @default(UNVERIFIED)

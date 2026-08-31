@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { ItemCondition, SellerType } from "@/lib/productListingTypes";
 import { formatGHS } from "@/lib/utils";
+import { CLASSIFIED_CATEGORIES, getSubcategoriesForCategory } from "@/lib/categoriesData";
+import { CategoryPickerModal } from "@/components/CategoryPickerModal";
 
 interface ProductSubmissionModalProps {
   isOpen: boolean;
@@ -42,8 +44,9 @@ export function ProductSubmissionModal({
 
   // Form Fields
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("Tools & Equipment");
-  const [subCategory, setSubCategory] = useState("Power Tools");
+  const [category, setCategory] = useState<string>(CLASSIFIED_CATEGORIES[0].name);
+  const [subCategory, setSubCategory] = useState<string>(CLASSIFIED_CATEGORIES[0].subcategories[0].name);
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
   const [condition, setCondition] = useState<ItemCondition>("USED_GOOD");
   const [description, setDescription] = useState("");
 
@@ -372,23 +375,56 @@ export function ProductSubmissionModal({
                   />
                 </div>
 
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-stone-500">Category & Subcategory *</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryPickerOpen(true)}
+                    className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3 h-3 text-emerald-500" />
+                    <span>Visual Category Explorer</span>
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold text-stone-500 mb-1">Category *</label>
                     <select
                       value={category}
-                      onChange={(e) => setCategory(e.target.value)}
+                      onChange={(e) => {
+                        const newCat = e.target.value;
+                        setCategory(newCat);
+                        const subs = getSubcategoriesForCategory(newCat);
+                        if (subs.length > 0) setSubCategory(subs[0].name);
+                      }}
                       className="w-full p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl font-semibold outline-none"
                     >
-                      <option value="Tools & Equipment">Tools & Heavy Rentals</option>
-                      <option value="Vehicles & Heavy Equipment">Vehicles & Trucks</option>
-                      <option value="Fashion & Apparel">Fashion & Fugu Weaving</option>
-                      <option value="Electronics & Phones">Electronics & Tech</option>
-                      <option value="Agricultural & Farming">Agricultural Supplies</option>
-                      <option value="Home & Construction">Construction Materials</option>
+                      {CLASSIFIED_CATEGORIES.map((cat) => (
+                        <option key={cat.slug} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-500 mb-1">Subcategory *</label>
+                    <select
+                      value={subCategory}
+                      onChange={(e) => setSubCategory(e.target.value)}
+                      className="w-full p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl font-semibold outline-none"
+                    >
+                      {getSubcategoriesForCategory(category).map((sub) => (
+                        <option key={sub.slug} value={sub.name}>
+                          {sub.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold text-stone-500 mb-1">Item Condition *</label>
                     <select
@@ -578,6 +614,17 @@ export function ProductSubmissionModal({
           </form>
         )}
       </div>
+
+      <CategoryPickerModal
+        isOpen={isCategoryPickerOpen}
+        onClose={() => setIsCategoryPickerOpen(false)}
+        selectedCategory={category}
+        selectedSubCategory={subCategory}
+        onSelect={(cat, sub) => {
+          setCategory(cat);
+          if (sub) setSubCategory(sub);
+        }}
+      />
     </div>
   );
 }

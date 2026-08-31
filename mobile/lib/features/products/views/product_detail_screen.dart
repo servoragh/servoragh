@@ -7,7 +7,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_shimmer_skeleton.dart';
 import '../../../core/utils/whatsapp_helper.dart';
+import '../../../core/utils/time_formatter.dart';
+import '../../../shared/widgets/presence_badge.dart';
 import '../../../shared/widgets/servora_image_lightbox.dart';
+import '../../../shared/widgets/servora_image_upload_widget.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -66,7 +69,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void dispose() {
     _pageController.dispose();
     _questionController.dispose();
-    _reviewTitleController.dispose();
     _reviewCommentController.dispose();
     _reviewPhotoController.dispose();
     _reportDetailsController.dispose();
@@ -179,9 +181,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         '/products/$_productSlug/reviews',
         data: {
           'rating': _selectedRating,
-          'title': _reviewTitleController.text.trim().isNotEmpty
-              ? _reviewTitleController.text.trim()
-              : 'Verified Purchase Review',
           'comment': comment,
           'photos': _reviewPhotos,
         },
@@ -467,15 +466,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
                 const Gap(10),
                 TextField(
-                  controller: _reviewTitleController,
-                  decoration: InputDecoration(
-                    hintText: 'Review Title (e.g. Excellent service, arrived in 30 mins!)',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  ),
-                ),
-                const Gap(10),
-                TextField(
                   controller: _reviewCommentController,
                   maxLines: 3,
                   decoration: InputDecoration(
@@ -483,51 +473,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
-                const Gap(10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _reviewPhotoController,
-                        decoration: InputDecoration(
-                          hintText: 'Photo URL (optional)...',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        ),
-                      ),
-                    ),
-                    const Gap(8),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ServoraColors.emerald600,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () {
-                        final p = _reviewPhotoController.text.trim();
-                        if (p.isNotEmpty) {
-                          setSheetState(() {
-                            _reviewPhotos.add(p);
-                            _reviewPhotoController.clear();
-                          });
-                        }
-                      },
-                      child: const Text('+ Add'),
-                    ),
-                  ],
+                const Gap(12),
+                ServoraImageUploadWidget(
+                  initialImages: _reviewPhotos,
+                  onImagesChanged: (imgs) {
+                    setSheetState(() {
+                      _reviewPhotos.clear();
+                      _reviewPhotos.addAll(imgs);
+                    });
+                  },
+                  label: 'ATTACH REVIEW PHOTOS (OPTIONAL)',
+                  helperText: 'Upload clear photos taken from your phone camera or gallery.',
+                  maxImages: 4,
                 ),
-                if (_reviewPhotos.isNotEmpty) ...[
-                  const Gap(8),
-                  Wrap(
-                    spacing: 6,
-                    children: _reviewPhotos
-                        .map((p) => Chip(
-                              label: const Text('Photo Attached', style: TextStyle(fontSize: 10)),
-                              onDeleted: () => setSheetState(() => _reviewPhotos.remove(p)),
-                            ))
-                        .toList(),
-                  ),
-                ],
                 const Gap(16),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -801,11 +759,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const Gap(10),
 
-                      // Title
+                      // Title & Exact Timestamp
                       Text(
                         title,
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, height: 1.25),
                       ),
+                      Builder(builder: (context) {
+                        final rawDate = prod['createdAt'] ?? prod['postedAt'] ?? prod['created_at'] ?? prod['date'] ?? prod['timestamp'];
+                        if (rawDate == null) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '📅 ${TimeFormatter.formatExactDateTime(rawDate)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                          ),
+                        );
+                      }),
                       const Gap(12),
 
                       // Price Block with Strikethrough & Savings
@@ -931,6 +904,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       sellerName,
                                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                                     ),
+                                    const Gap(2),
+                                    PresenceBadge(
+                                      isOnline: sellerData['isOnline'] == true,
+                                      lastSeen: sellerData['lastSeen'],
+                                    ),
+                                    const Gap(4),
                                     Row(
                                       children: [
                                         const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
@@ -1213,10 +1192,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       ),
                                     ],
                                   ),
-                                  if (rev['title'] != null && rev['title'].toString().isNotEmpty) ...[
-                                    const Gap(6),
-                                    Text(rev['title'], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                                  ],
                                   const Gap(4),
                                   Text(
                                     rev['comment'] ?? '',
@@ -1321,72 +1296,100 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
 
           // =========================================================================
-          // STICKY BOTTOM ACTION BAR (WHATSAPP & ESCROW CTA)
+          // STICKY BOTTOM ACTION BAR (CHAT, WHATSAPP & ESCROW CTA)
           // =========================================================================
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
               decoration: BoxDecoration(
                 color: isDark ? ServoraColors.darkSurface : Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withOpacity(0.12),
                     blurRadius: 16,
                     offset: const Offset(0, -4),
                   ),
                 ],
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('TOTAL PRICE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.grey)),
-                      Text(
-                        'GH₵ ${price.toStringAsFixed(0)}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
-                      ),
-                    ],
-                  ),
-                  const Gap(16),
-                  Expanded(
-                    child: ElevatedButton(
+                  // Row 1: Full-Width Native Chat Button (Passes Seller & Product Context)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF25D366),
+                        backgroundColor: const Color(0xFF1C1917),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: ServoraColors.emerald600),
+                      label: Text(
+                        '💬 Chat on Servora (Ask $sellerName)',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       onPressed: () {
-                        WhatsAppHelper.openWhatsApp(
-                          phone: phone,
-                          message: 'Hello $sellerName, I would like to order "$title" (GH₵ $price) on Servora.gh app.',
+                        final recipientId = sellerData['id'] ?? sellerData['userId'] ?? '';
+                        final productId = prod['id'] ?? prod['slug'] ?? '';
+                        context.push(
+                          '/messages?recipientId=$recipientId&productId=$productId&title=${Uri.encodeComponent(title)}',
                         );
                       },
-                      child: const Text('Order WhatsApp ✈️', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const Gap(8),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber[700],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    onPressed: () => context.push('/escrow'),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.shield_rounded, size: 16),
-                        Gap(4),
-                        Text('Escrow', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
+
+                  // Row 2: Price + WhatsApp CTA + Escrow CTA
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('TOTAL PRICE', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Colors.grey)),
+                          Text(
+                            'GH₵ ${price.toStringAsFixed(0)}',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
+                          ),
+                        ],
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF25D366),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () {
+                            WhatsAppHelper.openWhatsApp(
+                              phone: phone,
+                              message: 'Hello $sellerName, I would like to order "$title" (GH₵ $price) on Servora.gh app.',
+                            );
+                          },
+                          child: const Text('WhatsApp ✈️', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const Gap(8),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber[700],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        icon: const Icon(Icons.shield_rounded, size: 15),
+                        label: const Text('Escrow', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        onPressed: () => context.push('/escrow'),
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -34,6 +34,13 @@ class MarketplaceApiService {
 
   static const Duration _cacheTtl = Duration(minutes: 5);
 
+  static Future<void> sendPresenceHeartbeat() async {
+    try {
+      final opts = await _authOptions();
+      await _dio.post('/presence/heartbeat', options: opts);
+    } catch (_) {}
+  }
+
   static Future<Options> _authOptions() async {
     try {
       final token = await authNotifier.storage.getToken();

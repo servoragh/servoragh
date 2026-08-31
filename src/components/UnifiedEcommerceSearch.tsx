@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { CustomDropdown, CustomDropdownOption } from "@/components/CustomDropdown";
 import { formatGHS } from "@/lib/utils";
+import { CLASSIFIED_CATEGORIES } from "@/lib/categoriesData";
 
 interface UnifiedEcommerceSearchProps {
   placeholder?: string;
@@ -69,17 +70,10 @@ export function UnifiedEcommerceSearch({
 
   const categoryOptions: CustomDropdownOption[] = [
     { value: "all", label: "All Categories" },
-    { value: "Agribusiness", label: "Agribusiness & Farm" },
-    { value: "Electrical", label: "Electrical & Solar" },
-    { value: "Electronics", label: "Phones & Tech" },
-    { value: "Fashion", label: "Fugu & Tailoring" },
-    { value: "Tools", label: "Hardware & Tools" },
-    { value: "Building", label: "Building Materials" },
-    { value: "Carpentry", label: "Carpentry & Woodwork" },
-    { value: "Welding", label: "Welding & Metal" },
-    { value: "Auto", label: "Auto Parts & Mechanics" },
-    { value: "Food", label: "Food & Agro-Goods" },
-    { value: "Rentals", label: "Tool & Heavy Rentals" },
+    ...CLASSIFIED_CATEGORIES.map((cat) => ({
+      value: cat.name,
+      label: cat.name,
+    })),
   ];
 
   const areaOptions: CustomDropdownOption[] = [
