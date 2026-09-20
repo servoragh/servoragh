@@ -24,9 +24,10 @@ class BusinessPortalView extends StatefulWidget {
 
 
 class _BusinessPortalViewState extends State<BusinessPortalView> {
-  String _activeTab = 'catalogs'; // 'catalogs' | 'escrow' | 'reviews' | 'messages' | 'leads'
+  String _activeTab = 'catalogs'; // 'catalogs' | 'escrow' | 'reviews' | 'messages' | 'leads' | 'recycle_bin'
   String _catalogFilter = 'products'; // 'products' | 'rentals' | 'services'
   String _reviewSubTab = 'reviews'; // 'reviews' | 'questions'
+  String _recycleFilter = 'all'; // 'all' | 'product' | 'rental' | 'service'
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = true;
@@ -43,6 +44,7 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   List<dynamic> _chatRooms = [];
   List<dynamic> _leads = [];
   List<dynamic> _quotes = [];
+  List<dynamic> _recycledItems = [];
 
   final LocalStorageService _storageService = LocalStorageService();
   late final Dio _dio;
@@ -268,6 +270,19 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
           _quotes = List.from(data['quotes'] ?? profileData['quotes'] ?? []);
           _isLoading = false;
         });
+
+        // Fetch recycled items from backend
+        try {
+          final trashRes = await _dio.get('/business/recycle-bin');
+          if (trashRes.statusCode == 200 && trashRes.data != null && trashRes.data['items'] is List) {
+            if (mounted) {
+              setState(() {
+                _recycledItems = List.from(trashRes.data['items']);
+              });
+            }
+          }
+        } catch (_) {}
+
         return;
       }
     } catch (e) {
@@ -2014,22 +2029,22 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   }
 
   // ==========================================
-  // CONFIRM DELETE CATALOG ITEM DIALOG
+  // CONFIRM MOVE TO RECYCLE BIN DIALOG
   // ==========================================
   void _confirmDeleteCatalogItem(String id, String itemType, String title) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
-            const Gap(8),
-            const Text('Delete Listing?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Icon(Icons.delete_sweep_rounded, color: Colors.amber, size: 22),
+            Gap(8),
+            Text('Move to Recycle Bin?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
-          'Are you sure you want to permanently remove "$title" from your store catalog?',
+          'Move "$title" to the Recycle Bin? You can restore it back to your catalog anytime.',
           style: const TextStyle(fontSize: 13),
         ),
         actions: [
@@ -2037,14 +2052,37 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xFFE11D48),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
+            icon: const Icon(Icons.delete_sweep_rounded, size: 16),
+            label: const Text('Move to Trash', style: TextStyle(fontWeight: FontWeight.bold)),
             onPressed: () async {
               Navigator.of(ctx).pop();
+
+              dynamic deletedItemSnapshot;
+              if (itemType == 'product') {
+                deletedItemSnapshot = _products.firstWhere((item) => item['id']?.toString() == id, orElse: () => null);
+              } else if (itemType == 'rental') {
+                deletedItemSnapshot = _rentals.firstWhere((item) => item['id']?.toString() == id, orElse: () => null);
+              } else if (itemType == 'service') {
+                deletedItemSnapshot = _services.firstWhere((item) => item['id']?.toString() == id, orElse: () => null);
+              }
+
+              final trashEntry = {
+                'trashId': 'trash-${DateTime.now().millisecondsSinceEpoch}',
+                'originalId': id,
+                'itemType': itemType,
+                'title': title,
+                'category': deletedItemSnapshot?['category'] ?? 'General',
+                'price': deletedItemSnapshot?['price'] ?? deletedItemSnapshot?['dailyRate'] ?? deletedItemSnapshot?['startingPrice'] ?? 0,
+                'images': deletedItemSnapshot?['images'] ?? [],
+                'deletedAt': DateTime.now().toIso8601String(),
+                'snapshot': deletedItemSnapshot,
+              };
 
               try {
                 final token = await authNotifier.storage.getToken();
@@ -2078,24 +2116,212 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
               if (mounted) {
                 setState(() {
                   if (itemType == 'product') {
-                    _products.removeWhere((item) => item['id'] == id);
+                    _products.removeWhere((item) => item['id']?.toString() == id);
                   } else if (itemType == 'rental') {
-                    _rentals.removeWhere((item) => item['id'] == id);
+                    _rentals.removeWhere((item) => item['id']?.toString() == id);
                   } else if (itemType == 'service') {
-                    _services.removeWhere((item) => item['id'] == id);
+                    _services.removeWhere((item) => item['id']?.toString() == id);
                   }
+                  _recycledItems.insert(0, trashEntry);
                 });
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('✓ Removed "$title" from catalog.'),
+                    content: Row(
+                      children: [
+                        const Icon(Icons.delete_sweep_rounded, color: Colors.amber, size: 18),
+                        const Gap(8),
+                        Expanded(child: Text('Moved "$title" to Recycle Bin.')),
+                      ],
+                    ),
+                    action: SnackBarAction(
+                      label: 'UNDO',
+                      textColor: ServoraColors.emerald500,
+                      onPressed: () => _restoreRecycledItem(trashEntry),
+                    ),
+                    backgroundColor: const Color(0xFF0F172A),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // RECYCLE BIN ACTIONS: RESTORE & PURGE
+  // ==========================================
+  Future<void> _restoreRecycledItem(Map<String, dynamic> item) async {
+    final trashId = item['trashId']?.toString();
+    final title = item['title'] ?? 'Item';
+    final itemType = item['itemType'] ?? 'product';
+
+    try {
+      final token = await authNotifier.storage.getToken();
+      final user = authNotifier.state.user;
+
+      await _dio.post(
+        '/business/recycle-bin',
+        data: {'action': 'restore', 'trashId': trashId},
+        options: Options(headers: {
+          if (token != null) 'Authorization': 'Bearer $token',
+          if (user?.phone != null) 'x-user-phone': user!.phone,
+          if (user?.id != null) 'x-user-id': user!.id,
+        }),
+      );
+      MarketplaceApiService.clearCache();
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _recycledItems.removeWhere((i) => i['trashId']?.toString() == trashId);
+        final snapshot = item['snapshot'];
+        if (snapshot != null) {
+          if (itemType == 'product') {
+            _products.insert(0, snapshot);
+          } else if (itemType == 'rental') {
+            _rentals.insert(0, snapshot);
+          } else if (itemType == 'service') {
+            _services.insert(0, snapshot);
+          }
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✓ Restored "$title" back to catalog.'),
+          backgroundColor: ServoraColors.emerald600,
+        ),
+      );
+      _fetchLivePortalData();
+    }
+  }
+
+  void _permanentlyDeleteRecycledItem(Map<String, dynamic> item) {
+    final trashId = item['trashId']?.toString();
+    final title = item['title'] ?? 'Item';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 22),
+            Gap(8),
+            Text('Permanently Delete?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'Permanently delete "$title"? This action cannot be undone and cannot be recovered.',
+          style: const TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              try {
+                final token = await authNotifier.storage.getToken();
+                final user = authNotifier.state.user;
+                await _dio.delete(
+                  '/business/recycle-bin',
+                  queryParameters: {'trashId': trashId},
+                  options: Options(headers: {
+                    if (token != null) 'Authorization': 'Bearer $token',
+                    if (user?.phone != null) 'x-user-phone': user!.phone,
+                    if (user?.id != null) 'x-user-id': user!.id,
+                  }),
+                );
+              } catch (_) {}
+
+              if (mounted) {
+                setState(() {
+                  _recycledItems.removeWhere((i) => i['trashId']?.toString() == trashId);
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Permanently deleted "$title" from trash.'),
                     backgroundColor: const Color(0xFF1E293B),
                   ),
                 );
-                _fetchLivePortalData();
               }
             },
-            child: const Text('Delete Listing', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text('Delete Forever', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _emptyRecycleBin() {
+    if (_recycledItems.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever_rounded, color: Colors.red, size: 24),
+            Gap(8),
+            Text('Empty Recycle Bin?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently erase all ${_recycledItems.length} items from your Recycle Bin? This action cannot be reversed.',
+          style: const TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              try {
+                final token = await authNotifier.storage.getToken();
+                final user = authNotifier.state.user;
+                await _dio.delete(
+                  '/business/recycle-bin',
+                  queryParameters: {'action': 'empty'},
+                  options: Options(headers: {
+                    if (token != null) 'Authorization': 'Bearer $token',
+                    if (user?.phone != null) 'x-user-phone': user!.phone,
+                    if (user?.id != null) 'x-user-id': user!.id,
+                  }),
+                );
+              } catch (_) {}
+
+              if (mounted) {
+                setState(() {
+                  _recycledItems.clear();
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Recycle Bin has been completely emptied.'),
+                    backgroundColor: Color(0xFF1E293B),
+                  ),
+                );
+              }
+            },
+            child: const Text('Empty All Items', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -2161,6 +2387,8 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                 return _buildReviewsWorkspace(isDark);
               } else if (_activeTab == 'messages') {
                 return _buildMessagesWorkspace(isDark);
+              } else if (_activeTab == 'recycle_bin') {
+                return _buildRecycleBinWorkspace(isDark);
               } else {
                 return _buildLeadsWorkspace(isDark);
               }
@@ -2434,6 +2662,8 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
           _buildWorkspaceButton('messages', 'In-App Chats', Icons.chat_bubble_rounded, count: _chatRooms.length),
           const Gap(8),
           _buildWorkspaceButton('leads', 'Lead CRM', Icons.people_alt_rounded, count: _leads.length),
+          const Gap(8),
+          _buildWorkspaceButton('recycle_bin', 'Recycle Bin', Icons.delete_outline_rounded, count: _recycledItems.length),
         ],
       ),
     );
@@ -2482,6 +2712,302 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // TAB: RECYCLE BIN WORKSPACE
+  // ==========================================
+  Widget _buildRecycleBinWorkspace(bool isDark) {
+    final filtered = _recycledItems.where((item) {
+      if (_recycleFilter != 'all' && item['itemType'] != _recycleFilter) {
+        return false;
+      }
+      if (_searchQuery.trim().isNotEmpty) {
+        final q = _searchQuery.trim().toLowerCase();
+        final title = (item['title'] ?? '').toString().toLowerCase();
+        final cat = (item['category'] ?? '').toString().toLowerCase();
+        return title.contains(q) || cat.contains(q);
+      }
+      return true;
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Top Info & Empty Trash Banner
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? ServoraColors.darkSurface : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? ServoraColors.darkCardBorder : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF43F5E).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.delete_sweep_rounded, color: Color(0xFFF43F5E), size: 24),
+              ),
+              const Gap(12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Business Recycle Bin',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                        ),
+                        const Gap(6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${_recycledItems.length}',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(2),
+                    const Text(
+                      'Deleted items stay here safely. Restore them or delete forever.',
+                      style: TextStyle(fontSize: 10.5, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              if (_recycledItems.isNotEmpty)
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFF43F5E),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  icon: const Icon(Icons.delete_forever_rounded, size: 14),
+                  label: const Text('Empty Trash', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  onPressed: _emptyRecycleBin,
+                ),
+            ],
+          ),
+        ),
+        const Gap(12),
+
+        // Filter Pills
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildRecycleFilterPill('all', 'All Trash (${_recycledItems.length})'),
+              const Gap(6),
+              _buildRecycleFilterPill('product', 'Products'),
+              const Gap(6),
+              _buildRecycleFilterPill('rental', 'Tool Rentals'),
+              const Gap(6),
+              _buildRecycleFilterPill('service', 'Services'),
+            ],
+          ),
+        ),
+        const Gap(12),
+
+        // Items List or Empty State
+        if (filtered.isEmpty)
+          _buildEmptyState(
+            _recycledItems.isEmpty ? 'Recycle Bin is Empty' : 'No Matching Items in Trash',
+            _recycledItems.isEmpty
+                ? 'When you delete catalog products, rentals, or services, they move here safely so you can restore them anytime.'
+                : 'Try changing your search query or filter tab above.',
+            customIcon: Icons.check_circle_outline_rounded,
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filtered.length,
+            separatorBuilder: (_, __) => const Gap(10),
+            itemBuilder: (context, idx) {
+              final item = filtered[idx];
+              final itemType = item['itemType'] ?? 'product';
+              final title = item['title'] ?? 'Untitled Item';
+              final category = item['category'] ?? 'General';
+              final price = (item['price'] is num)
+                  ? (item['price'] as num).toDouble()
+                  : (double.tryParse(item['price']?.toString() ?? '0') ?? 0.0);
+
+              final rawImages = item['images'];
+              String? img;
+              if (rawImages is List && rawImages.isNotEmpty) {
+                img = rawImages[0].toString();
+              }
+
+              return ServoraCard(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: img != null
+                              ? CachedNetworkImage(
+                                  imageUrl: img,
+                                  width: 68,
+                                  height: 68,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => Container(
+                                    width: 68,
+                                    height: 68,
+                                    color: Colors.grey.withOpacity(0.15),
+                                    child: Icon(
+                                      itemType == 'rental' ? Icons.construction_rounded : Icons.shopping_bag_outlined,
+                                      color: Colors.grey,
+                                      size: 26,
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  width: 68,
+                                  height: 68,
+                                  color: Colors.grey.withOpacity(0.15),
+                                  child: Icon(
+                                    itemType == 'rental' ? Icons.construction_rounded : Icons.shopping_bag_outlined,
+                                    color: Colors.grey,
+                                    size: 26,
+                                  ),
+                                ),
+                        ),
+                        const Gap(12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: itemType == 'product'
+                                          ? ServoraColors.emerald600.withOpacity(0.12)
+                                          : itemType == 'rental'
+                                              ? const Color(0xFFD97706).withOpacity(0.12)
+                                              : const Color(0xFF2563EB).withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      itemType == 'product'
+                                          ? 'PRODUCT'
+                                          : itemType == 'rental'
+                                              ? 'RENTAL EQUIPMENT'
+                                              : 'SERVICE',
+                                      style: TextStyle(
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.w900,
+                                        color: itemType == 'product'
+                                            ? ServoraColors.emerald600
+                                            : itemType == 'rental'
+                                                ? const Color(0xFFD97706)
+                                                : const Color(0xFF2563EB),
+                                      ),
+                                    ),
+                                  ),
+                                  const Gap(6),
+                                  Expanded(
+                                    child: Text(
+                                      category,
+                                      style: const TextStyle(fontSize: 9.5, color: Colors.grey, fontWeight: FontWeight.w500),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Gap(4),
+                              Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900), maxLines: 2),
+                              const Gap(4),
+                              Text(
+                                'GH₵ ${price.toStringAsFixed(2)}',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: ServoraColors.emerald600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(10),
+                    const Divider(height: 1),
+                    const Gap(8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            visualDensity: VisualDensity.compact,
+                            side: BorderSide(color: Colors.red.withOpacity(0.3)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          icon: const Icon(Icons.delete_forever_rounded, size: 14, color: Colors.red),
+                          label: const Text('Delete Forever', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red)),
+                          onPressed: () => _permanentlyDeleteRecycledItem(item),
+                        ),
+                        const Gap(8),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ServoraColors.emerald600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            visualDensity: VisualDensity.compact,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          icon: const Icon(Icons.restore_from_trash_rounded, size: 14),
+                          label: const Text('Restore Item', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () => _restoreRecycledItem(item),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildRecycleFilterPill(String filterKey, String label) {
+    final isSel = _recycleFilter == filterKey;
+    return GestureDetector(
+      onTap: () => setState(() => _recycleFilter = filterKey),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSel ? ServoraColors.emerald600 : (Theme.of(context).brightness == Brightness.dark ? ServoraColors.darkSurface : Colors.white),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSel ? ServoraColors.emerald600 : (Theme.of(context).brightness == Brightness.dark ? ServoraColors.darkCardBorder : const Color(0xFFE2E8F0)),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: isSel ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
+          ),
         ),
       ),
     );
@@ -3172,20 +3698,22 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Flexible(
+                          Expanded(
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                ...List.generate(
-                                  5,
-                                  (i) => Icon(
-                                    Icons.star_rounded,
-                                    size: 13,
-                                    color: i < (r['rating'] ?? 5) ? const Color(0xFFF59E0B) : Colors.grey[300],
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: List.generate(
+                                    5,
+                                    (i) => Icon(
+                                      Icons.star_rounded,
+                                      size: 13,
+                                      color: i < (r['rating'] ?? 5) ? const Color(0xFFF59E0B) : Colors.grey[300],
+                                    ),
                                   ),
                                 ),
                                 const Gap(6),
-                                Flexible(
+                                Expanded(
                                   child: Text(
                                     r['authorName'] ?? 'Customer',
                                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
@@ -3197,7 +3725,8 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                             ),
                           ),
                           const Gap(8),
-                          Flexible(
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 150),
                             child: InkWell(
                               onTap: () {
                                 final pSlug = (r['productSlug'] ?? r['product']?['slug'] ?? '').toString();
@@ -3217,11 +3746,13 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      r['productTitle'] ?? 'Product',
-                                      style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    Flexible(
+                                      child: Text(
+                                        r['productTitle'] ?? 'Product',
+                                        style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                     const Gap(2),
                                     const Icon(Icons.open_in_new_rounded, size: 10, color: ServoraColors.emerald600),
@@ -3327,7 +3858,7 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Flexible(
+                          Expanded(
                             child: Text(
                               'Q: ${q['askerName'] ?? 'Customer'}',
                               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
@@ -3336,7 +3867,8 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                             ),
                           ),
                           const Gap(8),
-                          Flexible(
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 150),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
@@ -3551,17 +4083,17 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     );
   }
 
-  Widget _buildEmptyState(String title, String subtitle) {
+  Widget _buildEmptyState(String title, String subtitle, {IconData? customIcon}) {
     return Container(
       padding: const EdgeInsets.all(30),
       alignment: Alignment.center,
       child: Column(
         children: [
-          const Icon(Icons.inventory_2_outlined, size: 36, color: Colors.grey),
+          Icon(customIcon ?? Icons.inventory_2_outlined, size: 36, color: customIcon != null ? ServoraColors.emerald600 : Colors.grey),
           const Gap(10),
           Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
           const Gap(2),
-          Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey), textAlign: TextAlign.center),
         ],
       ),
     );

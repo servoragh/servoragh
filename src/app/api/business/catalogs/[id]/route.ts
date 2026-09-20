@@ -240,6 +240,91 @@ export async function DELETE(
 
     const isAdmin = session.role === "ADMIN" || (session as any).role === "SUPER_ADMIN";
 
+    // 1. Snapshot into Recycle Bin before deletion
+    try {
+      let itemToArchive: any = null;
+
+      if (itemType === "product") {
+        itemToArchive =
+          (await prisma.productListing.findFirst({
+            where: {
+              id,
+              ...(isAdmin
+                ? {}
+                : businessProfile
+                ? { businessId: businessProfile.id }
+                : { sellerId: session.id }),
+            },
+          })) ||
+          (await prisma.product.findFirst({
+            where: {
+              id,
+              ...(isAdmin
+                ? {}
+                : providerProfile
+                ? { providerId: providerProfile.id }
+                : { id: "none" }),
+            },
+          }));
+      } else if (itemType === "rental") {
+        itemToArchive =
+          (await prisma.toolRentalListing.findFirst({
+            where: {
+              id,
+              ...(isAdmin
+                ? {}
+                : businessProfile
+                ? { businessId: businessProfile.id }
+                : { id: "none" }),
+            },
+          })) ||
+          (await prisma.rentalTool.findFirst({
+            where: {
+              id,
+              ...(isAdmin ? {} : providerProfile ? { providerId: providerProfile.id } : { id: "none" }),
+            },
+          }));
+      } else if (itemType === "service") {
+        itemToArchive = await prisma.businessService.findFirst({
+          where: {
+            id,
+            ...(isAdmin
+              ? {}
+              : businessProfile
+              ? { businessId: businessProfile.id }
+              : { id: "none" }),
+          },
+        });
+      }
+
+      if (itemToArchive) {
+        await prisma.auditLog.create({
+          data: {
+            userId: session.id,
+            action: `RECYCLE_BIN:${itemType.toUpperCase()}`,
+            details: JSON.stringify({
+              originalId: id,
+              itemType,
+              title: itemToArchive.title || itemToArchive.serviceName || "Catalog Item",
+              category: itemToArchive.category || "General",
+              price: Number(itemToArchive.price || itemToArchive.dailyRate || itemToArchive.startingPrice || 0),
+              images: Array.isArray(itemToArchive.images)
+                ? itemToArchive.images
+                : typeof itemToArchive.images === "string"
+                ? JSON.parse(itemToArchive.images || "[]")
+                : [],
+              snapshot: itemToArchive,
+              deletedAt: new Date().toISOString(),
+              deletedBy: session.name || session.email || "Merchant",
+            }),
+          },
+        });
+      }
+    } catch (archiveErr) {
+      console.warn("Recycle bin archiving error:", archiveErr);
+    }
+
+    // 2. Perform removal from active tables
     if (itemType === "product") {
       await prisma.productListing.deleteMany({
         where: {

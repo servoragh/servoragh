@@ -31,6 +31,7 @@ import {
   RefreshCw,
   Layers,
   FileCheck,
+  Trash2,
 } from "lucide-react";
 import { TrustBadge } from "@/components/TrustBadge";
 import { BusinessOnboardingWizard } from "@/components/BusinessOnboardingWizard";
@@ -38,18 +39,37 @@ import { BusinessCatalogManager } from "@/components/BusinessCatalogManager";
 import { BusinessLeadCrmBoard } from "@/components/BusinessLeadCrmBoard";
 import { BusinessAnalyticsView } from "@/components/BusinessAnalyticsView";
 import { UnifiedMessagingHub } from "@/components/UnifiedMessagingHub";
+import { BusinessRecycleBin } from "@/components/BusinessRecycleBin";
 import { formatGHS } from "@/lib/utils";
 
 export default function BusinessOwnerPortalPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "catalogs" | "leads" | "messages" | "analytics" | "verification">("catalogs");
+  const [activeTab, setActiveTab] = useState<"overview" | "catalogs" | "leads" | "messages" | "analytics" | "verification" | "recycle_bin">("catalogs");
   const [isEditingOnboarding, setIsEditingOnboarding] = useState(false);
+  const [recycleBinCount, setRecycleBinCount] = useState(0);
 
   useEffect(() => {
     fetchPortalData();
+    fetchRecycleBinCount();
   }, []);
+
+  async function fetchRecycleBinCount() {
+    try {
+      const res = await fetch("/api/business/recycle-bin");
+      const json = await res.json();
+      let count = Array.isArray(json.items) ? json.items.length : 0;
+      try {
+        const local = localStorage.getItem("servora_merchant_recycle_bin");
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed) && parsed.length > count) count = parsed.length;
+        }
+      } catch (_) {}
+      setRecycleBinCount(count);
+    } catch (_) {}
+  }
 
   async function fetchPortalData() {
     try {
@@ -196,64 +216,211 @@ export default function BusinessOwnerPortalPage() {
             />
           </div>
         ) : (
-          /* WORKSPACE NAVIGATION TABS */
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-stone-200 dark:border-stone-800">
-              <button
-                onClick={() => setActiveTab("catalogs")}
-                className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                  activeTab === "catalogs"
-                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                    : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100"
-                }`}
-              >
-                <Package className="w-4 h-4" /> Storefront Catalogs
-              </button>
+          /* SIDEBAR & MAIN WORKSPACE LAYOUT */
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+            {/* LEFT SIDE MENU */}
+            <aside className="w-full lg:w-72 shrink-0 space-y-4">
+              {/* Mobile Tab Pills (shown on small screens) */}
+              <div className="lg:hidden bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-2 shadow-xs">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {[
+                    { id: "catalogs" as const, label: "Catalogs", icon: Package },
+                    { id: "leads" as const, label: "Leads", icon: Users },
+                    { id: "messages" as const, label: "Inbox", icon: MessageSquare },
+                    { id: "analytics" as const, label: "Analytics", icon: TrendingUp },
+                    { id: "verification" as const, label: "Trust", icon: ShieldCheck },
+                    { id: "recycle_bin" as const, label: "Trash", icon: Trash2 },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const isSel = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                          isSel
+                            ? "bg-emerald-600 text-white shadow-xs"
+                            : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white"
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-              <button
-                onClick={() => setActiveTab("leads")}
-                className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                  activeTab === "leads"
-                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                    : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100"
-                }`}
-              >
-                <Users className="w-4 h-4" /> Lead CRM & Quotes
-              </button>
+              {/* Desktop Side Menu Card (Sticky on scroll) */}
+              <div className="hidden lg:block bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-4 shadow-sm sticky top-24 space-y-4">
+                {/* Header */}
+                <div className="px-2 py-1 flex items-center justify-between border-b border-stone-100 dark:border-stone-800/80 pb-3">
+                  <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-stone-400 dark:text-stone-500">
+                    <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Workspace Menu</span>
+                  </div>
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Active
+                  </span>
+                </div>
 
-              <button
-                onClick={() => setActiveTab("messages")}
-                className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                  activeTab === "messages"
-                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                    : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100"
-                }`}
-              >
-                <MessageSquare className="w-4 h-4" /> Customer Inbox
-              </button>
+                {/* Main Navigation Items */}
+                <nav className="space-y-1.5">
+                  {[
+                    {
+                      id: "catalogs" as const,
+                      label: "Storefront Catalogs",
+                      description: "Products, rentals & services",
+                      icon: Package,
+                      badge:
+                        (profile.products?.length || 0) +
+                          (profile.rentals?.length || profile.rentalTools?.length || 0) +
+                          (profile.services?.length || 0) >
+                        0
+                          ? (profile.products?.length || 0) +
+                            (profile.rentals?.length || profile.rentalTools?.length || 0) +
+                            (profile.services?.length || 0)
+                          : null,
+                    },
+                    {
+                      id: "leads" as const,
+                      label: "Lead CRM & Quotes",
+                      description: "Inquiries, bids & dispatch",
+                      icon: Users,
+                      badge:
+                        (profile.leads?.length || 0) + (data.incomingRequests?.length || 0) > 0
+                          ? `${(profile.leads?.length || 0) + (data.incomingRequests?.length || 0)}`
+                          : null,
+                    },
+                    {
+                      id: "messages" as const,
+                      label: "Customer Inbox",
+                      description: "Direct customer messaging",
+                      icon: MessageSquare,
+                      badge: null,
+                    },
+                    {
+                      id: "analytics" as const,
+                      label: "Analytics & Revenue",
+                      description: "Views, revenue & insights",
+                      icon: TrendingUp,
+                      badge: null,
+                    },
+                    {
+                      id: "verification" as const,
+                      label: "Trust & Verification",
+                      description: "Ghana Card & KYB tiers",
+                      icon: ShieldCheck,
+                      badge: profile.verificationStatus ? "Tier 1" : null,
+                    },
+                    {
+                      id: "recycle_bin" as const,
+                      label: "Recycle Bin",
+                      description: "Trash & restore deleted items",
+                      icon: Trash2,
+                      badge: recycleBinCount > 0 ? `${recycleBinCount}` : null,
+                    },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const isSel = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`w-full p-3 rounded-2xl transition-all flex items-center justify-between text-left group cursor-pointer ${
+                          isSel
+                            ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/25"
+                            : "bg-transparent hover:bg-stone-100 dark:hover:bg-stone-800/80 text-stone-700 dark:text-stone-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={`p-2 rounded-xl transition ${
+                              isSel
+                                ? "bg-white/20 text-white"
+                                : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/40 group-hover:text-emerald-600"
+                            }`}
+                          >
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-black truncate">{item.label}</div>
+                            <div
+                              className={`text-[10px] truncate ${
+                                isSel ? "text-emerald-100" : "text-stone-400 dark:text-stone-500"
+                              }`}
+                            >
+                              {item.description}
+                            </div>
+                          </div>
+                        </div>
 
-              <button
-                onClick={() => setActiveTab("analytics")}
-                className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                  activeTab === "analytics"
-                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                    : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100"
-                }`}
-              >
-                <TrendingUp className="w-4 h-4" /> Analytics & Revenue
-              </button>
+                        {item.badge && (
+                          <span
+                            className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ml-2 ${
+                              isSel
+                                ? "bg-white/20 text-white"
+                                : "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                            }`}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </nav>
 
-              <button
-                onClick={() => setActiveTab("verification")}
-                className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                  activeTab === "verification"
-                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                    : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100"
-                }`}
-              >
-                <ShieldCheck className="w-4 h-4" /> Trust & Verification
-              </button>
-            </div>
+                {/* Shortcuts */}
+                <div className="pt-3 border-t border-stone-100 dark:border-stone-800/80 space-y-1 px-1">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 dark:text-stone-500 px-2 mb-1.5">
+                    Storefront Actions
+                  </p>
+
+                  <Link
+                    href={`/biz/${profile.slug}`}
+                    target="_blank"
+                    className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-emerald-600 dark:hover:text-emerald-400 transition"
+                  >
+                    <span className="flex items-center gap-2">
+                      <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
+                      <span>Public Storefront</span>
+                    </span>
+                    <span className="text-[10px] text-stone-400 font-mono">↗</span>
+                  </Link>
+
+                  <button
+                    onClick={() => setIsEditingOnboarding(true)}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer text-left"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Wrench className="w-3.5 h-3.5 text-stone-400" />
+                      <span>Edit Profile Setup</span>
+                    </span>
+                  </button>
+                </div>
+
+                {/* Status card */}
+                <div className="p-3 rounded-2xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200/80 dark:border-stone-800 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-black text-stone-900 dark:text-white truncate">
+                      {profile.businessName}
+                    </div>
+                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>{profile.verificationStatus || "Verified Solo Artisan"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            {/* RIGHT MAIN WORKSPACE CONTENT CANVAS */}
+            <main className="flex-1 min-w-0 w-full">
 
             {/* TAB CONTENT PANELS */}
             {activeTab === "catalogs" && (
@@ -323,6 +490,16 @@ export default function BusinessOwnerPortalPage() {
                 </button>
               </div>
             )}
+
+            {activeTab === "recycle_bin" && (
+              <BusinessRecycleBin
+                onItemRestored={() => {
+                  fetchPortalData();
+                  fetchRecycleBinCount();
+                }}
+              />
+            )}
+            </main>
           </div>
         )}
       </div>

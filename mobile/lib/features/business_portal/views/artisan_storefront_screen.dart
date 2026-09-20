@@ -711,13 +711,15 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                                   ),
                                 ],
                                 const Gap(4),
-                                Row(
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 3,
+                                  runSpacing: 2,
                                   children: [
                                     const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
-                                    const Gap(2),
                                     Text('$rating', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900)),
                                     Text(' ($reviewsCount reviews)', style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey[600])),
-                                    const Text(' • ', style: TextStyle(color: Colors.grey)),
+                                    const Text('•', style: TextStyle(color: Colors.grey)),
                                     Text(
                                       openNow ? '🟢 Open Today' : '🔴 Closed Now',
                                       style: TextStyle(

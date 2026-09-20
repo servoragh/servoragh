@@ -14,6 +14,7 @@ import {
   Search,
   MessageSquare,
   Truck,
+  Heart,
 } from "lucide-react";
 import { RequestWizardModal } from "@/components/RequestWizardModal";
 
@@ -35,12 +36,12 @@ export function MobileBottomNav() {
 
   return (
     <>
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-stone-900/90 backdrop-blur-xl border-t border-stone-200/80 dark:border-stone-800/80 shadow-2xl px-2 py-1.5 transition-colors duration-200 pb-safe">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border-t border-stone-200/80 dark:border-stone-800/80 shadow-2xl px-1.5 py-1.5 transition-colors duration-200 pb-safe">
         <div className="flex items-center justify-around max-w-md mx-auto">
-          {/* Home */}
+          {/* 1. Home */}
           <Link
             href="/"
-            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition cursor-pointer ${
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition cursor-pointer ${
               pathname === "/"
                 ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
                 : "text-stone-500 dark:text-stone-400 font-medium hover:text-stone-900 dark:hover:text-white"
@@ -50,10 +51,10 @@ export function MobileBottomNav() {
             <span className="text-[10px] tracking-tight">Home</span>
           </Link>
 
-          {/* Shop Products */}
+          {/* 2. Shop Products */}
           <Link
             href="/products"
-            className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-2xl transition cursor-pointer ${
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition cursor-pointer ${
               pathname?.startsWith("/products")
                 ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
                 : "text-stone-500 dark:text-stone-400 font-medium hover:text-stone-900 dark:hover:text-white"
@@ -63,10 +64,10 @@ export function MobileBottomNav() {
             <span className="text-[10px] tracking-tight">Products</span>
           </Link>
 
-          {/* Delivery */}
+          {/* 3. Delivery */}
           <Link
             href="/delivery"
-            className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-2xl transition cursor-pointer ${
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition cursor-pointer ${
               pathname?.startsWith("/delivery")
                 ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
                 : "text-stone-500 dark:text-stone-400 font-medium hover:text-stone-900 dark:hover:text-white"
@@ -76,30 +77,43 @@ export function MobileBottomNav() {
             <span className="text-[10px] tracking-tight">Delivery</span>
           </Link>
 
-          {/* Quick Post Service Request CTA Floating Action Button */}
+          {/* Center: Quick Post Service Request Floating Action Button */}
           <button
             onClick={() => setIsWizardOpen(true)}
-            className="relative -top-4 p-3 bg-gradient-to-tr from-emerald-700 via-emerald-600 to-teal-500 text-white rounded-full shadow-lg shadow-emerald-600/30 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border-2 border-white dark:border-stone-900 flex items-center justify-center group"
+            className="relative -top-3.5 p-2.5 bg-gradient-to-tr from-emerald-700 via-emerald-600 to-teal-500 text-white rounded-full shadow-lg shadow-emerald-600/30 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border-2 border-white dark:border-stone-900 flex items-center justify-center shrink-0 group"
             title="Post Service Request"
           >
-            <PlusCircle className="w-6 h-6 group-hover:rotate-90 transition duration-300" />
+            <PlusCircle className="w-5 h-5 group-hover:rotate-90 transition duration-300" />
             <span className="sr-only">Post Request</span>
           </button>
 
-          {/* Community */}
+          {/* 4. Saved Items */}
+          <Link
+            href="/account/favorites"
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition cursor-pointer ${
+              pathname?.startsWith("/account/favorites")
+                ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+                : "text-stone-500 dark:text-stone-400 font-medium hover:text-stone-900 dark:hover:text-white"
+            }`}
+          >
+            <Heart className="w-5 h-5" />
+            <span className="text-[10px] tracking-tight">Saved</span>
+          </Link>
+
+          {/* 5. Community / Notice Board */}
           <Link
             href="/community"
-            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition cursor-pointer ${
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition cursor-pointer ${
               pathname?.startsWith("/community")
                 ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
                 : "text-stone-500 dark:text-stone-400 font-medium hover:text-stone-900 dark:hover:text-white"
             }`}
           >
             <Users className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight">Notice Board</span>
+            <span className="text-[10px] tracking-tight whitespace-nowrap">Notice Board</span>
           </Link>
 
-          {/* Portal / Account */}
+          {/* 6. Portal / Account */}
           <Link
             href={
               session?.role === "PROVIDER"
@@ -110,8 +124,8 @@ export function MobileBottomNav() {
                 ? "/dashboard"
                 : "/login"
             }
-            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition cursor-pointer ${
-              pathname?.startsWith("/business/portal") || pathname?.startsWith("/dashboard")
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition cursor-pointer ${
+              pathname?.startsWith("/business/portal") || pathname?.startsWith("/dashboard") || pathname === "/login"
                 ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
                 : "text-stone-500 dark:text-stone-400 font-medium hover:text-stone-900 dark:hover:text-white"
             }`}
@@ -121,7 +135,7 @@ export function MobileBottomNav() {
             ) : (
               <User className="w-5 h-5" />
             )}
-            <span className="text-[10px] tracking-tight truncate max-w-[60px]">
+            <span className="text-[10px] tracking-tight truncate max-w-[50px]">
               {session?.role === "PROVIDER"
                 ? "Portal"
                 : session

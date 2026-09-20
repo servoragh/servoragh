@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { formatGHS } from "@/lib/utils";
 import { CategoryPickerModal } from "@/components/CategoryPickerModal";
+import { toast } from "@/lib/toast";
 
 interface BusinessCatalogManagerProps {
   products: any[];
@@ -384,14 +385,52 @@ export function BusinessCatalogManager({
   };
 
   const handleDeleteItem = async (id: string, itemType: "product" | "rental" | "service") => {
-    if (!confirm("Are you sure you want to delete this catalog item?")) return;
+    const itemTarget =
+      itemType === "product"
+        ? products.find((p) => p.id === id)
+        : itemType === "rental"
+        ? rentals.find((r) => r.id === id)
+        : services.find((s) => s.id === id);
+
+    const title = itemTarget?.title || itemTarget?.serviceName || "Item";
+
+    if (!confirm(`Move "${title}" to the Recycle Bin? You can restore it anytime.`)) return;
+
     try {
+      // Save snapshot to local storage backup for instant offline/demo resilience
+      try {
+        const rawTrash = localStorage.getItem("servora_merchant_recycle_bin");
+        const trashList = rawTrash ? JSON.parse(rawTrash) : [];
+        const newTrashItem = {
+          trashId: `trash-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          originalId: id,
+          itemType,
+          title,
+          category: itemTarget?.category || "General",
+          price: Number(itemTarget?.price || itemTarget?.dailyRate || itemTarget?.startingPrice || 0),
+          images: Array.isArray(itemTarget?.images)
+            ? itemTarget.images
+            : typeof itemTarget?.images === "string"
+            ? JSON.parse(itemTarget.images || "[]")
+            : [],
+          deletedAt: new Date().toISOString(),
+          snapshot: itemTarget,
+        };
+        localStorage.setItem(
+          "servora_merchant_recycle_bin",
+          JSON.stringify([newTrashItem, ...trashList.filter((t: any) => t.originalId !== id)])
+        );
+      } catch (_) {}
+
       const res = await fetch(`/api/business/catalogs/${id}?itemType=${itemType}`, {
         method: "DELETE",
       });
-      if (res.ok) onRefresh();
-    } catch (err) {
-      console.error(err);
+
+      toast.info("Moved to Recycle Bin 🗑️", `"${title}" moved to your business trash.`);
+      onRefresh();
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      toast.error("Deletion Error", err.message || "Could not move item to recycle bin.");
     }
   };
 
