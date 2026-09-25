@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -11,7 +12,10 @@ import '../../../core/utils/time_formatter.dart';
 import '../../../shared/widgets/presence_badge.dart';
 import '../../../shared/widgets/servora_image_lightbox.dart';
 import '../../../shared/widgets/servora_image_upload_widget.dart';
+import '../../../shared/widgets/category_picker_sheet.dart';
+import '../../../shared/widgets/servora_location_picker_sheet.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../core/services/marketplace_api_service.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Map<String, dynamic> product;
@@ -507,6 +511,522 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  bool get _isOwner {
+    final user = authNotifier.state.user;
+    if (user == null) return false;
+    final prod = _liveProduct ?? widget.product;
+    final sellerId = prod['sellerId']?.toString() ?? prod['seller']?['id']?.toString();
+    final sellerPhone = prod['seller']?['phone']?.toString() ?? prod['phone']?.toString();
+    return (sellerId != null && sellerId == user.id) ||
+        (sellerPhone != null && sellerPhone == user.phone) ||
+        user.role == 'ADMIN' ||
+        user.role == 'SUPER_ADMIN';
+  }
+
+  void _openFullProductEditSheet() {
+    final prod = _liveProduct ?? widget.product;
+    final pId = prod['id']?.toString() ?? '';
+
+    final titleCtrl = TextEditingController(text: prod['title'] ?? '');
+    final descCtrl = TextEditingController(text: prod['description'] ?? '');
+    final priceCtrl = TextEditingController(text: prod['price']?.toString() ?? '');
+    final originalPriceCtrl = TextEditingController(text: prod['originalPrice']?.toString() ?? '');
+    final stockCtrl = TextEditingController(text: (prod['stockQuantity'] ?? 1).toString());
+    final categoryCtrl = TextEditingController(text: prod['category'] ?? 'Electronics');
+    String? subCategoryVal = prod['subCategory']?.toString();
+    String conditionVal = prod['condition']?.toString() ?? 'BRAND_NEW';
+    String inventoryStatusVal = prod['inventoryStatus']?.toString() ?? 'IN_STOCK';
+    String areaVal = prod['area']?.toString() ?? prod['location']?.toString() ?? 'Tamale Central';
+    bool isNegotiableVal = prod['isNegotiable'] == true;
+
+    List<String> deliveryOptions = [];
+    final rawDeliv = prod['deliveryOptions'];
+    if (rawDeliv is List) {
+      deliveryOptions = rawDeliv.map((e) => e.toString()).toList();
+    } else if (rawDeliv is String) {
+      try {
+        final decoded = jsonDecode(rawDeliv);
+        if (decoded is List) deliveryOptions = decoded.map((e) => e.toString()).toList();
+      } catch (_) {
+        deliveryOptions = ['PICKUP', 'LOCAL_DELIVERY'];
+      }
+    }
+    if (deliveryOptions.isEmpty) {
+      deliveryOptions = ['PICKUP', 'LOCAL_DELIVERY'];
+    }
+
+    List<String> currentImages = [];
+    final rawImgs = prod['images'];
+    if (rawImgs is List) {
+      currentImages = rawImgs.map((e) => e.toString()).toList();
+    } else if (rawImgs is String && rawImgs.startsWith('http')) {
+      currentImages = [rawImgs];
+    }
+    if (currentImages.isEmpty && prod['image'] != null) {
+      currentImages = [prod['image'].toString()];
+    }
+
+    bool isSaving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+
+          return Container(
+            padding: EdgeInsets.only(
+              top: 20,
+              left: 20,
+              right: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? ServoraColors.darkSurface : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.92),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const Gap(16),
+                  const Row(
+                    children: [
+                      Icon(Icons.edit_note_rounded, color: ServoraColors.emerald600, size: 24),
+                      Gap(8),
+                      Text('Edit Product Setup', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                  const Gap(4),
+                  const Text(
+                    'Update full listing information, pricing, condition, location, delivery & photos.',
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey),
+                  ),
+                  const Divider(height: 24),
+
+                  // Title
+                  const Text('PRODUCT TITLE *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(4),
+                  TextField(
+                    controller: titleCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. 50kg Savannah Parboiled Rice',
+                      filled: true,
+                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const Gap(12),
+
+                  // Category & Subcategory Picker
+                  const Text('INDUSTRY CATEGORY & SUBCATEGORY *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(4),
+                  InkWell(
+                    onTap: () {
+                      CategoryPickerSheet.show(
+                        ctx,
+                        selectedCategory: categoryCtrl.text,
+                        selectedSubCategory: subCategoryVal,
+                        onSelect: (cat, sub) {
+                          setModalState(() {
+                            categoryCtrl.text = cat;
+                            subCategoryVal = sub;
+                          });
+                        },
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: ServoraColors.emerald600.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.layers_rounded, color: ServoraColors.emerald600, size: 20),
+                          const Gap(10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  categoryCtrl.text.isNotEmpty ? categoryCtrl.text : 'Select Category',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1C1917)),
+                                ),
+                                Text(
+                                  subCategoryVal != null && subCategoryVal!.isNotEmpty
+                                      ? 'Subcategory: $subCategoryVal'
+                                      : 'Tap to pick subcategory',
+                                  style: const TextStyle(fontSize: 10, color: ServoraColors.emerald600, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: ServoraColors.emerald600,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text('Change', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Gap(12),
+
+                  // Pricing Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('SELLING PRICE (GH₵) *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                            const Gap(4),
+                            TextField(
+                              controller: priceCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('COMPARE-AT PRICE (GH₵)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                            const Gap(4),
+                            TextField(
+                              controller: originalPriceCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                hintText: 'Optional',
+                                filled: true,
+                                fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(12),
+
+                  // Stock & Inventory Status
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('STOCK QUANTITY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                            const Gap(4),
+                            TextField(
+                              controller: stockCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('INVENTORY STATUS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                            const Gap(4),
+                            DropdownButtonFormField<String>(
+                              value: inventoryStatusVal,
+                              dropdownColor: isDark ? ServoraColors.darkSurface : Colors.white,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              ),
+                              items: const [
+                                DropdownMenuItem(value: 'IN_STOCK', child: Text('In Stock', style: TextStyle(fontSize: 12))),
+                                DropdownMenuItem(value: 'LOW_STOCK', child: Text('Low Stock', style: TextStyle(fontSize: 12))),
+                                DropdownMenuItem(value: 'SOLD_OUT', child: Text('Sold Out', style: TextStyle(fontSize: 12))),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) setModalState(() => inventoryStatusVal = val);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(12),
+
+                  // Condition Selector
+                  const Text('ITEM CONDITION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(4),
+                  DropdownButtonFormField<String>(
+                    value: conditionVal,
+                    dropdownColor: isDark ? ServoraColors.darkSurface : Colors.white,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'BRAND_NEW', child: Text('✨ Brand New (Unopened)', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'USED_LIKE_NEW', child: Text('💎 Used - Like New', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'USED_GOOD', child: Text('👍 Used - Good Condition', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'USED_FAIR', child: Text('👌 Used - Fair / Working', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'REFURBISHED', child: Text('🔧 Refurbished', style: TextStyle(fontSize: 13))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => conditionVal = val);
+                    },
+                  ),
+                  const Gap(12),
+
+                  // Location / Area Picker
+                  const Text('BUSINESS / PICKUP LOCATION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(4),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await ServoraLocationPickerSheet.show(context);
+                      if (picked != null) {
+                        setModalState(() {
+                          areaVal = picked.name;
+                        });
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.location_on_rounded, color: ServoraColors.emerald600, size: 18),
+                          const Gap(8),
+                          Expanded(
+                            child: Text(
+                              areaVal.isNotEmpty ? areaVal : 'Tap to select location',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Gap(12),
+
+                  // Delivery Options
+                  const Text('AVAILABLE DELIVERY OPTIONS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      {'id': 'PICKUP', 'label': 'Self-Pickup'},
+                      {'id': 'LOCAL_DELIVERY', 'label': 'Local Rider'},
+                      {'id': 'NATIONWIDE_SHIPPING', 'label': 'Nationwide Shipping'},
+                    ].map((opt) {
+                      final selected = deliveryOptions.contains(opt['id']);
+                      return FilterChip(
+                        selected: selected,
+                        label: Text(opt['label']!, style: TextStyle(fontSize: 11.5, fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
+                        selectedColor: ServoraColors.emerald600.withOpacity(0.18),
+                        checkmarkColor: ServoraColors.emerald600,
+                        backgroundColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        onSelected: (val) {
+                          setModalState(() {
+                            if (val) {
+                              deliveryOptions.add(opt['id']!);
+                            } else {
+                              deliveryOptions.remove(opt['id']);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const Gap(12),
+
+                  // Negotiable Switch
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Price is Negotiable', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    subtitle: const Text('Allows buyers to send counter-offers via chat', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    value: isNegotiableVal,
+                    activeColor: ServoraColors.emerald600,
+                    onChanged: (val) => setModalState(() => isNegotiableVal = val),
+                  ),
+                  const Gap(6),
+
+                  // Description
+                  const Text('DESCRIPTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(4),
+                  TextField(
+                    controller: descCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const Gap(16),
+
+                  // Native Photo Upload Component (Up to 10 photos)
+                  ServoraImageUploadWidget(
+                    initialImages: currentImages,
+                    maxImages: 10,
+                    label: 'MANAGE PHOTOS (UP TO 10)',
+                    helperText: 'Add new photos or remove existing ones. 1st photo is cover photo.',
+                    onImagesChanged: (imgs) {
+                      setModalState(() {
+                        currentImages = imgs;
+                      });
+                    },
+                  ),
+                  const Gap(20),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: isSaving ? null : () => Navigator.pop(ctx),
+                          child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ServoraColors.emerald600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: isSaving
+                              ? null
+                              : () async {
+                                  final title = titleCtrl.text.trim();
+                                  final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
+                                  if (title.isEmpty || price <= 0) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Please enter a valid title and price.')),
+                                    );
+                                    return;
+                                  }
+
+                                  setModalState(() => isSaving = true);
+
+                                  final payload = {
+                                    'itemType': 'product',
+                                    'title': title,
+                                    'price': price,
+                                    'originalPrice': double.tryParse(originalPriceCtrl.text.trim()),
+                                    'category': categoryCtrl.text,
+                                    'subCategory': subCategoryVal,
+                                    'condition': conditionVal,
+                                    'inventoryStatus': inventoryStatusVal,
+                                    'stockQuantity': int.tryParse(stockCtrl.text.trim()) ?? 1,
+                                    'area': areaVal,
+                                    'deliveryOptions': deliveryOptions,
+                                    'isNegotiable': isNegotiableVal,
+                                    'description': descCtrl.text.trim(),
+                                    'images': currentImages,
+                                  };
+
+                                  final slug = _productSlug;
+
+                                  try {
+                                    await authNotifier.apiClient.patch(
+                                      '/products/$slug',
+                                      data: payload,
+                                    );
+                                    MarketplaceApiService.clearCache();
+                                  } catch (_) {
+                                    try {
+                                      await authNotifier.apiClient.patch(
+                                        '/business/catalogs/$pId',
+                                        data: payload,
+                                      );
+                                    } catch (_) {}
+                                    MarketplaceApiService.clearCache();
+                                  }
+
+                                  if (mounted) {
+                                    Navigator.pop(ctx);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('✓ Product updated successfully!'),
+                                        backgroundColor: ServoraColors.emerald600,
+                                      ),
+                                    );
+                                    _fetchLiveProductData();
+                                  }
+                                },
+                          child: isSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Text('Save Changes ➔', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -528,8 +1048,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final sellerName = sellerData['businessName'] ?? sellerData['name'] ?? prod['seller'] ?? 'Verified Local Business';
     final sellerSlug = sellerData['slug'] ?? prod['providerSlug'] ?? 'royals-motors';
     final sellerLogo = sellerData['logoUrl'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80';
-    final sellerRating = sellerData['ratingAverage'] ?? sellerData['rating'] ?? 5.0;
-    final sellerReviewCount = sellerData['reviewsCount'] ?? sellerData['reviewCount'] ?? 18;
+    final sellerRating = (sellerData['ratingAverage'] is num)
+        ? (sellerData['ratingAverage'] as num).toDouble()
+        : (sellerData['rating'] is num)
+            ? (sellerData['rating'] as num).toDouble()
+            : null;
+    final sellerReviewCount = (sellerData['reviewsCount'] is num)
+        ? (sellerData['reviewsCount'] as num).toInt()
+        : (sellerData['reviewCount'] is num)
+            ? (sellerData['reviewCount'] as num).toInt()
+            : 0;
     final phone = sellerData['whatsapp'] ?? sellerData['phone'] ?? prod['phone'] ?? '+233240000000';
 
     final description = prod['description'] ??
@@ -571,6 +1099,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   },
                 ),
                 actions: [
+                  // Owner Edit Button
+                  if (_isOwner)
+                    IconButton(
+                      icon: const CircleAvatar(
+                        backgroundColor: ServoraColors.emerald600,
+                        child: Icon(Icons.edit_note_rounded, color: Colors.white, size: 20),
+                      ),
+                      tooltip: 'Edit Listing Setup',
+                      onPressed: _openFullProductEditSheet,
+                    ),
                   // Like Button
                   IconButton(
                     icon: CircleAvatar(
@@ -637,59 +1175,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         },
                       ),
 
-                      // Overlay Badges (Top Left)
-                      Positioned(
-                        top: 80,
-                        left: 16,
-                        child: Wrap(
-                          direction: Axis.vertical,
-                          spacing: 6,
-                          children: [
-                            if (hasDiscount)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.red[600],
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-                                ),
-                                child: Text(
-                                  '🏷️ $discountPct% OFF',
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white),
-                                ),
-                              ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.black87,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.white24),
-                              ),
-                              child: Text(
-                                condition == 'BRAND_NEW'
-                                    ? '✨ Brand New'
-                                    : condition == 'REFURBISHED'
-                                        ? '🔧 Refurbished'
-                                        : '✓ Tested Working',
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF059669),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '✓ In Stock: $stock available',
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Multi-Image Dot Indicator
+                      // Clean Multi-Image Dot Indicator (Frameless, uncorrupted photo view)
                       if (images.length > 1)
                         Positioned(
                           bottom: 16,
@@ -729,15 +1215,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Category Tag
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      // Modern Status Badges & Category Header
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: ServoraColors.emerald600.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
                               category,
@@ -748,13 +1236,62 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ),
                             ),
                           ),
-                          Row(
-                            children: [
-                              const Icon(Icons.favorite_rounded, size: 14, color: Colors.redAccent),
-                              const Gap(4),
-                              Text('$_likesCount likes', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-                            ],
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.grey[850] : Colors.grey[200],
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              condition == 'BRAND_NEW'
+                                  ? '✨ Brand New'
+                                  : condition == 'REFURBISHED'
+                                      ? '🔧 Refurbished'
+                                      : '✓ Tested Working',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.grey[200] : Colors.black87,
+                              ),
+                            ),
                           ),
+                          if (hasDiscount)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: Colors.red[600],
+                                borderRadius: BorderRadius.circular(9),
+                              ),
+                              child: Text(
+                                '🏷️ $discountPct% OFF',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white),
+                              ),
+                            ),
+                          Text(
+                            '• $stock in stock',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                          ),
+                          if (_isOwner) ...[
+                            InkWell(
+                              onTap: _openFullProductEditSheet,
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                                decoration: BoxDecoration(
+                                  color: ServoraColors.emerald600,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.edit_note_rounded, size: 14, color: Colors.white),
+                                    Gap(3),
+                                    Text('Edit Setup', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                       const Gap(10),
@@ -781,13 +1318,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       }),
                       const Gap(12),
 
-                      // Price Block with Strikethrough & Savings
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: isDark ? ServoraColors.darkSurface : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(18),
-                        ),
+                      // Price Block with Strikethrough & Savings (Clean Frameless Typography)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -801,7 +1334,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     Text(
                                       'GH₵ ${price.toStringAsFixed(2)}',
                                       style: const TextStyle(
-                                        fontSize: 24,
+                                        fontSize: 26,
                                         fontWeight: FontWeight.w900,
                                         color: ServoraColors.emerald600,
                                       ),
@@ -827,42 +1360,82 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   ),
                               ],
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFEF3C7),
-                                borderRadius: BorderRadius.circular(10),
+                            if (MarketplaceApiService.isEscrowEnabled)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.shield_rounded, size: 14, color: Color(0xFFD97706)),
+                                    Gap(4),
+                                    Text(
+                                      'MoMo Escrow',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFD97706)),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.shield_rounded, size: 14, color: Color(0xFFD97706)),
-                                  Gap(4),
-                                  Text(
-                                    'MoMo Escrow',
-                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFD97706)),
-                                  ),
-                                ],
-                              ),
-                            ),
                           ],
                         ),
                       ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.05, end: 0),
                       const Gap(16),
 
-                      // Attributes 4-Grid
-                      GridView.count(
-                        crossAxisCount: 2,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 3.2,
-                        children: [
-                          _buildAttributeTile(Icons.location_on_rounded, area, ServoraColors.emerald600),
-                          _buildAttributeTile(Icons.local_shipping_rounded, 'Express Delivery', Colors.blue),
-                          _buildAttributeTile(Icons.verified_user_rounded, 'Buyer Protected', Colors.teal),
-                          _buildAttributeTile(Icons.check_circle_rounded, 'Verified Condition', Colors.amber),
-                        ],
+                      // Streamlined Minimalist Metadata Text Row (Replaced Baroque Grid Panels)
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.symmetric(
+                            horizontal: BorderSide(
+                              color: isDark ? Colors.grey[850]! : Colors.grey[200]!,
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: Wrap(
+                          spacing: 10,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.location_on_outlined, size: 14, color: ServoraColors.emerald600),
+                                const Gap(4),
+                                Text(area, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[300] : Colors.grey[800])),
+                              ],
+                            ),
+                            Text('•', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.local_shipping_outlined, size: 14, color: Colors.blueAccent),
+                                const Gap(4),
+                                Text('Express Delivery', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[300] : Colors.grey[800])),
+                              ],
+                            ),
+                            Text('•', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.verified_user_outlined, size: 14, color: Colors.teal),
+                                const Gap(4),
+                                Text('100% Buyer Protection', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[300] : Colors.grey[800])),
+                              ],
+                            ),
+                            Text('•', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.check_circle_outline_rounded, size: 14, color: Colors.amber),
+                                const Gap(4),
+                                Text('Verified Condition', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[300] : Colors.grey[800])),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                       const Gap(20),
 
@@ -912,12 +1485,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     const Gap(4),
                                     Row(
                                       children: [
-                                        const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                                        const Gap(2),
-                                        Text(
-                                          '$sellerRating ($sellerReviewCount reviews)',
-                                          style: const TextStyle(fontSize: 11, color: Colors.grey),
-                                        ),
+                                        if (sellerReviewCount > 0 && sellerRating != null) ...[
+                                          const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                                          const Gap(2),
+                                          Text(
+                                            '${sellerRating.toStringAsFixed(1)} ($sellerReviewCount ${sellerReviewCount == 1 ? "review" : "reviews"})',
+                                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.amber),
+                                          ),
+                                        ] else ...[
+                                          Text(
+                                            '✨ New Local Seller • No ratings yet',
+                                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.grey[500]),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ],
@@ -936,17 +1516,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const Gap(8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: isDark ? ServoraColors.darkSurface : Colors.grey[50],
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
-                        ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           description,
-                          style: TextStyle(fontSize: 13, height: 1.6, color: isDark ? Colors.grey[300] : Colors.grey[800]),
+                          style: TextStyle(fontSize: 13, height: 1.6, color: isDark ? Colors.grey[300] : Colors.grey[700]),
                         ),
                       ),
                       const Gap(32),
@@ -1093,55 +1667,110 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const Gap(8),
 
                       // Review Summary Score
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark ? ServoraColors.darkSurface : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Row(
-                          children: [
-                            Column(
-                              children: [
-                                Text(
-                                  (_reviewsSummary?['averageRating'] ?? 5.0).toString(),
-                                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
+                      if (_reviews.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: isDark ? ServoraColors.darkSurface : Colors.grey[50],
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: isDark ? Colors.grey[850]! : Colors.grey[200]!),
+                          ),
+                          child: Column(
+                            children: [
+                              const Icon(Icons.star_outline_rounded, size: 36, color: ServoraColors.emerald600),
+                              const Gap(8),
+                              const Text(
+                                'No Customer Reviews Yet',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
+                              const Gap(4),
+                              Text(
+                                'Servora ratings are 100% genuine and verified from real customers. Be the first to share your experience with this seller!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                              ),
+                              const Gap(12),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: ServoraColors.emerald600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
-                                Row(
-                                  children: List.generate(5, (_) => const Icon(Icons.star_rounded, size: 16, color: Colors.amber)),
-                                ),
-                                const Gap(4),
-                                Text('${_reviews.length} reviews', style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                              ],
-                            ),
-                            const Gap(20),
-                            Expanded(
-                              child: Column(
-                                children: [5, 4, 3, 2, 1].map((star) {
-                                  final pct = _reviewsSummary?['ratingPercentages']?[star.toString()] ?? (star == 5 ? 100 : 0);
-                                  return Row(
-                                    children: [
-                                      Text('$star★', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                      const Gap(6),
-                                      Expanded(
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(4),
-                                          child: LinearProgressIndicator(
-                                            value: (pct as num).toDouble() / 100.0,
-                                            backgroundColor: Colors.grey[300],
-                                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
-                                            minHeight: 6,
+                                onPressed: _showWriteReviewSheet,
+                                child: const Text('Write First Review', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDark ? ServoraColors.darkSurface : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            children: [
+                              Column(
+                                children: [
+                                  Builder(builder: (context) {
+                                    final double avgScore = (_reviewsSummary?['averageRating'] is num)
+                                        ? (_reviewsSummary!['averageRating'] as num).toDouble()
+                                        : 0.0;
+                                    return Column(
+                                      children: [
+                                        Text(
+                                          avgScore > 0 ? avgScore.toStringAsFixed(1) : '0.0',
+                                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
+                                        ),
+                                        Row(
+                                          children: List.generate(5, (index) {
+                                            return Icon(
+                                              Icons.star_rounded,
+                                              size: 16,
+                                              color: (index + 1) <= avgScore.round() ? Colors.amber : Colors.grey[400],
+                                            );
+                                          }),
+                                        ),
+                                      ],
+                                    );
+                                  }),
+                                  const Gap(4),
+                                  Text(
+                                    '${_reviews.length} ${_reviews.length == 1 ? "review" : "reviews"}',
+                                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                              const Gap(20),
+                              Expanded(
+                                child: Column(
+                                  children: [5, 4, 3, 2, 1].map((star) {
+                                    final pct = _reviewsSummary?['ratingPercentages']?[star.toString()] ?? 0;
+                                    return Row(
+                                      children: [
+                                        Text('$star★', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                        const Gap(6),
+                                        Expanded(
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(4),
+                                            child: LinearProgressIndicator(
+                                              value: (pct as num).toDouble() / 100.0,
+                                              backgroundColor: Colors.grey[300],
+                                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+                                              minHeight: 6,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  );
-                                }).toList(),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
                       const Gap(16),
 
                       // Reviews Feed
@@ -1377,18 +2006,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           child: const Text('WhatsApp ✈️', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                         ),
                       ),
-                      const Gap(8),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber[700],
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      if (MarketplaceApiService.isEscrowEnabled) ...[
+                        const Gap(8),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber[700],
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          icon: const Icon(Icons.shield_rounded, size: 15),
+                          label: const Text('Escrow', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: () => context.push('/escrow'),
                         ),
-                        icon: const Icon(Icons.shield_rounded, size: 15),
-                        label: const Text('Escrow', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        onPressed: () => context.push('/escrow'),
-                      ),
+                      ],
                     ],
                   ),
                 ],
@@ -1401,29 +2032,4 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   );
 }
 
-  Widget _buildAttributeTile(IconData icon, String label, Color color) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? ServoraColors.darkSurface : Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: color),
-          const Gap(6),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

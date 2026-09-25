@@ -98,8 +98,8 @@ export async function GET(
       const sellerPhone = sellerBusiness?.phone || sellerUser?.phone || listing.guestPhone || "";
       const sellerWhatsApp = sellerBusiness?.phone || sellerUser?.phone || listing.guestWhatsApp || sellerPhone;
       const sellerZone = sellerBusiness?.zone || listing.area || "Tamale";
-      const sellerRating = sellerBusiness?.ratingAverage || 5.0;
       const sellerReviewCount = sellerBusiness?.reviewsCount || 0;
+      const sellerRating = sellerReviewCount > 0 ? (sellerBusiness?.ratingAverage ?? null) : null;
       const sellerVerification = sellerBusiness?.verificationStatus || "TIER_1_BASIC";
       const sellerLogo = sellerBusiness?.logoUrl || sellerUser?.avatarUrl || null;
 
@@ -328,10 +328,10 @@ export async function GET(
               zone: rentalTool.provider?.serviceArea || "Tamale Metro",
               location: rentalTool.provider?.serviceArea || "Tamale Metro",
               serviceArea: rentalTool.provider?.serviceArea || "Tamale Metro",
-              ratingAverage: 4.9,
-              rating: 4.9,
-              reviewsCount: 15,
-              reviewCount: 15,
+              ratingAverage: null,
+              rating: null,
+              reviewsCount: 0,
+              reviewCount: 0,
               verificationStatus: "VERIFIED",
               tagline: "Verified Tool & Machine Rentals in Tamale",
               bio: "Offering reliable heavy duty tools, concrete mixers, drills, and power equipment for rent.",
@@ -387,10 +387,10 @@ export async function GET(
           zone: "Sakasaka, Tamale",
           location: "Sakasaka, Tamale",
           serviceArea: "Sakasaka, Tamale",
-          ratingAverage: 4.9,
-          rating: 4.9,
-          reviewsCount: 28,
-          reviewCount: 28,
+          ratingAverage: null,
+          rating: null,
+          reviewsCount: 0,
+          reviewCount: 0,
           verificationStatus: "TIER_2_VERIFIED_ARTISAN",
           tagline: "Verified Tamale Retailer & Digital Merchant",
           bio: "Providing genuine goods, digital cards, and fast regional delivery in Northern Ghana.",
@@ -497,9 +497,9 @@ export async function GET(
       sumRating += r.rating;
     });
 
-    const averageRating = totalReviews > 0 ? Number((sumRating / totalReviews).toFixed(1)) : 5.0;
+    const averageRating = totalReviews > 0 ? Number((sumRating / totalReviews).toFixed(1)) : null;
     const ratingPercentages: Record<number, number> = {
-      5: totalReviews > 0 ? Math.round((ratingCounts[5] / totalReviews) * 100) : 100,
+      5: totalReviews > 0 ? Math.round((ratingCounts[5] / totalReviews) * 100) : 0,
       4: totalReviews > 0 ? Math.round((ratingCounts[4] / totalReviews) * 100) : 0,
       3: totalReviews > 0 ? Math.round((ratingCounts[3] / totalReviews) * 100) : 0,
       2: totalReviews > 0 ? Math.round((ratingCounts[2] / totalReviews) * 100) : 0,
@@ -512,6 +512,14 @@ export async function GET(
       ratingCounts,
       ratingPercentages,
     };
+
+    // If this product listing has genuine reviews, dynamically sync the seller's product card ratings
+    if (totalReviews > 0 && productPayload?.seller) {
+      productPayload.seller.ratingAverage = averageRating;
+      productPayload.seller.rating = averageRating;
+      productPayload.seller.reviewsCount = totalReviews;
+      productPayload.seller.reviewCount = totalReviews;
+    }
 
     // 5. Smart Dynamic Recommendations ("You May Also Like")
     let recommendations: any[] = [];
@@ -641,7 +649,7 @@ export async function PATCH(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const session = await getSession();
+    const session = await getSession(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
     }
@@ -720,17 +728,28 @@ export async function PATCH(
     if (body.title !== undefined) updateData.title = body.title;
     if (body.description !== undefined) updateData.description = body.description;
     if (body.category !== undefined) updateData.category = body.category;
+    if (body.subCategory !== undefined) updateData.subCategory = body.subCategory;
     if (body.price !== undefined) updateData.price = parseFloat(body.price);
     if (body.originalPrice !== undefined) updateData.originalPrice = body.originalPrice ? parseFloat(body.originalPrice) : null;
     if (body.stockQuantity !== undefined) {
       const stockNum = parseInt(body.stockQuantity);
       updateData.stockQuantity = stockNum;
-      updateData.inventoryStatus = stockNum === 0 ? "SOLD_OUT" : stockNum < 3 ? "LOW_STOCK" : "IN_STOCK";
+      if (body.inventoryStatus === undefined) {
+        updateData.inventoryStatus = stockNum === 0 ? "SOLD_OUT" : stockNum < 3 ? "LOW_STOCK" : "IN_STOCK";
+      }
     }
+    if (body.inventoryStatus !== undefined) updateData.inventoryStatus = body.inventoryStatus;
     if (body.images !== undefined) updateData.images = Array.isArray(body.images) ? body.images : [body.images];
     if (body.videoUrl !== undefined) updateData.videoUrl = body.videoUrl;
     if (body.condition !== undefined) updateData.condition = body.condition;
     if (body.status !== undefined) updateData.status = body.status;
+    if (body.isNegotiable !== undefined) updateData.isNegotiable = Boolean(body.isNegotiable);
+    if (body.area !== undefined) updateData.area = body.area;
+    if (body.deliveryOptions !== undefined) {
+      updateData.deliveryOptions = Array.isArray(body.deliveryOptions)
+        ? body.deliveryOptions
+        : [body.deliveryOptions];
+    }
 
     const updated = await prisma.productListing.update({
       where: { id: existing.id },

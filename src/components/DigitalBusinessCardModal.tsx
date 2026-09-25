@@ -24,9 +24,15 @@ export function DigitalBusinessCardModal({
   serviceArea,
   phone = "",
   ratingAverage = 5.0,
-  verificationStatus = "VERIFIED",
+  verificationStatus = "UNVERIFIED",
 }: DigitalBusinessCardModalProps) {
   if (!isOpen) return null;
+
+  const isVerified =
+    verificationStatus === "VERIFIED" ||
+    verificationStatus === "TIER_2_VERIFIED_ARTISAN" ||
+    verificationStatus === "TIER_3_REGISTERED_ENTERPRISE";
+  const isRejected = verificationStatus === "REJECTED";
 
   const profileUrl = `https://servora.vercel.app/provider/${slug}`;
   // Generate high quality QR code SVG URL using Google Charts QR API
@@ -53,9 +59,19 @@ export function DigitalBusinessCardModal({
         <div className="bg-gradient-to-b from-stone-800 to-stone-950 border border-stone-700/80 rounded-2xl p-5 shadow-inner space-y-4 relative z-10">
           {/* Header */}
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-950 text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-800">
-              <ShieldCheck className="w-3 h-3" /> VERIFIED PROVIDER
-            </div>
+            {isVerified ? (
+              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-950 text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-800">
+                <ShieldCheck className="w-3 h-3" /> VERIFIED PROVIDER
+              </div>
+            ) : isRejected ? (
+              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-rose-950 text-rose-300 text-[10px] font-bold rounded-full border border-rose-800">
+                UNVERIFIED PROVIDER
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-950 text-amber-300 text-[10px] font-bold rounded-full border border-amber-800">
+                KYC UNDER REVIEW
+              </div>
+            )}
             <h3 className="text-xl font-black text-white">{businessName}</h3>
             <p className="text-xs text-stone-400 flex items-center justify-center gap-1">
               <MapPin className="w-3.5 h-3.5 text-emerald-500" /> {serviceArea}

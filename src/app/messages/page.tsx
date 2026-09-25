@@ -8,14 +8,18 @@ import { UnifiedMessagingHub } from "@/components/UnifiedMessagingHub";
 export default function MessagesPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [escrowEnabled, setEscrowEnabled] = useState(true);
 
   useEffect(() => {
-    async function fetchUserSession() {
+    async function initData() {
       try {
-        const res = await fetch("/api/auth/me");
-        const data = await res.json();
-        if (res.ok && data.user) {
-          setCurrentUser(data.user);
+        const [meRes, settingsRes] = await Promise.all([
+          fetch("/api/auth/me").then((r) => r.json()).catch(() => null),
+          fetch("/api/platform/settings").then((r) => r.json()).catch(() => null),
+        ]);
+        if (meRes?.user) setCurrentUser(meRes.user);
+        if (settingsRes?.settings?.escrowEnabled !== undefined) {
+          setEscrowEnabled(settingsRes.settings.escrowEnabled);
         }
       } catch (err) {
         console.error("Failed to load user session for chat:", err);
@@ -23,7 +27,7 @@ export default function MessagesPage() {
         setLoading(false);
       }
     }
-    fetchUserSession();
+    initData();
   }, []);
 
   if (loading) {
@@ -75,11 +79,13 @@ export default function MessagesPage() {
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5" /> Verified Escrow Protection
-          </span>
-        </div>
+        {escrowEnabled && (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" /> Verified Escrow Protection
+            </span>
+          </div>
+        )}
       </header>
 
       {/* Main Messaging Body */}

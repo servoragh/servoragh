@@ -23,6 +23,7 @@ import 'admin_disputes_view.dart';
 import 'admin_community_view.dart';
 import 'admin_tickers_view.dart';
 import 'admin_settings_view.dart';
+import '../../../core/services/marketplace_api_service.dart';
 
 class AdminPortalView extends StatefulWidget {
   final VoidCallback? onSwitchToCustomer;
@@ -332,6 +333,35 @@ class _AdminPortalViewState extends State<AdminPortalView> {
           onAdminAction: _handleAdminAction,
         );
       case 'escrow':
+        if (!MarketplaceApiService.isEscrowEnabled) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.shield_outlined, size: 54, color: Colors.orange),
+                  const Gap(12),
+                  const Text(
+                    'MoMo Escrow Subsystem Disabled',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const Gap(6),
+                  const Text(
+                    'Escrow contracts & buyer hold vaults are currently disabled platform-wide by admin configuration.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const Gap(16),
+                  ElevatedButton(
+                    onPressed: () => setState(() => _activeView = 'settings'),
+                    child: const Text('Open System Settings'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         return AdminEscrowView(
           onRefresh: _fetchLiveAdminData,
         );
@@ -1136,7 +1166,8 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                   _buildDrawerItem(Icons.security_rounded, 'Security & Fraud Engine', 'security'),
 
                   _buildDrawerSectionTitle('COMMERCE & OPERATIONS'),
-                  _buildDrawerItem(Icons.account_balance_wallet_rounded, 'MoMo Escrow & Finance', 'escrow'),
+                  if (MarketplaceApiService.isEscrowEnabled)
+                    _buildDrawerItem(Icons.account_balance_wallet_rounded, 'MoMo Escrow & Finance', 'escrow'),
                   _buildDrawerItem(Icons.local_shipping_rounded, 'Delivery Dispatchers', 'delivery'),
                   _buildDrawerItem(Icons.shopping_bag_rounded, 'Product Catalog Hub', 'products'),
                   _buildDrawerItem(Icons.message_rounded, 'Service Requests & Gigs', 'requests'),

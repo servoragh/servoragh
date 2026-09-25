@@ -150,15 +150,21 @@ export function BusinessCatalogManager({
   const [quickInventoryStatus, setQuickInventoryStatus] = useState("IN_STOCK");
   const [quickUpdating, setQuickUpdating] = useState(false);
 
-  // Form State for New Item Creation
+  // Form State for Item Creation / Editing
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formCategory, setFormCategory] = useState("Electronics");
   const [formSubCategory, setFormSubCategory] = useState<string | undefined>("");
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+  const [formCondition, setFormCondition] = useState("BRAND_NEW");
   const [formPrice, setFormPrice] = useState("");
   const [formOriginalPrice, setFormOriginalPrice] = useState("");
   const [formStock, setFormStock] = useState("5");
+  const [formInventoryStatus, setFormInventoryStatus] = useState("IN_STOCK");
+  const [formArea, setFormArea] = useState("Tamale Central");
+  const [formDeliveryOptions, setFormDeliveryOptions] = useState<string[]>(["PICKUP", "LOCAL_DELIVERY"]);
+  const [formIsNegotiable, setFormIsNegotiable] = useState(false);
   const [formSku, setFormSku] = useState("");
 
   // Multi-Image & Video Upload State (Up to 10 images per product + short video)
@@ -196,13 +202,19 @@ export function BusinessCatalogManager({
 
   const handleOpenAddModal = (type: "product" | "rental" | "service") => {
     setAddingType(type);
+    setEditingItemId(null);
     setFormTitle("");
     setFormDescription("");
     setFormCategory(type === "rental" ? "Commercial Equipment & Tools" : type === "service" ? "Services" : "Electronics");
     setFormSubCategory("");
+    setFormCondition("BRAND_NEW");
     setFormPrice("");
     setFormOriginalPrice("");
     setFormStock("5");
+    setFormInventoryStatus("IN_STOCK");
+    setFormArea("Tamale Central");
+    setFormDeliveryOptions(["PICKUP", "LOCAL_DELIVERY"]);
+    setFormIsNegotiable(false);
     setFormSku("");
     setFormImages([]);
     setFormVideoUrl("");
@@ -211,6 +223,46 @@ export function BusinessCatalogManager({
     setFormSecurityDeposit("");
     setFormOperatorIncluded(false);
     setFormDuration("2-4 hours");
+    setIsAddModalOpen(true);
+  };
+
+  const handleOpenEditModal = (item: any, type: "product" | "rental" | "service") => {
+    setAddingType(type);
+    setEditingItemId(item.id);
+    setFormTitle(item.title || item.serviceName || "");
+    setFormDescription(item.description || "");
+    setFormCategory(item.category || (type === "rental" ? "Commercial Equipment & Tools" : type === "service" ? "Services" : "Electronics"));
+    setFormSubCategory(item.subCategory || "");
+    setFormCondition(item.condition || "BRAND_NEW");
+    setFormPrice(String(item.price ?? item.dailyRate ?? item.startingPrice ?? ""));
+    setFormOriginalPrice(item.originalPrice ? String(item.originalPrice) : "");
+    setFormStock(String(item.stockQuantity ?? 1));
+    setFormInventoryStatus(item.inventoryStatus || (item.status === "ACTIVE" ? "IN_STOCK" : "IN_STOCK"));
+    setFormArea(item.area || "Tamale Central");
+
+    let deliv: string[] = ["PICKUP", "LOCAL_DELIVERY"];
+    if (Array.isArray(item.deliveryOptions)) {
+      deliv = item.deliveryOptions;
+    } else if (typeof item.deliveryOptions === "string") {
+      try { deliv = JSON.parse(item.deliveryOptions); } catch { deliv = ["PICKUP", "LOCAL_DELIVERY"]; }
+    }
+    setFormDeliveryOptions(deliv);
+    setFormIsNegotiable(Boolean(item.isNegotiable));
+    setFormSku(item.sku || "");
+
+    let rawImgs: string[] = [];
+    if (Array.isArray(item.images)) rawImgs = item.images;
+    else if (Array.isArray(item.portfolioPhotos)) rawImgs = item.portfolioPhotos;
+    else if (typeof item.images === "string") {
+      try { rawImgs = JSON.parse(item.images); } catch { rawImgs = item.images ? [item.images] : []; }
+    }
+    setFormImages(rawImgs);
+    setFormVideoUrl(item.videoUrl || "");
+    setFormDailyRate(String(item.dailyRate ?? item.price ?? ""));
+    setFormWeeklyRate(String(item.weeklyRate ?? ""));
+    setFormSecurityDeposit(String(item.securityDeposit ?? ""));
+    setFormOperatorIncluded(Boolean(item.operatorIncluded));
+    setFormDuration(item.estimatedDuration || "2-4 hours");
     setIsAddModalOpen(true);
   };
 
@@ -303,9 +355,14 @@ export function BusinessCatalogManager({
         payload.description = formDescription;
         payload.category = formCategory;
         payload.subCategory = formSubCategory || null;
+        payload.condition = formCondition;
         payload.price = formPrice;
-        payload.originalPrice = formOriginalPrice;
+        payload.originalPrice = formOriginalPrice || null;
         payload.stockQuantity = formStock;
+        payload.inventoryStatus = formInventoryStatus;
+        payload.area = formArea;
+        payload.deliveryOptions = formDeliveryOptions;
+        payload.isNegotiable = formIsNegotiable;
         payload.sku = formSku;
         payload.images = formImages;
         payload.videoUrl = formVideoUrl || null;
@@ -314,10 +371,11 @@ export function BusinessCatalogManager({
         payload.description = formDescription;
         payload.category = formCategory || "Commercial Equipment & Tools";
         payload.subCategory = formSubCategory || null;
-        payload.dailyRate = formDailyRate;
+        payload.dailyRate = formDailyRate || formPrice;
         payload.weeklyRate = formWeeklyRate;
         payload.securityDeposit = formSecurityDeposit;
         payload.operatorIncluded = formOperatorIncluded;
+        payload.inventoryStatus = formInventoryStatus;
         payload.images = formImages;
         payload.videoUrl = formVideoUrl || null;
       } else if (addingType === "service") {
@@ -330,16 +388,20 @@ export function BusinessCatalogManager({
         payload.portfolioPhotos = formImages;
       }
 
-      const res = await fetch("/api/business/catalogs", {
-        method: "POST",
+      const url = editingItemId ? `/api/business/catalogs/${editingItemId}` : "/api/business/catalogs";
+      const method = editingItemId ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to add item.");
+      if (!res.ok) throw new Error(data.error || (editingItemId ? "Failed to update item." : "Failed to add item."));
 
       setIsAddModalOpen(false);
+      setEditingItemId(null);
       onRefresh();
     } catch (err: any) {
       alert(err.message);
@@ -672,15 +734,9 @@ export function BusinessCatalogManager({
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditingItem({ ...product, type: "product" });
-                        setQuickPrice(String(product.price));
-                        setQuickOriginalPrice(product.originalPrice ? String(product.originalPrice) : "");
-                        setQuickStockQuantity(String(product.stockQuantity || 1));
-                        setQuickInventoryStatus(product.inventoryStatus || "IN_STOCK");
-                      }}
+                      onClick={() => handleOpenEditModal(product, "product")}
                       className="p-2 bg-stone-100 dark:bg-stone-800 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition-all"
-                      title="Quick Price & Stock Update"
+                      title="Edit Entire Product Setup"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
@@ -809,13 +865,23 @@ export function BusinessCatalogManager({
                       {formatGHS(rental.dailyRate)} / day
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteItem(rental.id, "rental")}
-                    className="p-2 bg-stone-100 dark:bg-stone-800 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditModal(rental, "rental")}
+                      className="p-2 bg-stone-100 dark:bg-stone-800 hover:bg-amber-50 hover:text-amber-600 rounded-xl transition-all"
+                      title="Edit Rental Listing"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteItem(rental.id, "rental")}
+                      className="p-2 bg-stone-100 dark:bg-stone-800 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -934,14 +1000,24 @@ export function BusinessCatalogManager({
                     </span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteItem(service.id, "service")}
-                    className="p-2 bg-stone-100 dark:bg-stone-800 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all"
-                    title="Delete service"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditModal(service, "service")}
+                      className="p-2 bg-stone-100 dark:bg-stone-800 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all"
+                      title="Edit Service Details"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteItem(service.id, "service")}
+                      className="p-2 bg-stone-100 dark:bg-stone-800 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all"
+                      title="Delete service"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -1056,9 +1132,18 @@ export function BusinessCatalogManager({
           >
             <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
               <h3 className="font-bold text-stone-900 dark:text-white text-lg capitalize">
-                Add New {addingType} Item
+                {editingItemId
+                  ? `Edit ${addingType === "rental" ? "Rental Tool" : addingType === "service" ? "Service" : "Product"} Listing`
+                  : `Add New ${addingType} Item`}
               </h3>
-              <button type="button" onClick={() => setIsAddModalOpen(false)} className="text-stone-400">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  setEditingItemId(null);
+                }}
+                className="text-stone-400 hover:text-stone-600 cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1123,13 +1208,100 @@ export function BusinessCatalogManager({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">Stock Quantity</label>
+                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">Inventory Status</label>
+                    <select
+                      value={formInventoryStatus}
+                      onChange={(e) => setFormInventoryStatus(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-900 dark:text-white"
+                    >
+                      <option value="IN_STOCK">IN_STOCK (Available)</option>
+                      <option value="LOW_STOCK">LOW_STOCK (Few Left)</option>
+                      <option value="RENTED_OUT">RENTED_OUT</option>
+                      <option value="SOLD_OUT">SOLD_OUT</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">Condition</label>
+                    <select
+                      value={formCondition}
+                      onChange={(e) => setFormCondition(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-900 dark:text-white"
+                    >
+                      <option value="BRAND_NEW">✨ Brand New (Unused)</option>
+                      <option value="USED_LIKE_NEW">💎 Like New (Pristine)</option>
+                      <option value="USED_GOOD">✓ Used - Good Condition</option>
+                      <option value="USED_FAIR">Used - Fair Condition</option>
+                      <option value="REFURBISHED">🔧 Refurbished</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">Location / Area *</label>
                     <input
-                      type="number"
-                      value={formStock}
-                      onChange={(e) => setFormStock(e.target.value)}
+                      type="text"
+                      value={formArea}
+                      onChange={(e) => setFormArea(e.target.value)}
+                      placeholder="e.g. Sakasaka, Tamale"
                       className="w-full px-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-900 dark:text-white"
                     />
+                  </div>
+                </div>
+
+                {/* Delivery Options & Negotiation */}
+                <div className="p-3 bg-stone-50 dark:bg-stone-800/60 rounded-2xl border border-stone-200 dark:border-stone-700 space-y-2.5">
+                  <span className="block text-[11px] font-bold text-stone-500 uppercase tracking-wider">
+                    Fulfillment & Pricing Options
+                  </span>
+                  <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-stone-700 dark:text-stone-300">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formDeliveryOptions.includes("PICKUP")}
+                        onChange={(e) => {
+                          if (e.target.checked) setFormDeliveryOptions([...formDeliveryOptions, "PICKUP"]);
+                          else setFormDeliveryOptions(formDeliveryOptions.filter((d) => d !== "PICKUP"));
+                        }}
+                        className="rounded accent-emerald-600"
+                      />
+                      <span>Store Pickup</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formDeliveryOptions.includes("LOCAL_DELIVERY")}
+                        onChange={(e) => {
+                          if (e.target.checked) setFormDeliveryOptions([...formDeliveryOptions, "LOCAL_DELIVERY"]);
+                          else setFormDeliveryOptions(formDeliveryOptions.filter((d) => d !== "LOCAL_DELIVERY"));
+                        }}
+                        className="rounded accent-emerald-600"
+                      />
+                      <span>Local Delivery (Tamale)</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formDeliveryOptions.includes("NATIONWIDE_SHIPPING")}
+                        onChange={(e) => {
+                          if (e.target.checked) setFormDeliveryOptions([...formDeliveryOptions, "NATIONWIDE_SHIPPING"]);
+                          else setFormDeliveryOptions(formDeliveryOptions.filter((d) => d !== "NATIONWIDE_SHIPPING"));
+                        }}
+                        className="rounded accent-emerald-600"
+                      />
+                      <span>Nationwide Courier</span>
+                    </label>
+                  </div>
+                  <div className="pt-1.5 border-t border-stone-200 dark:border-stone-700">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                      <input
+                        type="checkbox"
+                        checked={formIsNegotiable}
+                        onChange={(e) => setFormIsNegotiable(e.target.checked)}
+                        className="w-4 h-4 rounded accent-emerald-600 cursor-pointer"
+                      />
+                      <span>Allow Price Negotiation / Escrow Offers from Buyers</span>
+                    </label>
                   </div>
                 </div>
 
@@ -1337,17 +1509,22 @@ export function BusinessCatalogManager({
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-100 dark:border-stone-800">
               <button
                 type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="px-4 py-2 text-xs font-bold text-stone-500"
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  setEditingItemId(null);
+                }}
+                className="px-4 py-2 text-xs font-bold text-stone-500 hover:text-stone-700 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={savingItem || uploadingImage || uploadingVideo}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
               >
-                {savingItem ? "Adding to Storefront..." : "Add to Catalog"}
+                {savingItem
+                  ? (editingItemId ? "Saving All Changes..." : "Adding to Storefront...")
+                  : (editingItemId ? "Save All Changes" : "Add to Catalog")}
               </button>
             </div>
           </form>

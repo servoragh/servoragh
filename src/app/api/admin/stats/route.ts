@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getSystemSettings } from "@/lib/systemSettingsStore";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ export async function GET() {
       auditLogs,
       reports,
       unmetDemandSearchLogs,
+      systemSettings,
     ] = await Promise.all([
       prisma.user.count().catch(() => 0),
       prisma.user.count({ where: { role: "CUSTOMER" } }).catch(() => 0),
@@ -99,6 +101,13 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         take: 20,
       }).catch(() => []),
+      getSystemSettings().catch(() => ({
+        escrowEnabled: true,
+        platformName: "Servora.gh Marketplace",
+        supportPhone: "+233501234567",
+        supportEmail: "support@servora.gh",
+        commissionRate: "5",
+      })),
     ]);
 
     const totalProducts = totalLegacyProducts + totalListings;
@@ -149,6 +158,7 @@ export async function GET() {
         totalVerificationDocs,
       },
       featureFlags,
+      systemSettings,
       auditLogs,
       providers,
       products,

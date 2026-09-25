@@ -29,6 +29,7 @@ class ArtisanStorefrontScreen extends StatefulWidget {
 }
 
 class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
+  static const String _defaultBannerUrl = 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&q=80';
   bool _isLoading = true;
   Map<String, dynamic>? _storeData;
   String _activeNavSection = 'all'; // 'all', 'shop', 'rentals', 'services', 'about', 'reviews'
@@ -417,6 +418,14 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
     final String bannerUrl = data['bannerUrl'] ?? '';
     final String storefrontPhotoUrl = data['storefrontPhotoUrl'] ?? '';
 
+    final String verificationStatus = (data['verificationStatus'] ?? data['status'] ?? '').toString();
+    final bool isVerified = (verificationStatus == 'VERIFIED' ||
+            verificationStatus == 'TIER_2_VERIFIED_ARTISAN' ||
+            verificationStatus == 'TIER_3_REGISTERED_ENTERPRISE' ||
+            data['isVerified'] == true) &&
+        verificationStatus != 'REJECTED';
+    final bool isRejected = verificationStatus == 'REJECTED' || data['isRejected'] == true;
+
     // Search Filtering
     final q = _searchQuery.trim().toLowerCase();
     final filteredProducts = productsList.where((p) {
@@ -520,6 +529,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                   stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
                   background: Stack(
                     fit: StackFit.expand,
+                    children: [
                       if (bannerUrl.isNotEmpty)
                         CachedNetworkImage(
                           imageUrl: bannerUrl,
@@ -642,18 +652,19 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                                           ),
                                   ),
                                 ),
-                                Positioned(
-                                  bottom: -2,
-                                  right: -2,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(3),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
+                                if (isVerified)
+                                  Positioned(
+                                    bottom: -2,
+                                    right: -2,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.verified_rounded, size: 18, color: ServoraColors.emerald600),
                                     ),
-                                    child: const Icon(Icons.verified_rounded, size: 18, color: ServoraColors.emerald600),
                                   ),
-                                ),
                               ],
                             ),
                           ),
@@ -666,21 +677,54 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                      decoration: BoxDecoration(
-                                        color: ServoraColors.emerald600.withOpacity(0.12),
-                                        borderRadius: BorderRadius.circular(8),
+                                    if (isVerified)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                        decoration: BoxDecoration(
+                                          color: ServoraColors.emerald600.withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.verified_user_rounded, size: 10, color: ServoraColors.emerald600),
+                                            Gap(3),
+                                            Text('VERIFIED MERCHANT', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: ServoraColors.emerald600, letterSpacing: 0.3)),
+                                          ],
+                                        ),
+                                      )
+                                    else if (isRejected)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.cancel_outlined, size: 10, color: Colors.red),
+                                            Gap(3),
+                                            Text('UNVERIFIED', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Colors.red, letterSpacing: 0.3)),
+                                          ],
+                                        ),
+                                      )
+                                    else
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                        decoration: BoxDecoration(
+                                          color: isDark ? Colors.white12 : const Color(0xFFF1F5F9),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.shield_outlined, size: 10, color: isDark ? Colors.white60 : Colors.grey[600]),
+                                            const Gap(3),
+                                            Text('STANDARD', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: isDark ? Colors.white60 : Colors.grey[700], letterSpacing: 0.3)),
+                                          ],
+                                        ),
                                       ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.verified_user_rounded, size: 10, color: ServoraColors.emerald600),
-                                          Gap(3),
-                                          Text('TIER 2 VERIFIED', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: ServoraColors.emerald600, letterSpacing: 0.3)),
-                                        ],
-                                      ),
-                                    ),
                                     const Gap(6),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
@@ -929,12 +973,15 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: isDark ? ServoraColors.darkCardBorder : const Color(0xFFE2E8F0)),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.shield_rounded, size: 13, color: Color(0xFF2563EB)),
-                              Gap(5),
-                              Text('Escrow Protected 🛡️', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              const Icon(Icons.shield_rounded, size: 13, color: Color(0xFF2563EB)),
+                              const Gap(5),
+                              Text(
+                                MarketplaceApiService.isEscrowEnabled ? 'Escrow Protected 🛡️' : 'Buyer Protected 🛡️',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
                             ],
                           ),
                         ),
@@ -1553,8 +1600,10 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                   ),
                   const Gap(10),
                   Text(
-                    '• Funds Held in Vault: Payments made via Servora Escrow MoMo are safely held in vault until you confirm receipt of goods or service completion.\n'
-                    '• Return Policy: Damaged or non-conforming items can be rejected upon courier dispatch inspection.\n'
+                    (MarketplaceApiService.isEscrowEnabled
+                        ? '• Funds Held in Vault: Payments made via Servora Escrow MoMo are safely held in vault until you confirm receipt of goods or service completion.\n'
+                        : '• Direct Merchant Orders: Deal and pay merchants directly upon delivery confirmation or dispatch.\n') +
+                    '• Return Policy: Damaged or non-conforming items can be rejected upon courier dispatch inspection.\n' +
                     '• Verified Credentials: This merchant has submitted official identification and operational details for customer safety.',
                     style: TextStyle(fontSize: 11.5, height: 1.5, color: isDark ? Colors.white70 : Colors.grey[800]),
                   ),

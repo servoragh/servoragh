@@ -67,7 +67,15 @@ class ApiClient {
     return await dio.put(path, data: data);
   }
 
+  Future<Response> patch(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
+    return await dio.patch(path, data: data, queryParameters: queryParameters);
+  }
+
   Future<Response> delete(String path, {dynamic data}) async {
     return await dio.delete(path, data: data);
+  }
+
+  void reconfigureBaseUrl(String url) {
+    dio.options.baseUrl = url;
   }
 }

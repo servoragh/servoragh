@@ -20,4 +20,7 @@ class ApiEndpoints {
   
   static const String userFavorites = '/api/favorites';
   static const String userMessages = '/api/messages';
+
+  static const String platformSettings = '/api/platform/settings';
+  static const String adminManage = '/api/admin/manage';
 }

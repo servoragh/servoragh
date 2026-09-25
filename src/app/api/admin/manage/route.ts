@@ -284,6 +284,20 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, message: "Service deleted." });
       }
 
+      case "SET_ESCROW_ENABLED": {
+        const isEnabled = Boolean(payload?.enabled);
+        const { setEscrowEnabled } = await import("@/lib/systemSettingsStore");
+        const updated = await setEscrowEnabled(isEnabled, session.name || session.email || "Admin");
+        await prisma.auditLog.create({
+          data: {
+            userId: session.id,
+            action: isEnabled ? "ADMIN_ENABLE_ESCROW" : "ADMIN_DISABLE_ESCROW",
+            details: `Master Admin (${session.name || session.email}) ${isEnabled ? "ENABLED" : "DISABLED"} the platform Escrow subsystem.`,
+          },
+        }).catch(() => null);
+        return NextResponse.json({ success: true, escrowEnabled: updated.escrowEnabled, settings: updated });
+      }
+
       default:
         return NextResponse.json({ error: "Unknown action." }, { status: 400 });
     }

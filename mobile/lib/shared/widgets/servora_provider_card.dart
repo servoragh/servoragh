@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/servora_colors.dart';
 import '../../core/utils/whatsapp_helper.dart';
 import 'servora_favorite_button.dart';
+import '../../core/services/marketplace_api_service.dart';
 
 class ServoraProviderCard extends StatelessWidget {
   final Map<String, dynamic> provider;
@@ -341,34 +342,35 @@ class ServoraProviderCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Gap(6),
-
-                GestureDetector(
-                  onTap: () => context.push('/escrow'),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.5)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.shield_outlined, size: 12, color: Color(0xFFD97706)),
-                        Gap(3),
-                        Text(
-                          'Safe MoMo',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFB45309),
+                if (MarketplaceApiService.isEscrowEnabled) ...[
+                  const Gap(6),
+                  GestureDetector(
+                    onTap: () => context.push('/escrow'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.5)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.shield_outlined, size: 12, color: Color(0xFFD97706)),
+                          Gap(3),
+                          Text(
+                            'Safe MoMo',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFB45309),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ],

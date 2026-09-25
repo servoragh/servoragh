@@ -1,11 +1,22 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isEscrowEnabled } from "@/lib/systemSettingsStore";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    const enabled = await isEscrowEnabled();
+    if (!enabled) {
+      return NextResponse.json({
+        escrowEnabled: false,
+        escrowDeals: [],
+        totalVaultHeld: 0,
+        activeCount: 0,
+      });
+    }
+
     const session = await getSession(req);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -33,6 +44,7 @@ export async function GET(req: Request) {
       .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
     return NextResponse.json({
+      escrowEnabled: true,
       escrowDeals,
       totalVaultHeld,
       activeCount: escrowDeals.filter((e) => e.status !== "COMPLETED" && e.status !== "REFUNDED").length,
@@ -45,6 +57,14 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const enabled = await isEscrowEnabled();
+    if (!enabled) {
+      return NextResponse.json(
+        { error: "The Escrow subsystem is currently disabled by administrator.", escrowEnabled: false },
+        { status: 403 }
+      );
+    }
+
     const session = await getSession(req);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -10,6 +10,7 @@ import '../../../core/utils/time_formatter.dart';
 import '../../../shared/widgets/servora_shimmer_skeleton.dart';
 import '../../../shared/widgets/presence_badge.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../core/services/marketplace_api_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? initialRoomId;
@@ -464,14 +465,16 @@ class _ChatScreenState extends State<ChatScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           color: ServoraColors.emerald600.withOpacity(0.08),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.shield_rounded, size: 16, color: ServoraColors.emerald600),
-              Gap(8),
+              const Icon(Icons.shield_rounded, size: 16, color: ServoraColors.emerald600),
+              const Gap(8),
               Expanded(
                 child: Text(
-                  'Protected by Servora Tamale Mediation & Escrow Guarantee.',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                  MarketplaceApiService.isEscrowEnabled
+                      ? 'Protected by Servora Tamale Mediation & Escrow Guarantee.'
+                      : 'Protected by Servora Tamale Mediation & Buyer Guarantee.',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
                 ),
               ),
             ],

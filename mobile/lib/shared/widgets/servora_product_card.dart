@@ -7,6 +7,7 @@ import '../../core/utils/whatsapp_helper.dart';
 import '../../core/utils/time_formatter.dart';
 import 'servora_image_lightbox.dart';
 import 'servora_shimmer_skeleton.dart';
+import '../../core/services/marketplace_api_service.dart';
 
 class ServoraProductCard extends StatelessWidget {
   final Map<String, dynamic> product;
@@ -333,18 +334,20 @@ class ServoraProductCard extends StatelessWidget {
                           },
                         ),
                       ),
-                      const Gap(4),
-                      GestureDetector(
-                        onTap: () => context.push('/escrow'),
-                        child: Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            color: ServoraColors.amberLight,
-                            borderRadius: BorderRadius.circular(8),
+                      if (MarketplaceApiService.isEscrowEnabled) ...[
+                        const Gap(4),
+                        GestureDetector(
+                          onTap: () => context.push('/escrow'),
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: ServoraColors.amberLight,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.shield_rounded, size: 14, color: ServoraColors.amberDark),
                           ),
-                          child: const Icon(Icons.shield_rounded, size: 14, color: ServoraColors.amberDark),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],

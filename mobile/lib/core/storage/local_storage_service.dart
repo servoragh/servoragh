@@ -71,4 +71,13 @@ class LocalStorageService {
   dynamic getCachedData(String key) {
     return _appBox.get(key);
   }
+
+  // Generic key-value store for preferences (Server URL, location JSON, etc.)
+  Future<void> saveCustomValue(String key, String value) async {
+    await _appBox.put(key, value);
+  }
+
+  String? getCustomValue(String key) {
+    return _appBox.get(key);
+  }
 }

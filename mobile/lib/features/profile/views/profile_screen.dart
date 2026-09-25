@@ -10,6 +10,7 @@ import '../../../main.dart';
 import '../../business_portal/views/business_portal_screen.dart';
 import '../../admin/views/admin_portal_screen.dart';
 import 'customer_portal_view.dart';
+import '../../../core/services/marketplace_api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -257,7 +258,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _buildActionTile(
           icon: Icons.shopping_bag_rounded,
           title: 'Shop Northern Marketplace Products',
-          subtitle: 'Fugu smocks, solar kits, shea butter, agro-produce with Escrow protection',
+          subtitle: MarketplaceApiService.isEscrowEnabled
+              ? 'Fugu smocks, solar kits, shea butter, agro-produce with Escrow protection'
+              : 'Fugu smocks, solar kits, shea butter, agro-produce with verified quality',
           onTap: () => context.go('/products'),
         ).animate().fadeIn(delay: 100.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
         const Gap(8),
@@ -267,13 +270,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           subtitle: 'Get quotes from verified Tamale artisans without upfront payment',
           onTap: () => context.push('/services/request'),
         ).animate().fadeIn(delay: 150.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
-        const Gap(8),
-        _buildActionTile(
-          icon: Icons.shield_rounded,
-          title: 'Escrow Buyer & Seller Protection',
-          subtitle: 'Learn how Servora secures your mobile money and payments safely',
-          onTap: () => context.push('/escrow'),
-        ).animate().fadeIn(delay: 200.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
+        if (MarketplaceApiService.isEscrowEnabled) ...[
+          const Gap(8),
+          _buildActionTile(
+            icon: Icons.shield_rounded,
+            title: 'Escrow Buyer & Seller Protection',
+            subtitle: 'Learn how Servora secures your mobile money and payments safely',
+            onTap: () => context.push('/escrow'),
+          ).animate().fadeIn(delay: 200.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
+        ],
         const Gap(8),
         _buildActionTile(
           icon: Icons.chat_rounded,

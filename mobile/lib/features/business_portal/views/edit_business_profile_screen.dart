@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/servora_colors.dart';
-import '../../../core/utils/location_helper.dart';
+import '../../../core/services/user_location_service.dart';
 import '../../../shared/widgets/servora_image_upload_widget.dart';
+import '../../../shared/widgets/servora_location_picker_sheet.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 
 class EditBusinessProfileScreen extends StatefulWidget {
@@ -56,23 +57,6 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
     {'value': 'SOLAR_ENERGY', 'label': 'Solar, Electrical & Heavy Tech Specialist'},
     {'value': 'FOOD_CATERING', 'label': 'Food, Agro-Processing & Catering'},
     {'value': 'CONSTRUCTION', 'label': 'Building Contractor & Materials Supply'},
-  ];
-
-  final List<String> _tamaleZones = [
-    'Tamale Central',
-    'Sakasaka',
-    'Aboabo',
-    'Lamashegu',
-    'Nyohini',
-    'Vittin',
-    'Choggu',
-    'Bilpella',
-    'Dungu (UDS)',
-    'Kalpohin',
-    'Gumani',
-    'Datoyili',
-    'Tishigu',
-    'Kukuo',
   ];
 
   @override
@@ -157,20 +141,24 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
   Future<void> _detectGpsLocation() async {
     setState(() => _isDetectingGps = true);
     try {
-      final pos = await LocationHelper.getCurrentPosition();
-      if (pos != null) {
+      final loc = await UserLocationService.detectCurrentGpsLocation(context);
+      if (loc != null && mounted) {
         setState(() {
-          _latitude = pos.latitude;
-          _longitude = pos.longitude;
+          _latitude = loc.lat;
+          _longitude = loc.lon;
+          if (loc.name.isNotEmpty) {
+            _selectedZone = loc.name;
+          }
+          if (_addressController.text.trim().isEmpty && loc.formattedAddress.isNotEmpty) {
+            _addressController.text = loc.formattedAddress;
+          }
         });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: ServoraColors.emerald600,
-              content: Text('📍 GPS Location detected: ${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}'),
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: ServoraColors.emerald600,
+            content: Text('📍 GPS Location detected: ${loc.formattedAddress}'),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -185,6 +173,20 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
       if (mounted) {
         setState(() => _isDetectingGps = false);
       }
+    }
+  }
+
+  Future<void> _pickLocationZone() async {
+    final picked = await ServoraLocationPickerSheet.show(context);
+    if (picked != null && mounted) {
+      setState(() {
+        _selectedZone = picked.name;
+        _latitude = picked.lat;
+        _longitude = picked.lon;
+        if (_addressController.text.trim().isEmpty && picked.formattedAddress.isNotEmpty) {
+          _addressController.text = picked.formattedAddress;
+        }
+      });
     }
   }
 
@@ -439,19 +441,55 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
                     icon: Icons.location_on_rounded,
                     isDark: isDark,
                     children: [
-                      _buildDropdown(
-                        label: 'Operating Zone in Northern Ghana *',
-                        value: _selectedZone,
-                        items: _tamaleZones
-                            .map((z) => DropdownMenuItem(
-                                  value: z,
-                                  child: Text(z, style: const TextStyle(fontSize: 12.5)),
-                                ))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) setState(() => _selectedZone = val);
-                        },
-                        isDark: isDark,
+                      // Smart Zone Selector
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Operating Zone / Town in Ghana *',
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                              ),
+                              GestureDetector(
+                                onTap: _pickLocationZone,
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.search_rounded, size: 14, color: ServoraColors.emerald600),
+                                    Gap(4),
+                                    Text('Search / Map 📍', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Gap(6),
+                          GestureDetector(
+                            onTap: _pickLocationZone,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: isDark ? ServoraColors.darkCardBorder : Colors.grey[300]!),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.location_city_rounded, size: 18, color: ServoraColors.emerald600),
+                                  const Gap(10),
+                                  Expanded(
+                                    child: Text(
+                                      _selectedZone,
+                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const Gap(12),
                       _buildTextField(
@@ -509,23 +547,39 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
                               style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.grey[600]),
                             ),
                             const Gap(10),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: ServoraColors.emerald600,
-                                  side: const BorderSide(color: ServoraColors.emerald600),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: ServoraColors.emerald600,
+                                      side: const BorderSide(color: ServoraColors.emerald600),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                    onPressed: _isDetectingGps ? null : _detectGpsLocation,
+                                    icon: _isDetectingGps
+                                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: ServoraColors.emerald600))
+                                        : const Icon(Icons.my_location_rounded, size: 16),
+                                    label: Text(
+                                      _isDetectingGps ? 'Detecting...' : 'Auto-Detect GPS 🎯',
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
                                 ),
-                                onPressed: _isDetectingGps ? null : _detectGpsLocation,
-                                icon: _isDetectingGps
-                                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: ServoraColors.emerald600))
-                                    : const Icon(Icons.my_location_rounded, size: 16),
-                                label: Text(
-                                  _isDetectingGps ? 'Detecting current GPS location...' : 'Auto-Detect Shop GPS Location 🎯',
-                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
-                                ),
-                              ),
+                                if (_latitude != null && _longitude != null) ...[
+                                  const Gap(8),
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: ServoraColors.emerald600,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                    onPressed: () => UserLocationService.openInGoogleMaps(_latitude!, _longitude!),
+                                    icon: const Icon(Icons.map_rounded, size: 15),
+                                    label: const Text('Google Maps 🗺️', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ],
                             ),
                           ],
                         ),

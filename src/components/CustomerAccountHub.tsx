@@ -61,6 +61,7 @@ export default function CustomerAccountHub() {
   const [activeTab, setActiveTab] = useState<
     "overview" | "requests" | "escrow" | "messages" | "favorites" | "reviews" | "disputes" | "settings"
   >("overview");
+  const [escrowEnabled, setEscrowEnabled] = useState(true);
 
   // Collections
   const [serviceRequests, setServiceRequests] = useState<any[]>([]);
@@ -154,6 +155,19 @@ export default function CustomerAccountHub() {
         const authMeData = await authMeRes.json();
         currentUser = authMeData.user;
       }
+
+      // Fetch Platform Settings for escrow status
+      try {
+        const settingsRes = await fetch("/api/platform/settings");
+        const settingsData = await settingsRes.json();
+        if (settingsData.settings?.escrowEnabled !== undefined) {
+          const isEnabled = Boolean(settingsData.settings.escrowEnabled);
+          setEscrowEnabled(isEnabled);
+          if (!isEnabled) {
+            setActiveTab((prev) => (prev === "escrow" ? "overview" : prev));
+          }
+        }
+      } catch {}
 
       // Fetch Verification Status
       try {
@@ -514,7 +528,19 @@ export default function CustomerAccountHub() {
           {[
             { id: "overview", label: "Overview & Stream", icon: TrendingUp },
             { id: "requests", label: `My Job Requests (${serviceRequests.length})`, icon: Briefcase },
-            { id: "escrow", label: `MoMo Escrow Vault (${escrowDeals.length})`, icon: ShieldCheck, badge: metrics.escrowVaultBalance > 0 ? `GH₵ ${metrics.escrowVaultBalance.toFixed(0)}` : null },
+            ...(escrowEnabled
+              ? [
+                  {
+                    id: "escrow",
+                    label: `MoMo Escrow Vault (${escrowDeals.length})`,
+                    icon: ShieldCheck,
+                    badge:
+                      metrics.escrowVaultBalance > 0
+                        ? `GH₵ ${metrics.escrowVaultBalance.toFixed(0)}`
+                        : null,
+                  },
+                ]
+              : []),
             { id: "messages", label: "Inbox & Messages", icon: MessageSquare },
             { id: "favorites", label: `Saved (${favorites.length})`, icon: Heart },
             { id: "reviews", label: `Reviews & Forum (${reviews.length + communityPosts.length})`, icon: Star },
@@ -561,16 +587,18 @@ export default function CustomerAccountHub() {
                 <div className="text-[11px] text-stone-500 mt-1">In progress & open for bids</div>
               </div>
 
-              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-xs">
-                <div className="flex items-center justify-between text-stone-400 text-xs font-bold mb-2">
-                  <span>MOMO ESCROW VAULT</span>
-                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              {escrowEnabled && (
+                <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-xs">
+                  <div className="flex items-center justify-between text-stone-400 text-xs font-bold mb-2">
+                    <span>MOMO ESCROW VAULT</span>
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                    GH₵ {metrics.escrowVaultBalance.toFixed(2)}
+                  </div>
+                  <div className="text-[11px] text-stone-500 mt-1">100% Protected held funds</div>
                 </div>
-                <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                  GH₵ {metrics.escrowVaultBalance.toFixed(2)}
-                </div>
-                <div className="text-[11px] text-stone-500 mt-1">100% Protected held funds</div>
-              </div>
+              )}
 
               <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 shadow-xs">
                 <div className="flex items-center justify-between text-stone-400 text-xs font-bold mb-2">
@@ -602,13 +630,15 @@ export default function CustomerAccountHub() {
                 <Plus className="w-4 h-4 shrink-0" />
                 <span>+ Post New Job Request</span>
               </Link>
-              <button
-                onClick={() => setActiveTab("escrow")}
-                className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 rounded-2xl flex items-center gap-3 text-blue-800 dark:text-blue-300 font-bold hover:scale-[1.02] transition text-left cursor-pointer"
-              >
-                <ShieldCheck className="w-4 h-4 shrink-0" />
-                <span>Manage Escrow Deals</span>
-              </button>
+              {escrowEnabled && (
+                <button
+                  onClick={() => setActiveTab("escrow")}
+                  className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 rounded-2xl flex items-center gap-3 text-blue-800 dark:text-blue-300 font-bold hover:scale-[1.02] transition text-left cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
+                  <span>Manage Escrow Deals</span>
+                </button>
+              )}
               <Link
                 href="/community"
                 className="p-4 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/50 rounded-2xl flex items-center gap-3 text-purple-800 dark:text-purple-300 font-bold hover:scale-[1.02] transition"
@@ -723,7 +753,7 @@ export default function CustomerAccountHub() {
         {/* ========================================================================= */}
         {/* TAB 3: MOMO ESCROW VAULT & LIVE DEAL TRACKER */}
         {/* ========================================================================= */}
-        {activeTab === "escrow" && (
+        {activeTab === "escrow" && escrowEnabled && (
           <div className="space-y-6">
             {/* Escrow Header & Security Vault Banner */}
             <div className="bg-emerald-950/80 border border-emerald-500/30 rounded-3xl p-6 text-white space-y-3 relative overflow-hidden">

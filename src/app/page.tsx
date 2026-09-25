@@ -3,20 +3,10 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Wrench,
-  Search,
-  Zap,
-  Smartphone,
-  Scissors,
   ShieldCheck,
-  Star,
-  MapPin,
   CheckCircle2,
   ArrowRight,
   PlusCircle,
-  Users,
-  Sparkles,
-  Award,
 } from "lucide-react";
 import { RequestWizardModal } from "@/components/RequestWizardModal";
 import { ProviderCard } from "@/components/ProviderCard";
@@ -38,7 +28,6 @@ export default function HomePage() {
   const [providers, setProviders] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loadingProviders, setLoadingProviders] = useState(true);
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState("Tamale");
 
   useEffect(() => {
     fetchFeaturedProviders();
@@ -162,145 +151,7 @@ export default function HomePage() {
       {/* 2. EXPLORE NORTHERN CATEGORIES (CLASSIFIED CATEGORY GRID) */}
       <CategoryGridSection onPostRequestClick={() => setIsWizardOpen(true)} />
 
-      {/* 3. MATCH VERIFIED ARTISANS BY LOCATION */}
-      <section className="py-8 sm:py-12 bg-stone-100/60 dark:bg-stone-900/60 border-b border-stone-200 dark:border-stone-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white/90 dark:bg-stone-900/90 border border-stone-200/80 dark:border-stone-800/80 rounded-3xl p-5 sm:p-8 shadow-xl backdrop-blur-xl">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                  Find Local Businesses
-                </span>
-                <h3 className="font-black text-lg sm:text-2xl text-stone-900 dark:text-white flex items-center gap-2 mt-0.5">
-                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 shrink-0" />
-                  <span>Find Verified Businesses & Workers</span>
-                </h3>
-              </div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/90 text-emerald-800 dark:text-emerald-300 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
-                Northern Ghana Active
-              </span>
-            </div>
-
-            <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 font-medium mb-4">
-              Select your city or area to find active local businesses & get instant price estimates:
-            </p>
-
-            {/* Region / City Quick Filter */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mb-5">
-              {[
-                { name: "Tamale", count: "45+ Businesses" },
-                { name: "Bolgatanga", count: "28+ Businesses" },
-                { name: "Wa", count: "24+ Businesses" },
-                { name: "Yendi", count: "18+ Businesses" },
-                { name: "Damongo", count: "14+ Businesses" },
-                { name: "Nalerigu", count: "12+ Businesses" },
-              ].map((loc) => (
-                <button
-                  key={loc.name}
-                  onClick={() => setSelectedNeighborhood(loc.name)}
-                  className={`p-3 rounded-2xl text-left border text-xs transition cursor-pointer active:scale-95 duration-150 ${
-                    selectedNeighborhood === loc.name
-                      ? "bg-emerald-50 dark:bg-emerald-950/80 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold shadow-xs ring-2 ring-emerald-500/20"
-                      : "bg-stone-50/90 dark:bg-stone-800/80 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700"
-                  }`}
-                >
-                  <div className="flex items-center gap-1 font-bold text-stone-900 dark:text-white truncate">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span className="truncate">{loc.name}</span>
-                  </div>
-                  <span className="text-[9px] text-stone-500 dark:text-stone-400 block mt-0.5 font-semibold">{loc.count}</span>
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setIsWizardOpen(true)}
-              className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-            >
-              <span>Post Job Request in {selectedNeighborhood}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. POPULAR SERVICE CATEGORIES */}
-      <section className="py-12 sm:py-16 bg-stone-50 dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-black text-stone-900 dark:text-white tracking-tight">
-              Most Needed Services in Northern Ghana
-            </h2>
-            <p className="text-stone-600 dark:text-stone-400 text-xs sm:text-sm font-medium mt-2">
-              Browse top service categories requested daily across Northern Ghana.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-            {/* Category 1: Electrical */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 hover:shadow-xl hover:border-emerald-300 dark:hover:border-emerald-700 transition duration-200 group">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4 group-hover:scale-110 transition duration-200">
-                <Zap className="w-6 h-6" />
-              </div>
-              <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-2">
-                Electrical & Solar Systems
-              </h3>
-              <p className="text-xs text-stone-600 dark:text-stone-400 mb-4 leading-relaxed font-medium">
-                House wiring, solar inverter installations, circuit breaker repairs, fridge gas refill, generator servicing.
-              </p>
-              <Link
-                href="/services/electricians/tamale"
-                className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
-              >
-                <span>Find Electrical Experts</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {/* Category 2: Electronics */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 hover:shadow-xl hover:border-emerald-300 dark:hover:border-emerald-700 transition duration-200 group">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-110 transition duration-200">
-                <Smartphone className="w-6 h-6" />
-              </div>
-              <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-2">
-                Device & Laptop Repairs
-              </h3>
-              <p className="text-xs text-stone-600 dark:text-stone-400 mb-4 leading-relaxed font-medium">
-                Smartphone screen replacement, laptop battery upgrade, charging port fixing, and micro-soldering diagnostics.
-              </p>
-              <Link
-                href="/services/phone-repair/tamale"
-                className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
-              >
-                <span>Electronics & Phone Repair</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {/* Category 3: Tailoring */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 hover:shadow-xl hover:border-emerald-300 dark:hover:border-emerald-700 transition duration-200 group">
-              <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/80 border border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition duration-200">
-                <Scissors className="w-6 h-6" />
-              </div>
-              <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-2">
-                Fugu & Bespoke Tailoring
-              </h3>
-              <p className="text-xs text-stone-600 dark:text-stone-400 mb-4 leading-relaxed font-medium">
-                Authentic Northern Ghana Smocks (Fugu), embroidery, Senator kaftans, and custom wedding attire.
-              </p>
-              <Link
-                href="/services/fugu-tailors/tamale"
-                className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
-              >
-                <span>Smock & Tailoring Artisans</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. FEATURED LOCAL PRODUCTS & SUPPLIES (2 COLUMNS ON MOBILE GRID!) */}
+      {/* 3. FEATURED LOCAL PRODUCTS & SUPPLIES (2 COLUMNS ON MOBILE GRID!) */}
       {products.length > 0 && (
         <section className="py-12 sm:py-16 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 transition-colors duration-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -333,53 +184,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* 6. HOW IT WORKS */}
-      <section className="py-12 sm:py-16 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-black text-stone-900 dark:text-white tracking-tight">
-              How Servora Works
-            </h2>
-            <p className="text-stone-600 dark:text-stone-400 text-xs sm:text-sm font-medium mt-2">
-              Getting work done safely across Northern Ghana takes under 2 minutes.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            <div className="text-center p-5 sm:p-6 rounded-3xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white font-black text-xl flex items-center justify-center mx-auto mb-4 shadow-xs">
-                1
-              </div>
-              <h3 className="font-bold text-base sm:text-lg text-stone-900 dark:text-white mb-2">Describe Your Need</h3>
-              <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
-                Select your service category, specify your area in Northern Ghana, add optional photos, and choose urgency.
-              </p>
-            </div>
-
-            <div className="text-center p-5 sm:p-6 rounded-3xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white font-black text-xl flex items-center justify-center mx-auto mb-4 shadow-xs">
-                2
-              </div>
-              <h3 className="font-bold text-base sm:text-lg text-stone-900 dark:text-white mb-2">Compare Quotes & Trust</h3>
-              <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
-                Receive transparent price estimates from verified local artisans. Check phone verification, badges & reviews.
-              </p>
-            </div>
-
-            <div className="text-center p-5 sm:p-6 rounded-3xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white font-black text-xl flex items-center justify-center mx-auto mb-4 shadow-xs">
-                3
-              </div>
-              <h3 className="font-bold text-base sm:text-lg text-stone-900 dark:text-white mb-2">Connect & Get It Done</h3>
-              <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
-                Contact the artisan via call or WhatsApp. Pay directly after satisfactory job completion and leave a review.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 7. TRUSTED PROVIDERS SHOWCASE */}
+      {/* 4. TRUSTED PROVIDERS SHOWCASE */}
       <section className="py-12 sm:py-16 bg-stone-50 dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-8">
@@ -429,7 +234,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 8. PROVIDER RECRUITMENT BANNER */}
+      {/* 5. PROVIDER RECRUITMENT BANNER */}
       <section className="py-12 sm:py-16 bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 dark:from-emerald-950 dark:via-stone-900 dark:to-stone-950 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="inline-block px-3 py-1 bg-amber-400 text-stone-950 font-black text-xs uppercase tracking-wider rounded-full mb-3 shadow-xs">

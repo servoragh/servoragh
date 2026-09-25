@@ -152,9 +152,57 @@ export default function BusinessOwnerPortalPage() {
   const profile = data?.businessProfile || data?.providerProfile;
   const isProfileComplete = Boolean(data?.businessProfile);
 
+  const isVerified =
+    profile?.verificationStatus === "TIER_2_VERIFIED_ARTISAN" ||
+    profile?.verificationStatus === "TIER_3_REGISTERED_ENTERPRISE" ||
+    Boolean(data?.verificationInfo?.isVerified);
+  const isRejected =
+    profile?.verificationStatus === "REJECTED" || Boolean(data?.verificationInfo?.isRejected);
+  const isPending =
+    !isVerified &&
+    !isRejected &&
+    (profile?.verificationStatus === "PENDING_REVIEW" || Boolean(data?.verificationInfo?.isPending));
+  const rejectionReason =
+    data?.verificationInfo?.rejectionReason ||
+    "Uploaded identification photo was rejected by admin. Please resubmit a clear photo of your Ghana Card front.";
+
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 py-8 lg:py-12 text-stone-900 dark:text-stone-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        {/* REJECTION WARNING BANNER (When ID Verification was Rejected) */}
+        {isRejected && (
+          <div className="bg-rose-500/10 border-2 border-rose-500/40 rounded-3xl p-5 md:p-6 text-rose-950 dark:text-rose-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-in fade-in duration-300">
+            <div className="flex items-start gap-3.5">
+              <div className="p-3 bg-rose-500/20 rounded-2xl shrink-0 text-rose-600 dark:text-rose-400">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-black text-base text-rose-600 dark:text-rose-400">
+                    Identity Verification Denied
+                  </h3>
+                  <span className="px-2 py-0.5 bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[10px] font-black rounded-md uppercase">
+                    Action Required
+                  </span>
+                </div>
+                <p className="text-xs text-stone-700 dark:text-stone-300">
+                  <span className="font-bold">Reason for Rejection: </span>
+                  {rejectionReason}
+                </p>
+                <p className="text-[11px] text-stone-500 dark:text-stone-400">
+                  Your business is currently marked as <span className="font-bold underline text-rose-600 dark:text-rose-400">UNVERIFIED</span>. Verified badges are disabled across your storefront and flyers until a clear Ghana Card is approved.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsEditingOnboarding(true)}
+              className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all shrink-0 cursor-pointer"
+            >
+              Re-Submit Ghana Card ➔
+            </button>
+          </div>
+        )}
+
         {/* TOP ENTERPRISE HEADER BANNER */}
         {profile ? (
           <div className="bg-gradient-to-r from-emerald-900 via-stone-900 to-emerald-950 border border-stone-800 rounded-3xl p-6 lg:p-8 shadow-2xl text-white relative overflow-hidden">
@@ -173,11 +221,27 @@ export default function BusinessOwnerPortalPage() {
                 <div>
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
-                      {profile.businessType || "VERIFIED ENTERPRISE"}
+                      {profile.businessType || "SOLO ARTISAN"}
                     </span>
-                    <span className="px-2.5 py-0.5 bg-white/10 text-white rounded-full text-[10px] font-bold">
-                      {profile.verificationStatus || "TIER_1_BASIC"}
-                    </span>
+
+                    {/* Accurate Verification Status Pill */}
+                    {isVerified ? (
+                      <span className="px-2.5 py-0.5 bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 rounded-full text-[10px] font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> VERIFIED TIER 2
+                      </span>
+                    ) : isRejected ? (
+                      <span className="px-2.5 py-0.5 bg-rose-500/30 text-rose-300 border border-rose-500/50 rounded-full text-[10px] font-bold flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" /> UNVERIFIED (REJECTED)
+                      </span>
+                    ) : isPending ? (
+                      <span className="px-2.5 py-0.5 bg-amber-500/30 text-amber-300 border border-amber-500/50 rounded-full text-[10px] font-bold flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> UNDER REVIEW
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 bg-white/10 text-white rounded-full text-[10px] font-bold">
+                        UNVERIFIED
+                      </span>
+                    )}
                   </div>
 
                   <h1 className="text-2xl lg:text-3xl font-black">{profile.businessName}</h1>
@@ -421,16 +485,60 @@ export default function BusinessOwnerPortalPage() {
 
                 {/* Status card */}
                 <div className="p-3 rounded-2xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200/80 dark:border-stone-800 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-5 h-5" />
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      isVerified
+                        ? "bg-emerald-600/15 text-emerald-600 dark:text-emerald-400"
+                        : isRejected
+                        ? "bg-rose-600/15 text-rose-600 dark:text-rose-400"
+                        : isPending
+                        ? "bg-amber-600/15 text-amber-600 dark:text-amber-400"
+                        : "bg-stone-200 dark:bg-stone-700 text-stone-500"
+                    }`}
+                  >
+                    {isVerified ? (
+                      <ShieldCheck className="w-5 h-5" />
+                    ) : isRejected ? (
+                      <AlertTriangle className="w-5 h-5" />
+                    ) : isPending ? (
+                      <Clock className="w-5 h-5" />
+                    ) : (
+                      <Building2 className="w-5 h-5" />
+                    )}
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-black text-stone-900 dark:text-white truncate">
                       {profile.businessName}
                     </div>
-                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>{profile.verificationStatus || "Verified Solo Artisan"}</span>
+                    <div
+                      className={`text-[10px] font-bold flex items-center gap-1 ${
+                        isVerified
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : isRejected
+                          ? "text-rose-600 dark:text-rose-400"
+                          : isPending
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-stone-400"
+                      }`}
+                    >
+                      {isVerified ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Tier 2 Verified</span>
+                        </>
+                      ) : isRejected ? (
+                        <>
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>Verification Denied</span>
+                        </>
+                      ) : isPending ? (
+                        <>
+                          <Clock className="w-3 h-3" />
+                          <span>Under Review</span>
+                        </>
+                      ) : (
+                        <span>Unverified Merchant</span>
+                      )}
                     </div>
                   </div>
                 </div>

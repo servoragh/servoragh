@@ -286,6 +286,29 @@ export async function GET(request: Request) {
     const unreadMessagesCount = (chatMemberships || []).reduce((acc, m) => acc + (m.unreadCount || 0), 0);
     const pendingLeadsCount = (businessProfile?.leads || []).filter((l: any) => l.status === "NEW_INQUIRY").length;
 
+    const latestVerification = await prisma.verificationRequest.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const isVerified =
+      businessProfile?.verificationStatus === "TIER_2_VERIFIED_ARTISAN" ||
+      businessProfile?.verificationStatus === "TIER_3_REGISTERED_ENTERPRISE";
+    const isPending = !isVerified && (businessProfile?.verificationStatus === "PENDING_REVIEW" || latestVerification?.status === "PENDING");
+    const isRejected = !isVerified && (businessProfile?.verificationStatus === "REJECTED" || latestVerification?.status === "REJECTED");
+    const rejectionReason = isRejected ? (latestVerification?.adminNotes || "ID document rejected by admin. Please upload a clear photo of your Ghana Card.") : null;
+
+    const verificationInfo = {
+      status: isVerified ? "VERIFIED" : isPending ? "PENDING_REVIEW" : isRejected ? "REJECTED" : "UNVERIFIED",
+      rawStatus: businessProfile?.verificationStatus || "UNVERIFIED",
+      isVerified,
+      isPending,
+      isRejected,
+      rejectionReason,
+      idCardNumber: businessProfile?.idCardNumber || latestVerification?.idNumber || null,
+      documentUrl: businessProfile?.idCardPhotoUrl || latestVerification?.documentUrl || null,
+    };
+
     const kpis = {
       totalProductLikes,
       totalProductViews,
@@ -311,6 +334,7 @@ export async function GET(request: Request) {
       success: true,
       kpis,
       businessProfile,
+      verificationInfo,
       products,
       rentals: businessProfile?.rentals || [],
       services: businessProfile?.services || [],

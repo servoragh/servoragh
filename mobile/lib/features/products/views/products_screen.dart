@@ -4,12 +4,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/servora_colors.dart';
-import '../../../shared/widgets/servora_dropdown_sheet.dart';
 import '../../../core/constants/constants.dart';
 import '../../../core/services/marketplace_api_service.dart';
 import '../../../core/utils/taxonomy_resolver.dart';
 import '../../../shared/widgets/servora_product_card.dart';
 import '../../../shared/widgets/category_picker_sheet.dart';
+import '../../../shared/widgets/servora_location_picker_sheet.dart';
 
 class ProductsScreen extends StatefulWidget {
   final String? initialCategory;
@@ -205,18 +205,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Future<void> _openZonePicker() async {
-    final zones = ['All Northern Ghana', 'Sakasaka', 'Nyohini', 'Choggu', 'Bolgatanga', 'Wa'];
-    final result = await ServoraBottomSheetPicker.show(
-      context: context,
-      title: 'Filter Products Zone 📍',
-      items: zones,
-      selectedValue: _selectedZone,
-      searchHint: 'Filter by location...',
-      titleIcon: Icons.location_on_rounded,
-    );
-
-    if (result != null && mounted) {
-      setState(() => _selectedZone = result);
+    final picked = await ServoraLocationPickerSheet.show(context);
+    if (picked != null && mounted) {
+      setState(() => _selectedZone = picked.name);
     }
   }
 
@@ -232,8 +223,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
         selectedCategoryInput: _selectedCategory,
         selectedSubcategoryInput: _selectedSubCategory,
       );
-      final locationStr = (p['location'] ?? p['area'] ?? '').toString();
-      final matchesZone = _selectedZone == 'All Northern Ghana' || locationStr.contains(_selectedZone);
+      final locationStr = (p['location'] ?? p['area'] ?? '').toString().toLowerCase();
+      final zoneLower = _selectedZone.toLowerCase();
+      final matchesZone = _selectedZone == 'All Northern Ghana' ||
+          _selectedZone == 'All Ghana' ||
+          _selectedZone == 'All' ||
+          locationStr.contains(zoneLower) ||
+          zoneLower.contains(locationStr);
       final titleStr = (p['title'] ?? '').toString().toLowerCase();
       final descStr = (p['description'] ?? '').toString().toLowerCase();
       final sellerStr = (p['seller'] ?? p['businessName'] ?? '').toString().toLowerCase();
@@ -263,10 +259,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
             icon: const Icon(Icons.location_on_outlined, color: ServoraColors.emerald600),
             onPressed: _openZonePicker,
           ),
-          IconButton(
-            icon: const Icon(Icons.shield_outlined, color: ServoraColors.emerald600),
-            onPressed: () => context.push('/escrow'),
-          ),
+          if (MarketplaceApiService.isEscrowEnabled)
+            IconButton(
+              icon: const Icon(Icons.shield_outlined, color: ServoraColors.emerald600),
+              onPressed: () => context.push('/escrow'),
+            ),
         ],
       ),
       body: Column(
@@ -354,6 +351,36 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       _selectedCategory = 'All';
                       _selectedSubCategory = null;
                     }),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ActionChip(
+                    avatar: Icon(
+                      _selectedZone != 'All Northern Ghana' && _selectedZone != 'All Ghana' && _selectedZone != 'All'
+                          ? Icons.my_location_rounded
+                          : Icons.location_on_outlined,
+                      size: 15,
+                      color: _selectedZone != 'All Northern Ghana' && _selectedZone != 'All Ghana' && _selectedZone != 'All'
+                          ? Colors.white
+                          : ServoraColors.emerald600,
+                    ),
+                    label: Text(
+                      _selectedZone != 'All Northern Ghana' && _selectedZone != 'All Ghana' && _selectedZone != 'All'
+                          ? 'Area: $_selectedZone'
+                          : 'Location 📍',
+                    ),
+                    backgroundColor: _selectedZone != 'All Northern Ghana' && _selectedZone != 'All Ghana' && _selectedZone != 'All'
+                        ? ServoraColors.emerald600
+                        : (isDark ? ServoraColors.darkSurface : const Color(0xFFF1F5F9)),
+                    labelStyle: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: _selectedZone != 'All Northern Ghana' && _selectedZone != 'All Ghana' && _selectedZone != 'All'
+                          ? Colors.white
+                          : (isDark ? Colors.grey[300] : Colors.black87),
+                    ),
+                    onPressed: _openZonePicker,
                   ),
                 ),
                 Padding(

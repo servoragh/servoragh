@@ -25,6 +25,18 @@ export function WhatsAppShareButton({
   showEscrowOption = true,
 }: WhatsAppShareButtonProps) {
   const [isEscrowOpen, setIsEscrowOpen] = useState(false);
+  const [escrowSystemActive, setEscrowSystemActive] = useState(true);
+
+  React.useEffect(() => {
+    fetch("/api/platform/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings?.escrowEnabled !== undefined) {
+          setEscrowSystemActive(d.settings.escrowEnabled);
+        }
+      })
+      .catch(() => null);
+  }, []);
 
   const url = variant === "direct" && phone
     ? buildWhatsAppDirectUrl(phone, text)
@@ -49,7 +61,7 @@ export function WhatsAppShareButton({
           <span>{label || defaultLabel}</span>
         </a>
 
-        {variant === "direct" && showEscrowOption && (
+        {variant === "direct" && showEscrowOption && escrowSystemActive && (
           <button
             type="button"
             onClick={() => setIsEscrowOpen(true)}
@@ -62,12 +74,14 @@ export function WhatsAppShareButton({
         )}
       </div>
 
-      <EscrowDealModal
-        isOpen={isEscrowOpen}
-        onClose={() => setIsEscrowOpen(false)}
-        sellerPhone={phone}
-        sellerBusinessName={sellerBusinessName}
-      />
+      {escrowSystemActive && (
+        <EscrowDealModal
+          isOpen={isEscrowOpen}
+          onClose={() => setIsEscrowOpen(false)}
+          sellerPhone={phone}
+          sellerBusinessName={sellerBusinessName}
+        />
+      )}
     </>
   );
 }

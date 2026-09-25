@@ -35,6 +35,11 @@ import {
   HelpCircle,
   ThumbsUp,
   AlertTriangle,
+  Edit,
+  Trash2,
+  UploadCloud,
+  Plus,
+  Video,
 } from "lucide-react";
 import { EscrowDealModal } from "@/components/EscrowDealModal";
 import { TrustBadge } from "@/components/TrustBadge";
@@ -90,6 +95,167 @@ export default function ProductDetailPage() {
   const [reportDetails, setReportDetails] = useState("");
   const [submittingReport, setSubmittingReport] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
+  const [escrowEnabled, setEscrowEnabled] = useState(true);
+
+  // Current User & Product Edit State
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editOriginalPrice, setEditOriginalPrice] = useState("");
+  const [editStock, setEditStock] = useState("1");
+  const [editCondition, setEditCondition] = useState("BRAND_NEW");
+  const [editCategory, setEditCategory] = useState("");
+  const [editSubCategory, setEditSubCategory] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editArea, setEditArea] = useState("");
+  const [editDeliveryOptions, setEditDeliveryOptions] = useState<string[]>(["PICKUP", "LOCAL_DELIVERY"]);
+  const [editIsNegotiable, setEditIsNegotiable] = useState(false);
+  const [editImages, setEditImages] = useState<string[]>([]);
+  const [editVideoUrl, setEditVideoUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/platform/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings?.escrowEnabled !== undefined) {
+          setEscrowEnabled(d.settings.escrowEnabled);
+        }
+      })
+      .catch(() => null);
+
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user) setCurrentUser(d.user);
+      })
+      .catch(() => null);
+  }, []);
+
+  const isOwner = Boolean(
+    currentUser &&
+      (currentUser.id === product?.sellerId ||
+        currentUser.id === product?.seller?.id ||
+        currentUser.phone === product?.seller?.phone ||
+        currentUser.phone === product?.phone ||
+        currentUser.role === "ADMIN" ||
+        currentUser.role === "SUPER_ADMIN")
+  );
+
+  function openEditModal() {
+    if (!product) return;
+    setEditTitle(product.title || "");
+    setEditPrice(String(product.price || ""));
+    setEditOriginalPrice(product.originalPrice ? String(product.originalPrice) : "");
+    setEditStock(String(product.stockQuantity || 1));
+    setEditCondition(product.condition || "BRAND_NEW");
+    setEditCategory(product.category || "Electronics");
+    setEditSubCategory(product.subCategory || "");
+    setEditDescription(product.description || "");
+    setEditArea(product.area || "Tamale Central");
+    let deliv: string[] = ["PICKUP", "LOCAL_DELIVERY"];
+    if (Array.isArray(product.deliveryOptions)) {
+      deliv = product.deliveryOptions;
+    } else if (typeof product.deliveryOptions === "string") {
+      try { deliv = JSON.parse(product.deliveryOptions); } catch { deliv = ["PICKUP", "LOCAL_DELIVERY"]; }
+    }
+    setEditDeliveryOptions(deliv);
+    setEditIsNegotiable(Boolean(product.isNegotiable));
+    setEditImages(Array.isArray(product.images) ? product.images : typeof product.images === "string" ? [product.images] : []);
+    setEditVideoUrl(product.videoUrl || "");
+    setIsEditModalOpen(true);
+  }
+
+  const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    if (editImages.length + files.length > 10) {
+      alert("You can upload a maximum of 10 images.");
+    }
+    const availableSlots = 10 - editImages.length;
+    const filesToUpload = files.slice(0, availableSlots);
+    setUploadingImage(true);
+    try {
+      const uploadPromises = filesToUpload.map(async (file) => {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok || !data.url) throw new Error(data.error || "Failed to upload image.");
+        return data.url;
+      });
+      const urls = await Promise.all(uploadPromises);
+      setEditImages((prev) => [...prev, ...urls].slice(0, 10));
+    } catch (err: any) {
+      alert(err.message || "Failed to upload images.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 40 * 1024 * 1024) {
+      alert("Video file size is too large (max 40MB).");
+      return;
+    }
+    setUploadingVideo(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error || "Failed to upload video.");
+      setEditVideoUrl(data.url);
+    } catch (err: any) {
+      alert(err.message || "Failed to upload video.");
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  async function handleSaveProductEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editTitle.trim() || !editPrice) {
+      alert("Please enter a valid title and price.");
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/products/${slug}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle.trim(),
+          price: Number(editPrice),
+          originalPrice: editOriginalPrice ? Number(editOriginalPrice) : null,
+          stockQuantity: Number(editStock) || 1,
+          condition: editCondition,
+          category: editCategory,
+          subCategory: editSubCategory || null,
+          description: editDescription.trim(),
+          area: editArea.trim(),
+          deliveryOptions: editDeliveryOptions,
+          isNegotiable: editIsNegotiable,
+          images: editImages,
+          videoUrl: editVideoUrl || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update product.");
+      setIsEditModalOpen(false);
+      await fetchProductDetails();
+      alert("Product listing updated successfully!");
+    } catch (err: any) {
+      alert(err.message || "Failed to save product edits.");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
 
   useEffect(() => {
     if (slug) {
@@ -372,7 +538,7 @@ export default function ProductDetailPage() {
   const savings = hasDiscount ? product.originalPrice - product.price : 0;
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 pb-24 md:pb-16 antialiased">
+    <div className="min-h-screen bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 pb-24 md:pb-16 antialiased">
       {/* Top Header / Breadcrumb Bar */}
       <div className="sticky top-0 z-40 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
@@ -405,6 +571,18 @@ export default function ProductDetailPage() {
               <span>{likesCount}</span>
             </button>
 
+            {/* Owner Edit Product Button */}
+            {isOwner && (
+              <button
+                onClick={openEditModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-colors"
+                title="Edit this listing setup"
+              >
+                <Edit className="w-3.5 h-3.5" />
+                <span>Edit Listing</span>
+              </button>
+            )}
+
             {/* Share Button */}
             <button
               onClick={() => setIsShareModalOpen(true)}
@@ -430,17 +608,17 @@ export default function ProductDetailPage() {
         {/* =========================================================================
             SECTION A: MAIN PRODUCT SHOWCASE CARD (2-COLUMN GRID)
             ========================================================================= */}
-        <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-4 sm:p-6 md:p-8 shadow-sm">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-            {/* Left Column: Media Carousel & Interactive Gallery */}
-            <div className="lg:col-span-6 space-y-4">
-              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-800 group flex items-center justify-center">
+        <div className="py-2 md:py-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-start">
+            {/* Left Column: Ultra-Modern Frameless Media Showcase */}
+            <div className="lg:col-span-6 space-y-3 sticky top-20">
+              <div className="relative aspect-square sm:aspect-[4/5] w-full rounded-2xl overflow-hidden bg-stone-50 dark:bg-stone-900 group flex items-center justify-center">
                 {images.length > 0 ? (
                   <img
                     src={images[activeImageIndex]}
                     alt={product.title}
                     onClick={() => setIsLightboxOpen(true)}
-                    className={`w-full h-full object-cover cursor-zoom-in transition-transform duration-300 ${
+                    className={`w-full h-full object-cover cursor-zoom-in transition-transform duration-500 ${
                       isZoomed ? "scale-125" : "scale-100 group-hover:scale-105"
                     }`}
                   />
@@ -451,29 +629,10 @@ export default function ProductDetailPage() {
                   </div>
                 )}
 
-                {/* Overlay Badges */}
-                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 pointer-events-none">
-                  {hasDiscount && (
-                    <span className="px-2.5 py-1 bg-rose-600 text-white font-extrabold text-[11px] rounded-lg tracking-wider shadow-md">
-                      🏷️ {product.discountPercent}% OFF
-                    </span>
-                  )}
-                  <span className="px-2.5 py-1 bg-stone-900/80 backdrop-blur-md text-white font-bold text-[11px] rounded-lg shadow-md border border-white/10">
-                    {product.condition === "BRAND_NEW"
-                      ? "✨ Brand New"
-                      : product.condition === "REFURBISHED"
-                      ? "🔧 Refurbished"
-                      : "✓ Tested Working"}
-                  </span>
-                  <span className="px-2.5 py-1 bg-emerald-600/90 backdrop-blur-md text-white font-bold text-[11px] rounded-lg shadow-md">
-                    ✓ In Stock: {product.stockQuantity} available
-                  </span>
-                </div>
-
-                {/* Lightbox Trigger Icon */}
+                {/* Subtle Expand Lightbox Button (Visible on hover) */}
                 <button
                   onClick={() => setIsLightboxOpen(true)}
-                  className="absolute bottom-3 right-3 p-2 bg-stone-950/70 backdrop-blur-md hover:bg-stone-950 text-white rounded-xl shadow-lg transition-transform hover:scale-105"
+                  className="absolute bottom-3 right-3 p-2 bg-stone-900/60 backdrop-blur-md hover:bg-stone-900 text-white rounded-xl shadow-sm transition-all opacity-0 group-hover:opacity-100 hover:scale-105"
                   title="Expand to Fullscreen Lightbox"
                 >
                   <ZoomIn className="w-4 h-4" />
@@ -487,7 +646,8 @@ export default function ProductDetailPage() {
                         e.stopPropagation();
                         setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
                       }}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/70 text-white rounded-full transition-opacity opacity-0 group-hover:opacity-100"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-stone-900/40 hover:bg-stone-900/80 text-white rounded-full transition-opacity opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+                      title="Previous photo"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -496,7 +656,8 @@ export default function ProductDetailPage() {
                         e.stopPropagation();
                         setActiveImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/70 text-white rounded-full transition-opacity opacity-0 group-hover:opacity-100"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-stone-900/40 hover:bg-stone-900/80 text-white rounded-full transition-opacity opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+                      title="Next photo"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -506,15 +667,15 @@ export default function ProductDetailPage() {
 
               {/* Multi-Photo Thumbnail Strip */}
               {images.length > 1 && (
-                <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none pt-1">
                   {images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveImageIndex(idx)}
-                      className={`relative flex-shrink-0 w-16 sm:w-20 aspect-square rounded-xl overflow-hidden border-2 transition-all ${
+                      className={`relative flex-shrink-0 w-16 sm:w-20 aspect-square rounded-xl overflow-hidden transition-all ${
                         activeImageIndex === idx
-                          ? "border-emerald-500 ring-2 ring-emerald-500/20 scale-105"
-                          : "border-stone-200 dark:border-stone-800 opacity-60 hover:opacity-100"
+                          ? "ring-2 ring-emerald-500 scale-105 opacity-100 shadow-sm"
+                          : "opacity-60 hover:opacity-100"
                       }`}
                     >
                       <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
@@ -524,17 +685,50 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Right Column: Product Info & Sticky Checkout Hub */}
+            {/* Right Column: Product Info & Modern Checkout */}
             <div className="lg:col-span-6 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
-                {/* Category Pill & ID */}
-                <div className="flex items-center justify-between">
-                  <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold text-xs rounded-full border border-emerald-200 dark:border-emerald-800">
-                    {product.category}
-                  </span>
-                  <span className="text-[11px] text-stone-400 font-mono">
-                    ID: #{product.id.slice(-6).toUpperCase()}
-                  </span>
+                {/* Modern Enterprise Status & Category Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold text-xs rounded-full border border-emerald-200 dark:border-emerald-800">
+                      {product.category}
+                    </span>
+                    {product.subCategory && (
+                      <span className="px-2.5 py-1 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 font-semibold text-xs rounded-full">
+                        {product.subCategory}
+                      </span>
+                    )}
+                    <span className="px-2.5 py-1 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-semibold text-xs rounded-full">
+                      {product.condition === "BRAND_NEW"
+                        ? "✨ Brand New"
+                        : product.condition === "REFURBISHED"
+                        ? "🔧 Refurbished"
+                        : "✓ Tested Working"}
+                    </span>
+                    {hasDiscount && (
+                      <span className="px-2.5 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-extrabold text-xs rounded-full border border-rose-200/80 dark:border-rose-900/60">
+                        {product.discountPercent}% OFF
+                      </span>
+                    )}
+                    <span className="text-xs font-medium text-stone-500 dark:text-stone-400 pl-1">
+                      • {product.stockQuantity > 0 ? `${product.stockQuantity} available` : "In stock"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {isOwner && (
+                      <button
+                        onClick={openEditModal}
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
+                      >
+                        <Edit className="w-3.5 h-3.5" /> Edit Setup
+                      </button>
+                    )}
+                    <span className="text-[11px] text-stone-400 font-mono">
+                      ID: #{product.id.slice(-6).toUpperCase()}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Bold Primary Title & Exact Timestamp */}
@@ -549,10 +743,10 @@ export default function ProductDetailPage() {
                   )}
                 </div>
 
-                {/* Price Block */}
-                <div className="p-4 bg-stone-50 dark:bg-stone-800/60 rounded-2xl border border-stone-200/80 dark:border-stone-700/80 flex flex-wrap items-baseline justify-between gap-2">
+                {/* Price Display (Clean Frameless Typography) */}
+                <div className="flex flex-wrap items-baseline justify-between gap-3 pt-1">
                   <div className="flex items-baseline gap-3">
-                    <span className="text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400">
+                    <span className="text-3xl sm:text-4xl font-black text-stone-900 dark:text-white">
                       GH₵ {Number(product.price).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                     {hasDiscount && (
@@ -562,51 +756,62 @@ export default function ProductDetailPage() {
                     )}
                   </div>
                   {hasDiscount && (
-                    <span className="px-2.5 py-1 bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-extrabold text-xs rounded-lg">
+                    <span className="px-2.5 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-extrabold text-xs rounded-full border border-rose-200/80 dark:border-rose-900/60">
                       Save GH₵ {savings.toLocaleString("en-US", { minimumFractionDigits: 2 })} ({product.discountPercent}%)
                     </span>
                   )}
                 </div>
 
-                {/* Description Text */}
-                <div className="space-y-2">
-                  <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider">Specifications & Scope</h3>
-                  <div className="text-sm text-stone-600 dark:text-stone-300 whitespace-pre-line leading-relaxed bg-stone-50/50 dark:bg-stone-950/40 p-4 rounded-xl border border-stone-100 dark:border-stone-800/60">
-                    {product.description}
-                  </div>
+                {/* Streamlined Attributes: Sleek Minimalist Text Row */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3 border-y border-stone-100 dark:border-stone-800 text-xs text-stone-600 dark:text-stone-400">
+                  <span className="inline-flex items-center gap-1.5 font-medium">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <span>{product.area}</span>
+                  </span>
+                  <span className="text-stone-300 dark:text-stone-700">•</span>
+                  <span className="inline-flex items-center gap-1.5 font-medium">
+                    <Truck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <span>Express Delivery</span>
+                  </span>
+                  <span className="text-stone-300 dark:text-stone-700">•</span>
+                  <span className="inline-flex items-center gap-1.5 font-medium">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <span>100% Buyer Protection</span>
+                  </span>
+                  <span className="text-stone-300 dark:text-stone-700">•</span>
+                  <span className="inline-flex items-center gap-1.5 font-medium">
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                    <span>Verified Condition</span>
+                  </span>
                 </div>
 
-                {/* Key Attributes Badges */}
-                <div className="grid grid-cols-2 gap-2.5 pt-2">
-                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800 text-xs">
-                    <MapPin className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span className="truncate font-semibold text-stone-700 dark:text-stone-300">{product.area}</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800 text-xs">
-                    <Truck className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span className="truncate font-semibold text-stone-700 dark:text-stone-300">Express Delivery Available</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800 text-xs">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span className="truncate font-semibold text-stone-700 dark:text-stone-300">100% Buyer Protected</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800 text-xs">
-                    <RotateCcw className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                    <span className="truncate font-semibold text-stone-700 dark:text-stone-300">Verified Condition</span>
-                  </div>
+                {/* Description Text (Clean, Unboxed) */}
+                <div className="space-y-1.5 pt-1">
+                  <h3 className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">Specifications & Description</h3>
+                  <p className="text-sm text-stone-600 dark:text-stone-300 whitespace-pre-line leading-relaxed">
+                    {product.description}
+                  </p>
                 </div>
 
                 {/* Seller Trust Card */}
-                <div className="p-4 bg-gradient-to-br from-emerald-50/50 via-white to-stone-50 dark:from-stone-800/50 dark:via-stone-900 dark:to-stone-800/30 rounded-2xl border border-emerald-200/60 dark:border-emerald-900/40 shadow-sm">
+                <div className="p-4 bg-stone-50/60 dark:bg-stone-900/60 rounded-2xl border border-stone-200/80 dark:border-stone-800/80 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
                       <Sparkles className="w-3 h-3" /> SOLD BY VERIFIED LOCAL BUSINESS
                     </span>
-                    <span className="flex items-center gap-1 text-xs font-bold text-amber-500">
-                      <Star className="w-3.5 h-3.5 fill-current" />
-                      <span>{product.seller?.ratingAverage || "5.0"}</span>
-                      <span className="text-stone-400 font-normal">({product.seller?.reviewsCount || 18})</span>
-                    </span>
+                    {product.seller?.ratingAverage && (product.seller?.reviewsCount || 0) > 0 ? (
+                      <span className="flex items-center gap-1 text-xs font-bold text-amber-500">
+                        <Star className="w-3.5 h-3.5 fill-current" />
+                        <span>{Number(product.seller.ratingAverage).toFixed(1)}</span>
+                        <span className="text-stone-400 font-normal">
+                          ({product.seller.reviewsCount} {product.seller.reviewsCount === 1 ? "review" : "reviews"})
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-semibold text-stone-400 dark:text-stone-500">
+                        ✨ New Local Seller • No ratings yet
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -615,10 +820,10 @@ export default function ProductDetailPage() {
                         <img
                           src={product.seller.logoUrl}
                           alt={product.seller?.name}
-                          className="w-12 h-12 rounded-xl object-cover border-2 border-emerald-500 shadow-sm"
+                          className="w-12 h-12 rounded-xl object-cover border border-emerald-500/40 shadow-sm"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border-2 border-emerald-500/40 flex items-center justify-center text-emerald-600 font-bold text-base shadow-sm">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-600 font-bold text-base shadow-sm">
                           <Building2 className="w-6 h-6" />
                         </div>
                       )}
@@ -646,7 +851,7 @@ export default function ProductDetailPage() {
                     {product.seller?.slug && (
                       <Link
                         href={`/biz/${product.seller.slug}`}
-                        className="px-3.5 py-1.5 bg-white dark:bg-stone-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                        className="px-3.5 py-1.5 bg-white dark:bg-stone-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-stone-200 dark:border-stone-700 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1"
                       >
                         <span>View Storefront</span>
                         <ChevronRight className="w-3.5 h-3.5" />
@@ -658,23 +863,27 @@ export default function ProductDetailPage() {
 
               {/* Primary Action Row */}
               <div className="space-y-2 pt-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className={escrowEnabled ? "grid grid-cols-1 sm:grid-cols-3 gap-2.5" : "flex flex-col gap-2.5"}>
                   {/* WhatsApp Order */}
                   <button
                     onClick={handleOrderWhatsApp}
-                    className="sm:col-span-2 py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-extrabold rounded-2xl text-sm transition-all shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
+                    className={`${
+                      escrowEnabled ? "sm:col-span-2" : "w-full"
+                    } py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-extrabold rounded-2xl text-sm transition-all shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2`}
                   >
                     <span>✈️ Order via WhatsApp</span>
                   </button>
 
-                  {/* MoMo Escrow Safe Buy */}
-                  <button
-                    onClick={() => setIsEscrowModalOpen(true)}
-                    className="py-3.5 px-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-stone-950 font-extrabold rounded-2xl text-sm transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5"
-                  >
-                    <ShieldCheck className="w-4 h-4 text-stone-950" />
-                    <span>Safe Escrow</span>
-                  </button>
+                  {/* MoMo Escrow Safe Buy (Only if escrow subsystem is enabled) */}
+                  {escrowEnabled && (
+                    <button
+                      onClick={() => setIsEscrowModalOpen(true)}
+                      className="py-3.5 px-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-stone-950 font-extrabold rounded-2xl text-sm transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-stone-950" />
+                      <span>Safe Escrow</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Direct Native Servora Chat with Seller */}
@@ -838,44 +1047,69 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Review Summary Breakdown Block */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-6 bg-stone-50 dark:bg-stone-800/40 rounded-2xl border border-stone-200/70 dark:border-stone-800">
-            {/* Left Rating Stat */}
-            <div className="md:col-span-4 flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 md:border-r border-stone-200 dark:border-stone-700">
-              <span className="text-5xl font-black text-stone-900 dark:text-white">
-                {reviewsSummary?.averageRating?.toFixed(1) || "5.0"}
-              </span>
-              <div className="flex items-center gap-1 text-amber-500 my-2">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Star key={s} className="w-4 h-4 fill-current" />
-                ))}
+          {reviews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-6 bg-stone-50 dark:bg-stone-800/40 rounded-2xl border border-stone-200/70 dark:border-stone-800">
+              {/* Left Rating Stat */}
+              <div className="md:col-span-4 flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 md:border-r border-stone-200 dark:border-stone-700">
+                <span className="text-5xl font-black text-stone-900 dark:text-white">
+                  {reviewsSummary?.averageRating ? reviewsSummary.averageRating.toFixed(1) : "0.0"}
+                </span>
+                <div className="flex items-center gap-1 text-amber-500 my-2">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      className={`w-4 h-4 ${
+                        s <= Math.round(reviewsSummary?.averageRating || 0)
+                          ? "fill-current"
+                          : "text-stone-300 dark:text-stone-700"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-stone-500 font-semibold">
+                  Based on {reviewsSummary?.totalReviews || reviews.length} verified {reviews.length === 1 ? "review" : "reviews"}
+                </span>
               </div>
-              <span className="text-xs text-stone-500 font-semibold">
-                Based on {reviewsSummary?.totalReviews || reviews.length} verified reviews
-              </span>
-            </div>
 
-            {/* Right 5-Star Visual Breakdown Bars */}
-            <div className="md:col-span-8 space-y-2 flex flex-col justify-center">
-              {[5, 4, 3, 2, 1].map((star) => {
-                const count = reviewsSummary?.ratingCounts?.[star] || 0;
-                const pct = reviewsSummary?.ratingPercentages?.[star] || (star === 5 && reviews.length === 0 ? 100 : 0);
-                return (
-                  <div key={star} className="flex items-center gap-3 text-xs font-semibold text-stone-600 dark:text-stone-400">
-                    <span className="w-8 flex items-center gap-1 font-bold">
-                      {star} <Star className="w-3 h-3 text-amber-500 fill-current" />
-                    </span>
-                    <div className="flex-1 h-2.5 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-amber-400 rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%` }}
-                      />
+              {/* Right 5-Star Visual Breakdown Bars */}
+              <div className="md:col-span-8 space-y-2 flex flex-col justify-center">
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const count = reviewsSummary?.ratingCounts?.[star] || 0;
+                  const pct = reviewsSummary?.ratingPercentages?.[star] || 0;
+                  return (
+                    <div key={star} className="flex items-center gap-3 text-xs font-semibold text-stone-600 dark:text-stone-400">
+                      <span className="w-8 flex items-center gap-1 font-bold">
+                        {star} <Star className="w-3 h-3 text-amber-500 fill-current" />
+                      </span>
+                      <div className="flex-1 h-2.5 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-10 text-right text-stone-400 text-[11px]">{count}</span>
                     </div>
-                    <span className="w-10 text-right text-stone-400 text-[11px]">{count}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-8 bg-stone-50 dark:bg-stone-800/30 rounded-2xl border border-stone-200/60 dark:border-stone-800 text-center space-y-3">
+              <div className="inline-flex p-3 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                <Star className="w-6 h-6 stroke-1" />
+              </div>
+              <h4 className="text-sm font-bold text-stone-900 dark:text-white">No Customer Reviews Yet</h4>
+              <p className="text-xs text-stone-500 dark:text-stone-400 max-w-sm mx-auto">
+                Servora ratings are 100% genuine and verified from real customers. Be the first to share your experience with this seller!
+              </p>
+              <button
+                onClick={() => setIsReviewModalOpen(true)}
+                className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm"
+              >
+                Write the First Review
+              </button>
+            </div>
+          )}
 
           {/* Reviews Feed */}
           <div className="space-y-4">
@@ -1304,15 +1538,382 @@ export default function ProductDetailPage() {
         </div>
       )}
 
-      {/* Escrow Deal Creation Modal */}
-      <EscrowDealModal
-        isOpen={isEscrowModalOpen}
-        onClose={() => setIsEscrowModalOpen(false)}
-        sellerName={product.seller?.name || "Verified Local Enterprise"}
-        sellerBusinessName={product.seller?.businessName || product.seller?.name}
-        sellerPhone={product.seller?.phone || "+233240000000"}
-        defaultTitle={`Order: ${product.title}`}
-      />
+      {/* Escrow Deal Creation Modal (Only if Escrow is enabled) */}
+      {escrowEnabled && (
+        <EscrowDealModal
+          isOpen={isEscrowModalOpen}
+          onClose={() => setIsEscrowModalOpen(false)}
+          sellerName={product.seller?.name || "Verified Local Enterprise"}
+          sellerBusinessName={product.seller?.businessName || product.seller?.name}
+          sellerPhone={product.seller?.phone || "+233240000000"}
+          defaultTitle={`Order: ${product.title}`}
+        />
+      )}
+
+      {/* =========================================================================
+          FULL PRODUCT SETUP EDIT MODAL
+          ========================================================================= */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-stone-900 rounded-3xl max-w-2xl w-full border border-stone-200 dark:border-stone-800 shadow-2xl my-8 overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between bg-stone-50/50 dark:bg-stone-800/40">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center font-bold">
+                  <Edit className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-stone-900 dark:text-white">Edit Product Setup</h3>
+                  <p className="text-xs text-stone-500">Update complete listing information, pricing, photos & delivery</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Form Body */}
+            <form onSubmit={handleSaveProductEdit} className="p-6 overflow-y-auto space-y-5 flex-1">
+              {/* Product Title */}
+              <div>
+                <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                  Product Name / Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="e.g. Brand New Solar Inverter 3.5kVA"
+                  className="w-full px-3.5 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Pricing & Stock */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                    Price (GH₵) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-sm font-bold text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                    Compare-at Price (GH₵)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editOriginalPrice}
+                    onChange={(e) => setEditOriginalPrice(e.target.value)}
+                    placeholder="Original price"
+                    className="w-full px-3 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                    Stock Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editStock}
+                    onChange={(e) => setEditStock(e.target.value)}
+                    placeholder="1"
+                    className="w-full px-3 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Category & Subcategory */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">Category</label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  >
+                    {[
+                      "Electronics",
+                      "Phones & Tech",
+                      "Agribusiness & Farm",
+                      "Electrical & Solar",
+                      "Electronics & Appliances",
+                      "Fugu & Tailoring",
+                      "Artisan Services",
+                      "Hardware & Tools",
+                      "Building Materials",
+                      "Carpentry & Woodwork",
+                      "Welding & Metal",
+                      "Auto Parts & Mechanics",
+                      "Generators & Power",
+                      "Property & Land Sites",
+                      "Food & Agro-Goods",
+                      "Health & Cosmetics",
+                    ].map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">Subcategory</label>
+                  <input
+                    type="text"
+                    value={editSubCategory}
+                    onChange={(e) => setEditSubCategory(e.target.value)}
+                    placeholder="e.g. Inverters, Smartphones, Shea Butter"
+                    className="w-full px-3 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Condition & Negotiation */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                <div>
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">Condition</label>
+                  <select
+                    value={editCondition}
+                    onChange={(e) => setEditCondition(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  >
+                    <option value="BRAND_NEW">✨ Brand New (Unopened)</option>
+                    <option value="USED_LIKE_NEW">💎 Used - Like New</option>
+                    <option value="USED_GOOD">👍 Used - Good Condition</option>
+                    <option value="USED_FAIR">👌 Used - Fair / Working</option>
+                    <option value="REFURBISHED">🔧 Refurbished</option>
+                  </select>
+                </div>
+
+                <div className="pt-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editIsNegotiable}
+                      onChange={(e) => setEditIsNegotiable(e.target.checked)}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 rounded"
+                    />
+                    <span className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                      Price is Negotiable (Allows Buyers to Make Offers)
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Location & Delivery Options */}
+              <div className="space-y-2">
+                <div>
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                    Business / Pickup Location
+                  </label>
+                  <input
+                    type="text"
+                    value={editArea}
+                    onChange={(e) => setEditArea(e.target.value)}
+                    placeholder="e.g. Tamale Central, Sakasaka, Lamashegu"
+                    className="w-full px-3 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1.5">
+                    Available Delivery Modes
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: "PICKUP", label: "Self-Pickup" },
+                      { id: "LOCAL_DELIVERY", label: "Local Rider Delivery" },
+                      { id: "NATIONWIDE_SHIPPING", label: "Nationwide Parcel Shipping" },
+                    ].map((opt) => {
+                      const selected = editDeliveryOptions.includes(opt.id);
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setEditDeliveryOptions((prev) =>
+                              selected ? prev.filter((x) => x !== opt.id) : [...prev, opt.id]
+                            );
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                            selected
+                              ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-400"
+                              : "bg-stone-50 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-700"
+                          }`}
+                        >
+                          {selected ? "✓ " : "+ "}
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Photos (Up to 10 images) */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                    Product Photos ({editImages.length}/10)
+                  </label>
+                  <label className="cursor-pointer text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1">
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{uploadingImage ? "Uploading..." : "Add Photos"}</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      disabled={uploadingImage || editImages.length >= 10}
+                      onChange={handleMultipleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-5 gap-2">
+                  {editImages.map((img, idx) => (
+                    <div
+                      key={idx}
+                      className="relative aspect-square rounded-xl overflow-hidden border border-stone-200 dark:border-stone-700 group bg-stone-100 dark:bg-stone-800"
+                    >
+                      <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setEditImages((prev) => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-1 right-1 p-1 bg-black/70 hover:bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Remove photo"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      {idx === 0 && (
+                        <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-emerald-600 text-[9px] font-extrabold text-white rounded">
+                          Cover
+                        </span>
+                      )}
+                    </div>
+                  ))}
+
+                  {editImages.length < 10 && (
+                    <label className="aspect-square border-2 border-dashed border-stone-200 dark:border-stone-700 hover:border-emerald-500 rounded-xl flex flex-col items-center justify-center cursor-pointer text-stone-400 hover:text-emerald-600 transition-colors">
+                      <Camera className="w-5 h-5 mb-1" />
+                      <span className="text-[10px] font-bold">Upload</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        disabled={uploadingImage}
+                        onChange={handleMultipleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Video Clip (Optional, max 30s) */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                    <Video className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Product Video Clip (Max 30s)</span>
+                  </label>
+                  {editVideoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setEditVideoUrl("")}
+                      className="text-[11px] font-bold text-red-500 hover:underline"
+                    >
+                      Remove Video
+                    </button>
+                  )}
+                </div>
+                {editVideoUrl ? (
+                  <div className="p-3 bg-stone-50 dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 flex items-center justify-between text-xs">
+                    <span className="truncate text-emerald-600 font-medium">✓ Video attached</span>
+                    <a
+                      href={editVideoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-blue-500 hover:underline flex items-center gap-1 font-semibold"
+                    >
+                      Preview <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-stone-200 dark:border-stone-700 hover:border-blue-500 rounded-xl cursor-pointer text-xs font-bold text-stone-500 hover:text-blue-500 transition-colors">
+                    <UploadCloud className="w-4 h-4" />
+                    <span>{uploadingVideo ? "Uploading Video..." : "Upload 30-sec Video Showcase"}</span>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      disabled={uploadingVideo}
+                      onChange={handleVideoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* Description & Specifications */}
+              <div>
+                <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                  Full Description & Specifications
+                </label>
+                <textarea
+                  rows={4}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Detail condition, features, warranty, bundled accessories, etc."
+                  className="w-full px-3.5 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs leading-relaxed focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Form Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-100 dark:border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2.5 text-xs font-bold text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit || uploadingImage || uploadingVideo}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  {savingEdit ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving Listing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

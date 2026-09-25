@@ -7,12 +7,13 @@ import '../../../app/theme/servora_colors.dart';
 import '../../../app/theme/servora_typography.dart';
 import '../../../core/constants/constants.dart';
 import '../../../core/services/marketplace_api_service.dart';
+import '../../../core/services/user_location_service.dart';
 import '../../../main.dart';
-import '../../../shared/widgets/servora_dropdown_sheet.dart';
 import '../../../shared/widgets/servora_live_ticker_bar.dart';
 import '../../../shared/widgets/servora_provider_card.dart';
 import '../../../shared/widgets/servora_product_card.dart';
 import '../../../shared/widgets/category_picker_sheet.dart';
+import '../../../shared/widgets/servora_location_picker_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,7 +23,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _selectedLocation = 'Sakasaka, Tamale';
+  late String _selectedLocation;
   bool _isLoadingLiveApi = false;
   bool _showAllHomeCategories = false;
   List<Map<String, dynamic>> _liveProducts = [];
@@ -238,7 +239,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedLocation = UserLocationService.currentLocation.name;
+    UserLocationService.locationNotifier.addListener(_onLocationChanged);
     _loadLiveProductionData();
+  }
+
+  @override
+  void dispose() {
+    UserLocationService.locationNotifier.removeListener(_onLocationChanged);
+    super.dispose();
+  }
+
+  void _onLocationChanged() {
+    if (mounted) {
+      setState(() {
+        _selectedLocation = UserLocationService.currentLocation.name;
+      });
+    }
   }
 
   Future<void> _loadLiveProductionData() async {
@@ -362,17 +379,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openLocationPicker() async {
-    final result = await ServoraBottomSheetPicker.show(
-      context: context,
-      title: 'Select Northern Ghana Zone 📍',
-      items: ServoraConstants.northernNeighborhoods,
-      selectedValue: _selectedLocation,
-      searchHint: 'Search Sakasaka, Nyohini, Choggu...',
-      titleIcon: Icons.location_on_rounded,
-    );
-
-    if (result != null && mounted) {
-      setState(() => _selectedLocation = result);
+    final picked = await ServoraLocationPickerSheet.show(context);
+    if (picked != null && mounted) {
+      setState(() => _selectedLocation = picked.name);
     }
   }
 
@@ -433,11 +442,22 @@ class _HomeScreenState extends State<HomeScreen> {
                               decoration: BoxDecoration(
                                 color: isDark ? ServoraColors.darkSurface : const Color(0xFFE2E8F0),
                                 borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: ServoraColors.emerald600.withOpacity(0.3)),
+                                border: Border.all(
+                                  color: UserLocationService.currentLocation.isGps
+                                      ? ServoraColors.emerald600
+                                      : ServoraColors.emerald600.withOpacity(0.3),
+                                  width: UserLocationService.currentLocation.isGps ? 1.5 : 1.0,
+                                ),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.location_on_rounded, size: 14, color: ServoraColors.emerald600),
+                                  Icon(
+                                    UserLocationService.currentLocation.isGps
+                                        ? Icons.my_location_rounded
+                                        : Icons.location_on_rounded,
+                                    size: 14,
+                                    color: ServoraColors.emerald600,
+                                  ),
                                   const Gap(4),
                                   Text(
                                     _selectedLocation.length > 14

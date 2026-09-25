@@ -1,8 +1,63 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../constants/constants.dart';
 import '../../features/auth/providers/auth_provider.dart';
 
 class MarketplaceApiService {
+  // Global Platform Settings Reactive State
+  static final ValueNotifier<bool> escrowEnabledNotifier = ValueNotifier<bool>(true);
+
+  static bool get isEscrowEnabled => escrowEnabledNotifier.value;
+
+  /// Fetch live platform settings (escrow enabled, defaults)
+  static Future<bool> fetchPlatformSettings() async {
+    try {
+      final response = await _dio.get('/platform/settings');
+      if (response.statusCode == 200 && response.data != null && response.data is Map) {
+        final settings = response.data['settings'];
+        if (settings != null && settings['escrowEnabled'] != null) {
+          final bool enabled = settings['escrowEnabled'] == true;
+          escrowEnabledNotifier.value = enabled;
+          return enabled;
+        }
+      }
+    } catch (_) {}
+    return escrowEnabledNotifier.value;
+  }
+
+  /// Update Escrow master switch across web and mobile
+  static Future<bool> updateEscrowEnabled(bool enabled) async {
+    escrowEnabledNotifier.value = enabled;
+    try {
+      final opts = await _authOptions();
+      final response = await _dio.post(
+        '/platform/settings',
+        data: {'escrowEnabled': enabled},
+        options: opts,
+      );
+      if (response.statusCode == 200 && response.data != null && response.data is Map) {
+        final settings = response.data['settings'];
+        if (settings != null && settings['escrowEnabled'] != null) {
+          escrowEnabledNotifier.value = settings['escrowEnabled'] == true;
+          return escrowEnabledNotifier.value;
+        }
+      }
+    } catch (_) {
+      try {
+        final opts = await _authOptions();
+        await _dio.post(
+          '/admin/manage',
+          data: {
+            'action': 'SET_ESCROW_ENABLED',
+            'payload': {'enabled': enabled},
+          },
+          options: opts,
+        );
+      } catch (_) {}
+    }
+    return escrowEnabledNotifier.value;
+  }
+
   static final Dio _dio = Dio(
     BaseOptions(
       baseUrl: ServoraConstants.baseUrl,
@@ -12,12 +67,18 @@ class MarketplaceApiService {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Cache-Control': 'max-age=60',
+        'Cache-Control': 'no-cache',
       },
     ),
   );
 
-  // In-Memory Cache for 0ms Instant Page Loads
+  /// Dynamically update Dio baseUrl when active server switch occurs
+  static void reconfigureBaseUrl(String url) {
+    _dio.options.baseUrl = url;
+    clearCache();
+  }
+
+  // In-Memory Cache for 0ms Instant Page Loads (Short TTL for live real-time sync)
   static List<dynamic>? _cachedProducts;
   static DateTime? _productsCacheTime;
 
@@ -32,7 +93,7 @@ class MarketplaceApiService {
 
   static final Map<String, dynamic> _storefrontCache = {};
 
-  static const Duration _cacheTtl = Duration(minutes: 5);
+  static const Duration _cacheTtl = Duration(seconds: 15);
 
   static Future<void> sendPresenceHeartbeat() async {
     try {

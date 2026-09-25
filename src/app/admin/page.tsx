@@ -162,6 +162,7 @@ export default function AdminDashboardPage() {
 
   // Feature Flags Toggle State
   const [localFlags, setLocalFlags] = useState<any[]>(DEFAULT_FEATURE_FLAGS);
+  const [escrowEnabled, setEscrowEnabledState] = useState<boolean>(true);
 
   // System Settings State & Sub-Tabs
   const [settingsSubTab, setSettingsSubTab] = useState<
@@ -185,12 +186,56 @@ export default function AdminDashboardPage() {
       const resData = await res.json();
       if (res.ok && resData && resData.stats) {
         setData(resData);
+        if (resData.systemSettings?.escrowEnabled !== undefined) {
+          setEscrowEnabledState(resData.systemSettings.escrowEnabled);
+          setLocalFlags((prev) =>
+            prev.map((f) =>
+              f.id === "flag-4" || f.name.includes("Escrow")
+                ? { ...f, isEnabled: resData.systemSettings.escrowEnabled }
+                : f
+            )
+          );
+        }
       }
     } catch (err: any) {
       console.warn("Background admin stats sync error:", err);
     } finally {
       setIsSyncing(false);
       setLoading(false);
+    }
+  }
+
+  async function handleToggleEscrow(desiredState?: boolean) {
+    const nextVal = desiredState !== undefined ? desiredState : !escrowEnabled;
+    setEscrowEnabledState(nextVal);
+    setLocalFlags((prev) =>
+      prev.map((f) =>
+        f.id === "flag-4" || f.name.includes("Escrow") ? { ...f, isEnabled: nextVal } : f
+      )
+    );
+
+    try {
+      const res = await fetch("/api/admin/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "SET_ESCROW_ENABLED",
+          payload: { enabled: nextVal },
+        }),
+      });
+
+      if (res.ok) {
+        if (nextVal) {
+          toast.success("Escrow Subsystem Enabled 🛡️", "Mobile Money Escrow, deals, and vaults are now active across the platform.");
+        } else {
+          toast.warning("Escrow Subsystem Disabled ⛔", "All escrow buttons, deals, and vaults are now removed and hidden from the platform.");
+        }
+        fetchAdminStats();
+      } else {
+        toast.error("Failed to update escrow setting", "Please try again.");
+      }
+    } catch {
+      toast.error("Network error updating escrow setting");
     }
   }
 
@@ -214,6 +259,10 @@ export default function AdminDashboardPage() {
   }
 
   function toggleFlag(id: string) {
+    if (id === "flag-4" || id.includes("escrow")) {
+      handleToggleEscrow();
+      return;
+    }
     setLocalFlags((prev) =>
       prev.map((f) => {
         if (f.id === id) {
@@ -226,8 +275,21 @@ export default function AdminDashboardPage() {
     );
   }
 
-  function handleSaveSettings(e: React.FormEvent) {
+  async function handleSaveSettings(e: React.FormEvent) {
     e.preventDefault();
+    try {
+      await fetch("/api/platform/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platformName,
+          supportPhone,
+          supportEmail,
+          commissionRate,
+          escrowEnabled,
+        }),
+      });
+    } catch {}
     setSettingsSavedMessage(true);
     toast.success("Master Settings Saved! ⚙️", "Platform configuration updated.");
     setTimeout(() => setSettingsSavedMessage(false), 3000);
@@ -275,6 +337,7 @@ export default function AdminDashboardPage() {
       unresolvedDisputesCount={0}
       themeMode={themeMode}
       onToggleTheme={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
+      escrowEnabled={escrowEnabled}
     >
       {/* ------------------------------------------------------------- */}
       {/* 1. VIEW: DASHBOARD OVERVIEW */}
@@ -1079,40 +1142,96 @@ export default function AdminDashboardPage() {
 
           {/* Sub-Tab 1: General Configuration */}
           {settingsSubTab === "general" && (
-            <form onSubmit={handleSaveSettings} className="space-y-6 max-w-4xl">
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-2xl space-y-4 text-xs">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Core Marketplace Configuration</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-zinc-300 mb-1">Platform Name</label>
-                    <input
-                      type="text"
-                      value={platformName}
-                      onChange={(e) => setPlatformName(e.target.value)}
-                      className="w-full p-3 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none font-bold"
-                    />
+            <div className="space-y-6 max-w-4xl">
+              {/* Dedicated Master Escrow Subsystem Switch Card */}
+              <div
+                className={`p-6 rounded-2xl border transition-all text-xs space-y-4 ${
+                  escrowEnabled
+                    ? "bg-white dark:bg-zinc-900 border-emerald-500/40 shadow-xs"
+                    : "bg-amber-50/60 dark:bg-amber-950/20 border-amber-500/40"
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <ShieldCheck className={`w-5 h-5 ${escrowEnabled ? "text-emerald-500" : "text-amber-500"}`} />
+                        <span>Mobile Money Escrow Subsystem (Master Switch)</span>
+                      </h3>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          escrowEnabled
+                            ? "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                            : "bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                        }`}
+                      >
+                        {escrowEnabled ? "ENABLED & VISIBLE 🛡️" : "DISABLED & REMOVED ⛔"}
+                      </span>
+                    </div>
+                    <p className="text-slate-600 dark:text-zinc-400 text-xs leading-relaxed max-w-2xl">
+                      {escrowEnabled
+                        ? "Escrow protection is active. Buyers can lock funds in safe MoMo escrow vaults, 'Safe Escrow' buttons appear on products and WhatsApp shares, customer account vault tabs are enabled, and the Finance & Escrow hub is accessible."
+                        : "Escrow protection is disabled. All escrow buttons, 'Safe Escrow' checkout options, customer escrow vault tabs, and sidebar finance modules are completely removed and hidden from the platform."}
+                    </p>
                   </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-zinc-300 mb-1">Platform Support Phone</label>
-                    <input
-                      type="text"
-                      value={supportPhone}
-                      onChange={(e) => setSupportPhone(e.target.value)}
-                      className="w-full p-3 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none font-bold"
-                    />
-                  </div>
-                </div>
 
-                <div className="pt-4 flex justify-end">
                   <button
-                    type="submit"
-                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow cursor-pointer transition flex items-center gap-1.5"
+                    type="button"
+                    onClick={() => handleToggleEscrow()}
+                    className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shrink-0 flex items-center gap-2 shadow-xs active:scale-95 ${
+                      escrowEnabled
+                        ? "bg-rose-600 hover:bg-rose-500 text-white"
+                        : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                    }`}
                   >
-                    <Save className="w-4 h-4" /> Save Master Settings
+                    {escrowEnabled ? (
+                      <>
+                        <X className="w-3.5 h-3.5" /> Disable Escrow System
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" /> Enable Escrow System
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
-            </form>
+
+              <form onSubmit={handleSaveSettings} className="space-y-6">
+                <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-2xl space-y-4 text-xs">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Core Marketplace Configuration</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-zinc-300 mb-1">Platform Name</label>
+                      <input
+                        type="text"
+                        value={platformName}
+                        onChange={(e) => setPlatformName(e.target.value)}
+                        className="w-full p-3 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-zinc-300 mb-1">Platform Support Phone</label>
+                      <input
+                        type="text"
+                        value={supportPhone}
+                        onChange={(e) => setSupportPhone(e.target.value)}
+                        className="w-full p-3 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 flex justify-end">
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow cursor-pointer transition flex items-center gap-1.5"
+                    >
+                      <Save className="w-4 h-4" /> Save Master Settings
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
           )}
 
           {/* Sub-Tab 2: Recycle Bin & Trash Vault */}
@@ -1206,7 +1325,27 @@ export default function AdminDashboardPage() {
       {/* ------------------------------------------------------------- */}
       {/* 15. VIEW: FINANCE & MOMO ESCROW HUB */}
       {/* ------------------------------------------------------------- */}
-      {activeView === "escrow" && <AdminFinanceEscrowHub />}
+      {activeView === "escrow" && (
+        <div className="space-y-4">
+          {!escrowEnabled && (
+            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between text-xs text-amber-800 dark:text-amber-200">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>
+                  <strong>Notice:</strong> The Escrow Subsystem is currently <strong>DISABLED</strong> in System Settings. Customer-facing safe escrow buttons, vaults, and APIs are deactivated.
+                </span>
+              </div>
+              <button
+                onClick={() => handleToggleEscrow(true)}
+                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition cursor-pointer"
+              >
+                Enable Escrow Now
+              </button>
+            </div>
+          )}
+          <AdminFinanceEscrowHub />
+        </div>
+      )}
 
       {/* ------------------------------------------------------------- */}
       {/* 16. VIEW: SECURITY & FRAUD ENGINE */}

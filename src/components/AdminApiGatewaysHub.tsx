@@ -4,10 +4,29 @@ import React from "react";
 import { Radio, Zap, MessageCircle, Send, CreditCard, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 export function AdminApiGatewaysHub() {
+  const [escrowEnabled, setEscrowEnabled] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch("/api/platform/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings?.escrowEnabled !== undefined) {
+          setEscrowEnabled(d.settings.escrowEnabled);
+        }
+      })
+      .catch(() => null);
+  }, []);
+
   const gateways = [
     { name: "WhatsApp Business API", provider: "Meta / WhatsApp Cloud API", status: "ONLINE", latency: "140ms", balance: "Unlimited API Messaging" },
     { name: "SMS Gateway (Hubtel / Arkesel)", provider: "Hubtel Ghana", status: "ONLINE", latency: "210ms", balance: "4,820 SMS Credits Left" },
-    { name: "MoMo Escrow Payment Gateway", provider: "Paystack / MTN MoMo API", status: "ONLINE", latency: "180ms", balance: "Live Merchant Sandbox Active" },
+    {
+      name: "MoMo Escrow Payment Gateway",
+      provider: "Paystack / MTN MoMo API",
+      status: escrowEnabled ? "ONLINE" : "DISABLED",
+      latency: escrowEnabled ? "180ms" : "N/A",
+      balance: escrowEnabled ? "Live Merchant Sandbox Active" : "Escrow Subsystem Inactive (Disabled in Settings)",
+    },
     { name: "Google Maps & Geocoding API", provider: "Google Cloud", status: "ONLINE", latency: "95ms", balance: "Active (Tamale Bounds Filter)" },
   ];
 

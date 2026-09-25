@@ -24,7 +24,7 @@ export function DigitalPromoFlyerModal({
   slug,
   category = "Artisan & Merchant Services",
   zone = "Sakasaka, Tamale",
-  verificationStatus = "VERIFIED",
+  verificationStatus = "UNVERIFIED",
   ratingAverage = 4.9,
   reviewsCount = 18,
   topItems = [
@@ -84,18 +84,50 @@ export function DigitalPromoFlyerModal({
     ctx.font = "900 28px Inter, sans-serif";
     ctx.fillText("SERVORA NORTHERN MARKET", 110, 110);
 
-    // Verified Merchant Badge
-    ctx.fillStyle = "rgba(16, 185, 129, 0.25)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(750, 70, 250, 60, 30);
-    ctx.fill();
-    ctx.stroke();
+    const isVerified =
+      verificationStatus === "VERIFIED" ||
+      verificationStatus === "TIER_2_VERIFIED_ARTISAN" ||
+      verificationStatus === "TIER_3_REGISTERED_ENTERPRISE";
+    const isRejected = verificationStatus === "REJECTED";
 
-    ctx.fillStyle = "#6ee7b7";
-    ctx.font = "800 24px Inter, sans-serif";
-    ctx.fillText(`✓ ${verificationStatus}`, 780, 110);
+    // Trust / Verification Badge
+    if (isVerified) {
+      ctx.fillStyle = "rgba(16, 185, 129, 0.25)";
+      ctx.strokeStyle = "#10b981";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(730, 70, 270, 60, 30);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#6ee7b7";
+      ctx.font = "800 24px Inter, sans-serif";
+      ctx.fillText("✓ VERIFIED MERCHANT", 750, 110);
+    } else if (isRejected) {
+      ctx.fillStyle = "rgba(239, 68, 68, 0.2)";
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(730, 70, 270, 60, 30);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#fca5a5";
+      ctx.font = "800 22px Inter, sans-serif";
+      ctx.fillText("UNVERIFIED MERCHANT", 745, 110);
+    } else {
+      ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(730, 70, 270, 60, 30);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#fde68a";
+      ctx.font = "800 22px Inter, sans-serif";
+      ctx.fillText("KYC UNDER REVIEW", 750, 110);
+    }
 
     // Business Name
     ctx.fillStyle = "#ffffff";

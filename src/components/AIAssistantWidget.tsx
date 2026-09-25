@@ -14,12 +14,13 @@ const QUICK_PROMPTS = [
 export function AIAssistantWidget() {
   const pathname = usePathname() || "";
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [escrowEnabled, setEscrowEnabled] = useState(true);
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ sender: "user" | "bot"; text: string }>>([
     {
       sender: "bot",
-      text: "👋 Hi there! I'm Servora AI Assistant. Ask me anything about finding verified artisans, tracking orders, or Mobile Money escrow safety in Northern Ghana!",
+      text: "👋 Hi there! I'm Servora AI Assistant. Ask me anything about finding verified artisans, tracking orders, or buying safely in Northern Ghana!",
     },
   ]);
   const [input, setInput] = useState("");
@@ -32,6 +33,15 @@ export function AIAssistantWidget() {
       .then((res) => res.json())
       .then((data) => {
         if (data.user?.role) setUserRole(data.user.role);
+      })
+      .catch(() => null);
+
+    fetch("/api/platform/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.settings?.escrowEnabled !== undefined) {
+          setEscrowEnabled(data.settings.escrowEnabled);
+        }
       })
       .catch(() => null);
   }, []);
@@ -143,7 +153,7 @@ export function AIAssistantWidget() {
 
           {/* Quick Prompt Chips */}
           <div className="p-2 bg-stone-100/90 dark:bg-stone-800/90 border-b border-stone-200/80 dark:border-stone-800 flex items-center gap-1.5 overflow-x-auto text-[11px] shrink-0">
-            {QUICK_PROMPTS.map((qp, idx) => (
+            {QUICK_PROMPTS.filter((qp) => escrowEnabled || !qp.label.toLowerCase().includes("escrow")).map((qp, idx) => (
               <button
                 key={idx}
                 onClick={() => sendMessage(qp.prompt)}

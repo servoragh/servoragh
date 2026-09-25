@@ -185,11 +185,15 @@ export async function POST(request: Request) {
       const provider = await prisma.providerProfile.findUnique({ where: { id: entityId } });
       if (!provider) return NextResponse.json({ error: "Provider profile not found." }, { status: 404 });
 
-      const existingBadges = JSON.parse(provider.badges || "[]");
+      const existingBadges: string[] = JSON.parse(provider.badges || "[]");
       let updatedBadges = [...existingBadges];
       if (status === "VERIFIED") {
         if (!updatedBadges.includes("IDENTITY_VERIFIED")) updatedBadges.push("IDENTITY_VERIFIED");
         if (!updatedBadges.includes("BUSINESS_VERIFIED")) updatedBadges.push("BUSINESS_VERIFIED");
+      } else if (status === "REJECTED") {
+        updatedBadges = updatedBadges.filter(
+          (b) => b !== "IDENTITY_VERIFIED" && b !== "BUSINESS_VERIFIED" && b !== "TIER_2_VERIFIED"
+        );
       }
 
       updatedResult = await prisma.providerProfile.update({
@@ -201,6 +205,17 @@ export async function POST(request: Request) {
       });
       userIdToNotify = provider.userId;
       entityName = provider.businessName;
+
+      if (status === "REJECTED" && provider.userId) {
+        await prisma.verificationRequest.updateMany({
+          where: { userId: provider.userId },
+          data: { status: "REJECTED", adminNotes: notes || "ID document rejected. Please upload a clear photo of your Ghana Card." },
+        });
+        await prisma.businessProfile.updateMany({
+          where: { userId: provider.userId },
+          data: { verificationStatus: "REJECTED" },
+        });
+      }
     }
 
     // 2. Target: Delivery Provider Profile
@@ -236,6 +251,27 @@ export async function POST(request: Request) {
           where: { userId: business.userId },
           data: { verificationTier: "TIER_2_IDENTITY" },
         });
+      } else if (status === "REJECTED" && business.userId) {
+        // Strip verified tier & sync rejection status
+        await prisma.customerProfile.updateMany({
+          where: { userId: business.userId },
+          data: { verificationTier: "TIER_1_BASIC" },
+        });
+        await prisma.verificationRequest.updateMany({
+          where: { userId: business.userId },
+          data: { status: "REJECTED", adminNotes: notes || "ID document rejected. Please upload a clear photo of your Ghana Card." },
+        });
+        const provider = await prisma.providerProfile.findFirst({ where: { userId: business.userId } });
+        if (provider) {
+          const badges: string[] = JSON.parse(provider.badges || "[]");
+          const cleanedBadges = badges.filter(
+            (b) => b !== "IDENTITY_VERIFIED" && b !== "BUSINESS_VERIFIED" && b !== "TIER_2_VERIFIED"
+          );
+          await prisma.providerProfile.update({
+            where: { id: provider.id },
+            data: { verificationStatus: "REJECTED", badges: JSON.stringify(cleanedBadges) },
+          });
+        }
       }
     }
 
@@ -248,7 +284,7 @@ export async function POST(request: Request) {
         where: { id: entityId },
         data: {
           status: status,
-          adminNotes: notes || null,
+          adminNotes: notes || (status === "REJECTED" ? "ID document was unclear or invalid. Please resubmit a clear Ghana Card photo." : null),
         },
       });
 
@@ -269,6 +305,26 @@ export async function POST(request: Request) {
           where: { userId: req.userId },
           data: { verificationStatus: "VERIFIED" },
         });
+      } else if (status === "REJECTED") {
+        await prisma.customerProfile.updateMany({
+          where: { userId: req.userId },
+          data: { verificationTier: "TIER_1_BASIC" },
+        });
+        await prisma.businessProfile.updateMany({
+          where: { userId: req.userId },
+          data: { verificationStatus: "REJECTED" },
+        });
+        const provider = await prisma.providerProfile.findFirst({ where: { userId: req.userId } });
+        if (provider) {
+          const badges: string[] = JSON.parse(provider.badges || "[]");
+          const cleanedBadges = badges.filter(
+            (b) => b !== "IDENTITY_VERIFIED" && b !== "BUSINESS_VERIFIED" && b !== "TIER_2_VERIFIED"
+          );
+          await prisma.providerProfile.update({
+            where: { id: provider.id },
+            data: { verificationStatus: "REJECTED", badges: JSON.stringify(cleanedBadges) },
+          });
+        }
       }
       userIdToNotify = req.userId;
       entityName = "General User Request";
@@ -288,11 +344,11 @@ export async function POST(request: Request) {
       await prisma.notification.create({
         data: {
           userId: userIdToNotify,
-          title: status === "VERIFIED" ? "🎉 Verification Approved!" : "⚠️ Verification Status Update",
+          title: status === "VERIFIED" ? "🎉 Verification Approved!" : "❌ ID Verification Denied: Action Required",
           message: status === "VERIFIED"
-            ? `Congratulations! Your identity credentials for "${entityName}" have been approved on Servora.`
-            : `Your verification request was reviewed: ${notes || "Documentation rejected. Please resubmit clear Ghana Card ID."}`,
-          link: "/dashboard",
+            ? `Congratulations! Your identity credentials for "${entityName}" have been approved. Your verified badge is now active on Servora.`
+            : `Your verification request was reviewed and denied: ${notes || "The uploaded Ghana Card photo was unclear or unreadable"}. Please upload a clear photo of your Ghana Card front to receive your verified badge.`,
+          link: "/business/portal",
         },
       }).catch(() => null);
     }

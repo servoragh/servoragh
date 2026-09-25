@@ -12,6 +12,7 @@ import '../../../shared/widgets/servora_image_upload_widget.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../core/utils/location_helper.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../core/services/marketplace_api_service.dart';
 
 class CustomerPortalView extends StatefulWidget {
   final VoidCallback? onSwitchToMerchant;
@@ -360,8 +361,10 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
               _buildTabChip('📊 Overview & Stream', 'overview'),
               const Gap(6),
               _buildTabChip('📋 My Requests (${_serviceRequests.length})', 'requests'),
-              const Gap(6),
-              _buildTabChip('🛡️ MoMo Escrow (${_escrowDeals.length})', 'escrow'),
+              if (MarketplaceApiService.isEscrowEnabled) ...[
+                const Gap(6),
+                _buildTabChip('🛡️ MoMo Escrow (${_escrowDeals.length})', 'escrow'),
+              ],
               const Gap(6),
               _buildTabChip('💬 Messages', 'messages'),
               const Gap(6),
@@ -403,6 +406,9 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
       case 'requests':
         return _buildRequestsTab(isDark);
       case 'escrow':
+        if (!MarketplaceApiService.isEscrowEnabled) {
+          return _buildOverviewTab(isDark);
+        }
         return _buildEscrowTab(isDark);
       case 'messages':
         return _buildMessagesTab(isDark);
@@ -433,20 +439,29 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 4 KPI Cards
+        // KPI Cards (Adjusts dynamically when escrow is disabled)
         Row(
           children: [
             _buildKpiCard('ACTIVE JOBS & GIGS', '$activeGigs', 'In progress & open', Icons.assignment_outlined, const Color(0xFF059669), isDark),
             const Gap(8),
-            _buildKpiCard('MOMO ESCROW VAULT', 'GH₵ ${escrowBal.toStringAsFixed(2)}', '100% Protected funds', Icons.shield_rounded, const Color(0xFF059669), isDark),
+            if (MarketplaceApiService.isEscrowEnabled)
+              _buildKpiCard('MOMO ESCROW VAULT', 'GH₵ ${escrowBal.toStringAsFixed(2)}', '100% Protected funds', Icons.shield_rounded, const Color(0xFF059669), isDark)
+            else
+              _buildKpiCard('SAVED STORES', '$savedCount', 'Bookmarked shops', Icons.favorite_rounded, const Color(0xFFF43F5E), isDark),
           ],
         ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.05, end: 0),
         const Gap(8),
         Row(
           children: [
-            _buildKpiCard('SAVED STORES', '$savedCount', 'Bookmarked shops', Icons.favorite_rounded, const Color(0xFFF43F5E), isDark),
-            const Gap(8),
-            _buildKpiCard('OPEN DISPUTES', '$openDisputes', openDisputes == 0 ? 'Good standing ✓' : 'Requires mediation', Icons.gavel_rounded, Colors.amber[800]!, isDark),
+            if (MarketplaceApiService.isEscrowEnabled) ...[
+              _buildKpiCard('SAVED STORES', '$savedCount', 'Bookmarked shops', Icons.favorite_rounded, const Color(0xFFF43F5E), isDark),
+              const Gap(8),
+              _buildKpiCard('OPEN DISPUTES', '$openDisputes', openDisputes == 0 ? 'Good standing ✓' : 'Requires mediation', Icons.gavel_rounded, Colors.amber[800]!, isDark),
+            ] else ...[
+              _buildKpiCard('OPEN DISPUTES', '$openDisputes', openDisputes == 0 ? 'Good standing ✓' : 'Requires mediation', Icons.gavel_rounded, Colors.amber[800]!, isDark),
+              const Gap(8),
+              _buildKpiCard('TIER 1 BUYER', 'Verified', 'Phone verified', Icons.verified_user_rounded, const Color(0xFF059669), isDark),
+            ],
           ],
         ).animate().fadeIn(delay: 50.ms, duration: 250.ms).slideY(begin: 0.05, end: 0),
         const Gap(14),
@@ -460,8 +475,10 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
               const Text('Quick Customer Actions:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
               const Gap(8),
               _buildActionTile(Icons.post_add_rounded, 'Post New Job Request', 'Broadcast quote call to Tamale artisans', () => context.push('/services/request')),
-              const Gap(6),
-              _buildActionTile(Icons.shield_outlined, 'MoMo Escrow Protection Vault', 'Inspect held deposits & release funds', () => setState(() => _activeTab = 'escrow')),
+              if (MarketplaceApiService.isEscrowEnabled) ...[
+                const Gap(6),
+                _buildActionTile(Icons.shield_outlined, 'MoMo Escrow Protection Vault', 'Inspect held deposits & release funds', () => setState(() => _activeTab = 'escrow')),
+              ],
               const Gap(6),
               _buildActionTile(Icons.forum_rounded, 'Tamale Community Notice Board', 'View tool rental calls & trade notices', () => context.go('/community')),
             ],
@@ -1011,12 +1028,14 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
       return title.contains(q) || desc.contains(q) || status.contains(q);
     }).toList();
 
-    final filteredEscrow = _escrowDeals.where((e) {
-      final title = (e['title'] ?? '').toString().toLowerCase();
-      final code = (e['dealCode'] ?? '').toString().toLowerCase();
-      final prov = (e['provider']?['name'] ?? '').toString().toLowerCase();
-      return title.contains(q) || code.contains(q) || prov.contains(q);
-    }).toList();
+    final filteredEscrow = MarketplaceApiService.isEscrowEnabled
+        ? _escrowDeals.where((e) {
+            final title = (e['title'] ?? '').toString().toLowerCase();
+            final code = (e['dealCode'] ?? '').toString().toLowerCase();
+            final prov = (e['provider']?['name'] ?? '').toString().toLowerCase();
+            return title.contains(q) || code.contains(q) || prov.contains(q);
+          }).toList()
+        : <dynamic>[];
 
     final filteredLiked = _likedProducts.where((p) {
       final title = (p['title'] ?? '').toString().toLowerCase();
@@ -1146,7 +1165,7 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
         ],
 
         // 3. Matching Escrow Deals
-        if (filteredEscrow.isNotEmpty) ...[
+        if (MarketplaceApiService.isEscrowEnabled && filteredEscrow.isNotEmpty) ...[
           Text('🛡️ Escrow Contracts (${filteredEscrow.length})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
           const Gap(6),
           ...filteredEscrow.map((deal) => Padding(

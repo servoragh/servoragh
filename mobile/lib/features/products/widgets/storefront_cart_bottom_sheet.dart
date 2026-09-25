@@ -4,6 +4,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../features/auth/providers/auth_provider.dart';
+import '../../../core/services/marketplace_api_service.dart';
+import '../../../core/services/user_location_service.dart';
+import '../../../shared/widgets/servora_location_picker_sheet.dart';
 
 class StorefrontCartItem {
   final String id;
@@ -98,10 +101,16 @@ class _StorefrontCartBottomSheetState extends State<StorefrontCartBottomSheet> {
   void initState() {
     super.initState();
     _items = List.from(widget.cartItems);
+    if (!MarketplaceApiService.isEscrowEnabled) {
+      _paymentMethod = 'CASH';
+    }
     final user = authNotifier.state.user;
     if (user != null) {
       _nameController.text = user.name;
       _phoneController.text = user.phone;
+    }
+    if (UserLocationService.currentLocation.formattedAddress.isNotEmpty) {
+      _addressController.text = UserLocationService.currentLocation.formattedAddress;
     }
   }
 
@@ -481,8 +490,14 @@ ${_notesController.text.trim().isNotEmpty ? '📝 *Notes:* ${_notesController.te
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Escrow Buyer Protection', style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.grey[700])),
-                  const Text('FREE 🛡️', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                  Text(
+                    MarketplaceApiService.isEscrowEnabled ? 'Escrow Buyer Protection' : 'Servora Order Protection',
+                    style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.grey[700]),
+                  ),
+                  Text(
+                    MarketplaceApiService.isEscrowEnabled ? 'FREE 🛡️' : 'FREE ✓',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                  ),
                 ],
               ),
             ],
@@ -574,7 +589,29 @@ ${_notesController.text.trim().isNotEmpty ? '📝 *Notes:* ${_notesController.te
         _buildTextField(_phoneController, 'Phone / WhatsApp *', 'e.g. 0244123456', Icons.phone_rounded, isDark, keyboard: TextInputType.phone),
         if (_deliveryType == 'DELIVERY') ...[
           const Gap(8),
-          _buildTextField(_addressController, 'Delivery Address & Landmark *', 'e.g. Sakasaka, near Regional Hospital', Icons.location_on_rounded, isDark),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Delivery Address & Landmark *', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+              InkWell(
+                onTap: () async {
+                  final picked = await ServoraLocationPickerSheet.show(context);
+                  if (picked != null) {
+                    setState(() => _addressController.text = picked.formattedAddress);
+                  }
+                },
+                child: const Row(
+                  children: [
+                    Icon(Icons.my_location_rounded, size: 12, color: ServoraColors.emerald600),
+                    Gap(4),
+                    Text('Auto-Detect / Map 📍', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: ServoraColors.emerald600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Gap(4),
+          _buildTextField(_addressController, '', 'e.g. Sakasaka, near Regional Hospital or GPS address', Icons.location_on_rounded, isDark),
         ],
         const Gap(8),
         _buildTextField(_notesController, 'Special Instructions / Notes (Optional)', 'e.g. Deliver before 4 PM', Icons.notes_rounded, isDark),
@@ -583,8 +620,10 @@ ${_notesController.text.trim().isNotEmpty ? '📝 *Notes:* ${_notesController.te
         // Payment Method Selector
         const Text('3. PAYMENT METHOD', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Colors.grey, letterSpacing: 0.5)),
         const Gap(8),
-        _buildPaymentOption('MOMO_ESCROW', 'MTN / Telecel / AT MoMo (Escrow Protected)', 'Funds held safely until you confirm delivery 🛡️', Icons.account_balance_wallet_rounded, isDark),
-        const Gap(6),
+        if (MarketplaceApiService.isEscrowEnabled) ...[
+          _buildPaymentOption('MOMO_ESCROW', 'MTN / Telecel / AT MoMo (Escrow Protected)', 'Funds held safely until you confirm delivery 🛡️', Icons.account_balance_wallet_rounded, isDark),
+          const Gap(6),
+        ],
         _buildPaymentOption('CARD', 'Debit / Credit Card', 'Mastercard, Visa online payment', Icons.credit_card_rounded, isDark),
         const Gap(6),
         _buildPaymentOption('CASH', 'Cash on Delivery / Pickup', 'Pay merchant directly upon receipt', Icons.payments_rounded, isDark),

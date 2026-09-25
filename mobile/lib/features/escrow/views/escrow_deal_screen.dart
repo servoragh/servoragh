@@ -4,6 +4,7 @@ import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/servora_button.dart';
 import '../../../shared/widgets/servora_text_field.dart';
 import '../../../shared/widgets/status_badge.dart';
+import '../../../core/services/marketplace_api_service.dart';
 
 class EscrowDealScreen extends StatefulWidget {
   const EscrowDealScreen({super.key});
@@ -45,14 +46,42 @@ class _EscrowDealScreenState extends State<EscrowDealScreen> {
             },
           ),
         ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Escrow Explanation Banner
-            Container(
-              padding: const EdgeInsets.all(16),
+      body: !MarketplaceApiService.isEscrowEnabled
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(28.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.shield_outlined, size: 64, color: Colors.orange),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Escrow Subsystem Inactive',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'MoMo Escrow deposits are currently disabled across the platform. You can still order and deal directly with verified merchants.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, color: Colors.grey, height: 1.4),
+                    ),
+                    const SizedBox(height: 24),
+                    ServoraButton(
+                      label: 'Explore Marketplace 🛒',
+                      onPressed: () => context.go('/products'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Escrow Explanation Banner
+                  Container(
+                    padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFFFEF3C7),
                 borderRadius: BorderRadius.circular(16),

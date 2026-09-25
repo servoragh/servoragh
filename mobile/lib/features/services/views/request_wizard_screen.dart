@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../../../core/constants/constants.dart';
-import '../../../core/utils/location_helper.dart';
+import '../../../core/services/user_location_service.dart';
 import '../../../shared/widgets/servora_button.dart';
 import '../../../shared/widgets/servora_text_field.dart';
 import '../../../shared/widgets/servora_dropdown_sheet.dart';
+import '../../../shared/widgets/servora_location_picker_sheet.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class RequestWizardScreen extends StatefulWidget {
@@ -277,74 +278,89 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
 
-          // GPS Lock Button with safe fallback
-          ServoraButton(
-            label: _fetchingGps
-                ? 'Locking GPS Coordinates...'
-                : 'Use Current Device GPS 📍',
-            variant: ServoraButtonVariant.outline,
-            isLoading: _fetchingGps,
-            onPressed: () async {
-              setState(() => _fetchingGps = true);
-              try {
-                final pos = await LocationHelper.getCurrentPosition();
-                if (mounted) {
-                  setState(() {
-                    _fetchingGps = false;
-                    if (pos != null) {
-                      _locationController.text =
-                          'Exact GPS (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}) Sakasaka, Tamale';
-                    } else {
-                      _locationController.text = 'Sakasaka, Tamale';
-                    }
-                  });
-                }
-              } catch (_) {
-                if (mounted) {
-                  setState(() {
-                    _fetchingGps = false;
-                    _locationController.text = 'Tamale Central, Northern Ghana';
-                  });
-                }
-              }
-            },
-          ),
-          const SizedBox(height: 14),
-
-          // 1-Tap Quick Area Selector
-          const Text('Quick 1-Tap Area Selector:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
+          // 1. Smart GPS Detection & Search Actions
+          Row(
             children: [
-              'Sakasaka',
-              'Tamale Central',
-              'Choggu',
-              'Nyohini',
-              'Aboabo',
-              'Dungu',
-              'Lamashegu',
-              'Bolgatanga',
-            ].map((area) {
-              return ActionChip(
-                label: Text(area, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
-                backgroundColor: _locationController.text.contains(area)
-                    ? const Color(0xFF059669).withOpacity(0.15)
-                    : null,
-                onPressed: () {
-                  setState(() {
-                    _locationController.text = '$area, Tamale';
-                  });
-                },
-              );
-            }).toList(),
+              Expanded(
+                child: ServoraButton(
+                  label: _fetchingGps
+                      ? 'Locating via GPS...'
+                      : 'Auto-Detect GPS 🎯',
+                  variant: ServoraButtonVariant.primary,
+                  isLoading: _fetchingGps,
+                  onPressed: () async {
+                    setState(() => _fetchingGps = true);
+                    final loc = await UserLocationService.detectCurrentGpsLocation(context);
+                    if (mounted) {
+                      setState(() {
+                        _fetchingGps = false;
+                        if (loc != null) {
+                          _locationController.text = loc.formattedAddress;
+                        }
+                      });
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ServoraButton(
+                  label: 'Search / Map 📍',
+                  variant: ServoraButtonVariant.outline,
+                  onPressed: () async {
+                    final picked = await ServoraLocationPickerSheet.show(context);
+                    if (picked != null && mounted) {
+                      setState(() {
+                        _locationController.text = picked.formattedAddress;
+                      });
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
+
+          // Google Maps Preview Indicator if GPS coordinates exist
+          if (UserLocationService.currentLocation.isGps)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: InkWell(
+                onTap: () => UserLocationService.openInGoogleMaps(
+                  UserLocationService.currentLocation.lat,
+                  UserLocationService.currentLocation.lon,
+                ),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF059669).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF059669).withOpacity(0.25)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.map_rounded, size: 16, color: Color(0xFF059669)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Google Maps Pin: ${UserLocationService.currentLocation.lat.toStringAsFixed(4)}, ${UserLocationService.currentLocation.lon.toStringAsFixed(4)}',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF059669)),
+                        ),
+                      ),
+                      const Text(
+                        'View Map ↗',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF059669)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           ServoraTextField(
-            label: 'Landmark / Area *',
-            hint: 'e.g. Sakasaka near Shell Fuel Station',
+            label: 'Landmark / Area / Street *',
+            hint: 'e.g. Sakasaka near Shell Fuel Station or GPS address',
             controller: _locationController,
           ),
           const SizedBox(height: 30),

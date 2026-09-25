@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import '../../../core/constants/constants.dart';
 import '../../../app/theme/servora_colors.dart';
 import '../../../shared/widgets/servora_card.dart';
 import '../../../shared/widgets/servora_image_upload_widget.dart';
+import '../../../shared/widgets/servora_location_picker_sheet.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../core/storage/local_storage_service.dart';
 import '../../../core/services/marketplace_api_service.dart';
@@ -33,6 +35,7 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   bool _isLoading = true;
 
   Map<String, dynamic>? _profile;
+  Map<String, dynamic>? _verificationInfo;
   Map<String, dynamic> _kpis = {};
 
   List<dynamic> _products = [];
@@ -258,6 +261,7 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
 
         setState(() {
           _profile = profileData;
+          _verificationInfo = data['verificationInfo'] as Map<String, dynamic>?;
           _kpis = kpisData;
           _products = List.from(data['products'] ?? profileData['products'] ?? []);
           _rentals = List.from(data['rentals'] ?? profileData['rentals'] ?? []);
@@ -1287,7 +1291,7 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   }
 
   // ==========================================
-  // EDIT PRODUCT MODAL
+  // EDIT PRODUCT MODAL (FULL SETUP EXPERIENCE)
   // ==========================================
   void _openEditProductModal(Map<String, dynamic> product) {
     final titleCtrl = TextEditingController(text: product['title'] ?? '');
@@ -1295,7 +1299,28 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     final priceCtrl = TextEditingController(text: product['price']?.toString() ?? '');
     final originalPriceCtrl = TextEditingController(text: product['originalPrice']?.toString() ?? '');
     final stockCtrl = TextEditingController(text: (product['stockQuantity'] ?? 1).toString());
-    final categoryCtrl = TextEditingController(text: product['category'] ?? 'Agriculture & Produce');
+    final categoryCtrl = TextEditingController(text: product['category'] ?? 'Electronics');
+    String? subCategoryVal = product['subCategory']?.toString();
+    String conditionVal = product['condition']?.toString() ?? 'BRAND_NEW';
+    String inventoryStatusVal = product['inventoryStatus']?.toString() ?? 'IN_STOCK';
+    String areaVal = product['area']?.toString() ?? _profile?['zone'] ?? 'Tamale Central';
+    bool isNegotiableVal = product['isNegotiable'] == true;
+
+    List<String> deliveryOptions = [];
+    final rawDeliv = product['deliveryOptions'];
+    if (rawDeliv is List) {
+      deliveryOptions = rawDeliv.map((e) => e.toString()).toList();
+    } else if (rawDeliv is String) {
+      try {
+        final decoded = jsonDecode(rawDeliv);
+        if (decoded is List) deliveryOptions = decoded.map((e) => e.toString()).toList();
+      } catch (_) {
+        deliveryOptions = ['PICKUP', 'LOCAL_DELIVERY'];
+      }
+    }
+    if (deliveryOptions.isEmpty) {
+      deliveryOptions = ['PICKUP', 'LOCAL_DELIVERY'];
+    }
 
     List<String> currentImages = [];
     final rawImgs = product['images'];
@@ -1305,17 +1330,6 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
       currentImages = [rawImgs];
     }
     bool isSaving = false;
-
-    final categoryPresets = [
-      'Agriculture & Produce',
-      'Electronics',
-      'Solar & Inverters',
-      'Agro-Processing',
-      'Fugu Smocks',
-      'Building Supplies',
-      'Automotive',
-      'Food & Catering',
-    ];
 
     showModalBottomSheet(
       context: context,
@@ -1336,7 +1350,7 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
               color: isDark ? ServoraColors.darkSurface : Colors.white,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             ),
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.9),
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.92),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1355,20 +1369,25 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                   const Gap(16),
                   const Row(
                     children: [
-                      Icon(Icons.edit_note_rounded, color: ServoraColors.emerald600, size: 22),
+                      Icon(Icons.edit_note_rounded, color: ServoraColors.emerald600, size: 24),
                       Gap(8),
-                      Text('Edit Product Listing', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                      Text('Edit Product Setup', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
                     ],
                   ),
                   const Gap(4),
-                  const Text('Update product details, pricing, stock, and photos.', style: TextStyle(fontSize: 11.5, color: Colors.grey)),
+                  const Text(
+                    'Update full listing information, pricing, condition, location, delivery & photos.',
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey),
+                  ),
                   const Divider(height: 24),
 
+                  // Title
                   const Text('PRODUCT TITLE *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                   const Gap(4),
                   TextField(
                     controller: titleCtrl,
                     decoration: InputDecoration(
+                      hintText: 'e.g. 50kg Savannah Parboiled Rice',
                       filled: true,
                       fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -1376,32 +1395,74 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                   ),
                   const Gap(12),
 
-                  const Text('CATEGORY *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  // Category & Subcategory Picker
+                  const Text('INDUSTRY CATEGORY & SUBCATEGORY *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                   const Gap(4),
-                  DropdownButtonFormField<String>(
-                    value: categoryPresets.contains(categoryCtrl.text) ? categoryCtrl.text : categoryPresets[0],
-                    dropdownColor: isDark ? ServoraColors.darkSurface : Colors.white,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                    items: categoryPresets
-                        .map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13))))
-                        .toList(),
-                    onChanged: (val) {
-                      if (val != null) setModalState(() => categoryCtrl.text = val);
+                  InkWell(
+                    onTap: () {
+                      CategoryPickerSheet.show(
+                        ctx,
+                        selectedCategory: categoryCtrl.text,
+                        selectedSubCategory: subCategoryVal,
+                        onSelect: (cat, sub) {
+                          setModalState(() {
+                            categoryCtrl.text = cat;
+                            subCategoryVal = sub;
+                          });
+                        },
+                      );
                     },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: ServoraColors.emerald600.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.layers_rounded, color: ServoraColors.emerald600, size: 20),
+                          const Gap(10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  categoryCtrl.text.isNotEmpty ? categoryCtrl.text : 'Select Category',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1C1917)),
+                                ),
+                                Text(
+                                  subCategoryVal != null && subCategoryVal!.isNotEmpty
+                                      ? 'Subcategory: $subCategoryVal'
+                                      : 'Tap to pick subcategory',
+                                  style: const TextStyle(fontSize: 10, color: ServoraColors.emerald600, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: ServoraColors.emerald600,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text('Change', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const Gap(12),
 
+                  // Pricing Row
                   Row(
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('PRICE (GH₵) *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                            const Text('SELLING PRICE (GH₵) *', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                             const Gap(4),
                             TextField(
                               controller: priceCtrl,
@@ -1420,12 +1481,13 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('ORIGINAL PRICE (GH₵)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                            const Text('COMPARE-AT PRICE (GH₵)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                             const Gap(4),
                             TextField(
                               controller: originalPriceCtrl,
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
+                                hintText: 'Optional',
                                 filled: true,
                                 fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -1438,19 +1500,168 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                   ),
                   const Gap(12),
 
-                  const Text('STOCK QUANTITY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  // Stock & Inventory Status
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('STOCK QUANTITY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                            const Gap(4),
+                            TextField(
+                              controller: stockCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('INVENTORY STATUS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                            const Gap(4),
+                            DropdownButtonFormField<String>(
+                              value: inventoryStatusVal,
+                              dropdownColor: isDark ? ServoraColors.darkSurface : Colors.white,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              ),
+                              items: const [
+                                DropdownMenuItem(value: 'IN_STOCK', child: Text('In Stock', style: TextStyle(fontSize: 12))),
+                                DropdownMenuItem(value: 'LOW_STOCK', child: Text('Low Stock', style: TextStyle(fontSize: 12))),
+                                DropdownMenuItem(value: 'SOLD_OUT', child: Text('Sold Out', style: TextStyle(fontSize: 12))),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) setModalState(() => inventoryStatusVal = val);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(12),
+
+                  // Condition Selector
+                  const Text('ITEM CONDITION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                   const Gap(4),
-                  TextField(
-                    controller: stockCtrl,
-                    keyboardType: TextInputType.number,
+                  DropdownButtonFormField<String>(
+                    value: conditionVal,
+                    dropdownColor: isDark ? ServoraColors.darkSurface : Colors.white,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
+                    items: const [
+                      DropdownMenuItem(value: 'BRAND_NEW', child: Text('✨ Brand New (Unopened)', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'USED_LIKE_NEW', child: Text('💎 Used - Like New', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'USED_GOOD', child: Text('👍 Used - Good Condition', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'USED_FAIR', child: Text('👌 Used - Fair / Working', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'REFURBISHED', child: Text('🔧 Refurbished', style: TextStyle(fontSize: 13))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => conditionVal = val);
+                    },
                   ),
                   const Gap(12),
 
+                  // Location / Area Picker
+                  const Text('BUSINESS / PICKUP LOCATION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(4),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await ServoraLocationPickerSheet.show(context);
+                      if (picked != null) {
+                        setModalState(() {
+                          areaVal = picked.name;
+                        });
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.location_on_rounded, color: ServoraColors.emerald600, size: 18),
+                          const Gap(8),
+                          Expanded(
+                            child: Text(
+                              areaVal.isNotEmpty ? areaVal : 'Tap to select location',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Gap(12),
+
+                  // Delivery Options
+                  const Text('AVAILABLE DELIVERY OPTIONS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                  const Gap(6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      {'id': 'PICKUP', 'label': 'Self-Pickup'},
+                      {'id': 'LOCAL_DELIVERY', 'label': 'Local Rider'},
+                      {'id': 'NATIONWIDE_SHIPPING', 'label': 'Nationwide Shipping'},
+                    ].map((opt) {
+                      final selected = deliveryOptions.contains(opt['id']);
+                      return FilterChip(
+                        selected: selected,
+                        label: Text(opt['label']!, style: TextStyle(fontSize: 11.5, fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
+                        selectedColor: ServoraColors.emerald600.withOpacity(0.18),
+                        checkmarkColor: ServoraColors.emerald600,
+                        backgroundColor: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        onSelected: (val) {
+                          setModalState(() {
+                            if (val) {
+                              deliveryOptions.add(opt['id']!);
+                            } else {
+                              deliveryOptions.remove(opt['id']);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const Gap(12),
+
+                  // Negotiable Switch
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Price is Negotiable', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    subtitle: const Text('Allows buyers to send counter-offers via chat', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    value: isNegotiableVal,
+                    activeColor: ServoraColors.emerald600,
+                    onChanged: (val) => setModalState(() => isNegotiableVal = val),
+                  ),
+                  const Gap(6),
+
+                  // Description
                   const Text('DESCRIPTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
                   const Gap(4),
                   TextField(
@@ -1464,12 +1675,12 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                   ),
                   const Gap(16),
 
-                  // Native Photo Upload Component (Zero URL typing)
+                  // Native Photo Upload Component (Up to 10 photos)
                   ServoraImageUploadWidget(
                     initialImages: currentImages,
-                    maxImages: 6,
-                    label: 'MANAGE PHOTOS',
-                    helperText: 'Add new photos or remove existing ones.',
+                    maxImages: 10,
+                    label: 'MANAGE PHOTOS (UP TO 10)',
+                    helperText: 'Add new photos or remove existing ones. 1st photo is cover photo.',
                     onImagesChanged: (imgs) {
                       setModalState(() {
                         currentImages = imgs;
@@ -1520,7 +1731,13 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                                     'price': price,
                                     'originalPrice': double.tryParse(originalPriceCtrl.text.trim()),
                                     'category': categoryCtrl.text,
+                                    'subCategory': subCategoryVal,
+                                    'condition': conditionVal,
+                                    'inventoryStatus': inventoryStatusVal,
                                     'stockQuantity': int.tryParse(stockCtrl.text.trim()) ?? 1,
+                                    'area': areaVal,
+                                    'deliveryOptions': deliveryOptions,
+                                    'isNegotiable': isNegotiableVal,
                                     'description': descCtrl.text.trim(),
                                     'images': currentImages,
                                   };
@@ -1576,7 +1793,11 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                                   }
                                 },
                           child: isSaving
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
                               : const Text('Save Changes ➔', style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
@@ -2344,6 +2565,10 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // 0. REJECTION ALERT BANNER (If Ghana Card ID verification was rejected)
+        if (_isVerificationRejected())
+          _buildRejectionAlertBanner(isDark),
+
         // 1. HERO IDENTITY CARD
         _buildHeroIdentityBanner(bizName, slug, zone, bannerLogo, isDark),
         const Gap(14),
@@ -2382,6 +2607,9 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
               if (_activeTab == 'catalogs') {
                 return _buildCatalogsWorkspace(isDark);
               } else if (_activeTab == 'escrow') {
+                if (!MarketplaceApiService.isEscrowEnabled) {
+                  return _buildCatalogsWorkspace(isDark);
+                }
                 return _buildEscrowWorkspace(isDark);
               } else if (_activeTab == 'reviews') {
                 return _buildReviewsWorkspace(isDark);
@@ -2399,10 +2627,114 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
     );
   }
 
+  bool _isVerificationRejected() {
+    final vStatus = _verificationInfo?['status']?.toString() ??
+        _profile?['verificationStatus']?.toString() ??
+        '';
+    return vStatus == 'REJECTED' || _verificationInfo?['isRejected'] == true;
+  }
+
+  Widget _buildRejectionAlertBanner(bool isDark) {
+    final reason = _verificationInfo?['rejectionReason']?.toString() ??
+        'Ghana Card photo was blurry or details did not match your registered business profile.';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF450A0A).withOpacity(0.6) : const Color(0xFFFFF1F2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.red.withOpacity(0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.error_outline_rounded, color: Colors.red, size: 20),
+              ),
+              const Gap(10),
+              const Expanded(
+                child: Text(
+                  'ID Verification Denied / Rejected',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(10),
+          Text(
+            'Admin Note / Reason: "$reason"',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
+              height: 1.35,
+            ),
+          ),
+          const Gap(6),
+          Text(
+            'Your business storefront and digital flyers currently indicate Unverified status until a valid Ghana Card is approved.',
+            style: TextStyle(
+              fontSize: 11,
+              color: isDark ? Colors.white60 : Colors.grey[700],
+            ),
+          ),
+          const Gap(12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: const Icon(Icons.upload_file_rounded, size: 16),
+              label: const Text(
+                'Re-Upload Ghana Card ID ➔',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              onPressed: _openGhanaCardVerificationModal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ==========================================
   // WIDGET: HERO IDENTITY BANNER
   // ==========================================
   Widget _buildHeroIdentityBanner(String name, String slug, String zone, String logo, bool isDark) {
+    final vStatus = _verificationInfo?['status']?.toString() ??
+        _profile?['verificationStatus']?.toString() ??
+        '';
+    final isVerified = (vStatus == 'VERIFIED' ||
+            vStatus == 'TIER_2_VERIFIED_ARTISAN' ||
+            vStatus == 'TIER_3_REGISTERED_ENTERPRISE' ||
+            _profile?['isVerified'] == true) &&
+        vStatus != 'REJECTED';
+    final isRejected = vStatus == 'REJECTED' || _verificationInfo?['isRejected'] == true;
+    final isPending = vStatus == 'PENDING_REVIEW' || _verificationInfo?['isPending'] == true;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -2463,21 +2795,70 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
                           child: const Text('SOLO_ARTISAN', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                         const Gap(6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(6),
+                        if (isVerified)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.verified_rounded, size: 10, color: Color(0xFF6EE7B7)),
+                                Gap(2),
+                                Text('VERIFIED ENTERPRISE', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFF6EE7B7))),
+                              ],
+                            ),
+                          )
+                        else if (isRejected)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.35),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.cancel_rounded, size: 10, color: Color(0xFFFCA5A5)),
+                                Gap(2),
+                                Text('VERIFICATION DENIED', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFFFCA5A5))),
+                              ],
+                            ),
+                          )
+                        else if (isPending)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.hourglass_top_rounded, size: 10, color: Color(0xFFFDE68A)),
+                                Gap(2),
+                                Text('UNDER REVIEW', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFFFDE68A))),
+                              ],
+                            ),
+                          )
+                        else
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.14),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.shield_outlined, size: 10, color: Colors.white70),
+                                Gap(2),
+                                Text('UNVERIFIED', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white70)),
+                              ],
+                            ),
                           ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.verified_rounded, size: 10, color: Color(0xFF6EE7B7)),
-                              Gap(2),
-                              Text('TIER 2 VERIFIED', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFF6EE7B7))),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                     const Gap(4),
@@ -2600,7 +2981,10 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
           children: [
             _buildKpiCard('Product Likes', '$likes', Icons.favorite_rounded, const Color(0xFFEF4444), isDark),
             _buildKpiCard('Total Views', '$views', Icons.visibility_rounded, const Color(0xFF3B82F6), isDark),
-            _buildKpiCard('Safe Escrow', escrowVol > 0 ? 'GH₵ $escrowVol' : '$activeEscrows active', Icons.lock_clock_rounded, const Color(0xFF10B981), isDark),
+            if (MarketplaceApiService.isEscrowEnabled)
+              _buildKpiCard('Safe Escrow', escrowVol > 0 ? 'GH₵ $escrowVol' : '$activeEscrows active', Icons.lock_clock_rounded, const Color(0xFF10B981), isDark)
+            else
+              _buildKpiCard('Active Stock', '${_products.length} items', Icons.inventory_2_rounded, const Color(0xFF10B981), isDark),
             _buildKpiCard('Rating & Revs', '${avgRating.toStringAsFixed(1)} ★ ($revCount)', Icons.star_rounded, const Color(0xFFF59E0B), isDark),
             _buildKpiCard('Inquiries & Chat', '$unreadChats new', Icons.mark_chat_unread_rounded, const Color(0xFF8B5CF6), isDark),
             _buildKpiCard('QR & Link Reach', '$scans scans', Icons.qr_code_scanner_rounded, const Color(0xFF06B6D4), isDark),
@@ -2661,8 +3045,10 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
       child: Row(
         children: [
           _buildWorkspaceButton('catalogs', 'Catalogs & Stock', Icons.inventory_2_rounded),
-          const Gap(8),
-          _buildWorkspaceButton('escrow', 'Escrow Orders', Icons.shield_rounded, count: _escrowDeals.length),
+          if (MarketplaceApiService.isEscrowEnabled) ...[
+            const Gap(8),
+            _buildWorkspaceButton('escrow', 'Escrow Orders', Icons.shield_rounded, count: _escrowDeals.length),
+          ],
           const Gap(8),
           _buildWorkspaceButton('reviews', 'Reviews & Q&A', Icons.rate_review_rounded, count: _reviews.length + _questions.length),
           const Gap(8),

@@ -2,10 +2,16 @@ class ServoraConstants {
   static const String appName = 'Servora.gh';
   static const String appTagline = 'Northern Marketplace & Artisan Trade Hub';
   
-  // Base Backend API URL - Live Production Vercel Database & REST Server
-  static const String baseUrl = 'https://servoragh-inky.vercel.app/api';
+  // Dynamic Base Backend API URL (Auto-syncs with running web dev server)
+  static String _baseUrl = 'http://localhost:3000/api';
+  static String get baseUrl => _baseUrl;
+  static set baseUrl(String url) => _baseUrl = url;
+  static void setBaseUrl(String url) => _baseUrl = url;
+
+  static const String defaultLocalUrl = 'http://localhost:3000/api';
   static const String localBaseUrl = 'http://localhost:3000/api';
   static const String webBaseUrl = 'https://servoragh-inky.vercel.app';
+  static const String productionBaseUrl = 'https://servoragh-inky.vercel.app/api';
 
   static const List<String> northernNeighborhoods = [
     'All Northern Ghana',

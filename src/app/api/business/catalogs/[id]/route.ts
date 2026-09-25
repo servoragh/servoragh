@@ -19,6 +19,11 @@ export async function PATCH(
       title,
       description,
       category,
+      subCategory,
+      condition,
+      area,
+      deliveryOptions,
+      isNegotiable,
       sku,
       videoUrl,
       images,
@@ -97,6 +102,13 @@ export async function PATCH(
       if (title !== undefined) updateData.title = title;
       if (description !== undefined) updateData.description = description;
       if (category !== undefined) updateData.category = category;
+      if (subCategory !== undefined) updateData.subCategory = subCategory;
+      if (condition !== undefined) updateData.condition = condition;
+      if (isNegotiable !== undefined) updateData.isNegotiable = Boolean(isNegotiable);
+      if (area !== undefined) updateData.area = area;
+      if (deliveryOptions !== undefined) {
+        updateData.deliveryOptions = Array.isArray(deliveryOptions) ? deliveryOptions : [deliveryOptions];
+      }
       if (sku !== undefined) updateData.sku = sku;
       if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
       if (images !== undefined) updateData.images = Array.isArray(images) ? images : [images];

@@ -33,6 +33,7 @@ export function AdminFinanceEscrowHub() {
   const [statusFilter, setStatusFilter] = useState<EscrowStatus | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [escrowEnabled, setEscrowEnabled] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -42,6 +43,9 @@ export function AdminFinanceEscrowHub() {
       const url = `/api/escrow?status=${statusFilter}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}`;
       const res = await fetch(url);
       const data = await res.json();
+      if (data.escrowEnabled !== undefined) {
+        setEscrowEnabled(data.escrowEnabled);
+      }
       if (data.success) {
         setDeals(data.deals || []);
         setStats(data.stats || {
@@ -58,6 +62,21 @@ export function AdminFinanceEscrowHub() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleEnableEscrow() {
+    try {
+      const res = await fetch("/api/platform/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ escrowEnabled: true }),
+      });
+      if (res.ok) {
+        toast.success("Escrow Subsystem Restored 🛡️", "Escrow is now active across the platform.");
+        setEscrowEnabled(true);
+        fetchFinanceEscrow();
+      }
+    } catch {}
   }
 
   useEffect(() => {
@@ -146,6 +165,27 @@ export function AdminFinanceEscrowHub() {
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh Ledger
         </button>
       </div>
+
+      {/* Escrow Disabled Warning Banner */}
+      {!escrowEnabled && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-800 dark:text-amber-200">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+            <div>
+              <span className="font-bold block text-sm">Escrow Subsystem is Currently Disabled in Admin Settings</span>
+              <span className="text-slate-600 dark:text-zinc-400 text-xs">
+                All customer-facing safe escrow buttons, deal creations, and vaults are removed across the entire platform.
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={handleEnableEscrow}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition cursor-pointer shrink-0"
+          >
+            Enable Escrow Now
+          </button>
+        </div>
+      )}
 
       {/* Notification Banner */}
       {notification && (

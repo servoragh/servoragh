@@ -48,10 +48,22 @@ export async function GET(req: Request) {
       user.businessProfile?.verificationStatus === "PENDING_REVIEW" ||
       user.providerProfile?.verificationStatus === "PENDING";
 
+    const isRejected =
+      !isVerified &&
+      (latestRequest?.status === "REJECTED" ||
+        user.businessProfile?.verificationStatus === "REJECTED" ||
+        user.providerProfile?.verificationStatus === "REJECTED");
+
+    const rejectionReason = isRejected
+      ? latestRequest?.adminNotes || "ID document was rejected by admin. Please resubmit a clear photo of your Ghana Card front."
+      : null;
+
     const tier = isVerified
       ? (user.businessProfile?.verificationStatus === "TIER_3_REGISTERED_ENTERPRISE" || user.customerProfile?.verificationTier === "TIER_3_ENTERPRISE" ? "TIER_3_GOLD" : "TIER_2_VERIFIED")
       : isPending
       ? "PENDING_REVIEW"
+      : isRejected
+      ? "REJECTED"
       : (user.isPhoneVerified ? "TIER_1_BASIC" : "UNVERIFIED");
 
     return NextResponse.json({
@@ -59,6 +71,9 @@ export async function GET(req: Request) {
       tier,
       isVerified,
       isPending,
+      isRejected,
+      rejectionReason,
+      verificationStatus: isVerified ? "VERIFIED" : isPending ? "PENDING_REVIEW" : isRejected ? "REJECTED" : "UNVERIFIED",
       latestRequest,
       ghanaCardNumber: user.businessProfile?.idCardNumber || latestRequest?.idNumber || "",
       documentUrl: user.businessProfile?.idCardPhotoUrl || latestRequest?.documentUrl || "",

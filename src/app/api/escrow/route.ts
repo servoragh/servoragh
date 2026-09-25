@@ -2,11 +2,29 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getEscrowDeals, createEscrowDeal, updateEscrowStatus } from "@/lib/escrowStore";
 import { EscrowStatus } from "@/lib/escrowTypes";
+import { isEscrowEnabled } from "@/lib/systemSettingsStore";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
+    const enabled = await isEscrowEnabled();
+    if (!enabled) {
+      return NextResponse.json({
+        success: true,
+        escrowEnabled: false,
+        deals: [],
+        stats: {
+          totalDeals: 0,
+          totalHeldGhs: 0,
+          totalReleasedGhs: 0,
+          totalRefundedGhs: 0,
+          activeEscrowsCount: 0,
+          disputedCount: 0,
+        },
+      });
+    }
+
     const { searchParams } = new URL(request.url);
     const status = (searchParams.get("status") as EscrowStatus | "ALL") || "ALL";
     const search = searchParams.get("search") || undefined;
@@ -15,6 +33,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
+      escrowEnabled: true,
       deals,
       stats,
     });
@@ -26,6 +45,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const enabled = await isEscrowEnabled();
+    if (!enabled) {
+      return NextResponse.json(
+        { error: "The Escrow subsystem is currently disabled by administrator.", escrowEnabled: false },
+        { status: 403 }
+      );
+    }
+
     const session = await getSession();
     const body = await request.json();
     const { action, dealData, dealId, newStatus, reason } = body;

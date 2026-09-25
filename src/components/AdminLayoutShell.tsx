@@ -47,6 +47,7 @@ interface AdminLayoutShellProps {
   unresolvedDisputesCount?: number;
   themeMode?: "dark" | "light";
   onToggleTheme?: () => void;
+  escrowEnabled?: boolean;
 }
 
 export function AdminLayoutShell({
@@ -58,6 +59,7 @@ export function AdminLayoutShell({
   unresolvedDisputesCount = 0,
   themeMode = "light",
   onToggleTheme,
+  escrowEnabled = true,
 }: AdminLayoutShellProps) {
   const [isCmdOpen, setIsCmdOpen] = useState(false);
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
@@ -115,7 +117,7 @@ export function AdminLayoutShell({
     {
       groupTitle: "MARKETPLACE & SERVICES",
       items: [
-        { id: "escrow", label: "Finance & MoMo Escrow", icon: DollarSign, count: "MoMo" },
+        ...(escrowEnabled ? [{ id: "escrow", label: "Finance & MoMo Escrow", icon: DollarSign, count: "MoMo" }] : []),
         { id: "delivery", label: "Delivery Fleet & Dispatchers", icon: Truck, count: "Fleet" },
         { id: "products", label: "Product Moderation", icon: ShoppingBag, count: pendingProductsCount > 0 ? pendingProductsCount : null },
         { id: "requests", label: "Service Requests & Gigs", icon: MessageSquare, count: null },
