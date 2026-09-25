@@ -146,10 +146,10 @@ export function TopAnnouncementBar({
     <div
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      className="relative z-50 bg-gradient-to-r from-stone-950 via-emerald-950 to-stone-950 text-white border-b border-emerald-500/30 shadow-md font-sans overflow-hidden transition-all duration-300 select-none"
+      className="relative z-50 bg-slate-950 text-white border-b border-white/[0.08] shadow-xs font-sans overflow-hidden transition-all duration-300 select-none"
     >
-      {/* Background Glow Effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/10 via-teal-500/10 to-amber-500/10 opacity-70 blur-md pointer-events-none" />
+      {/* Subtle Ambient Glow */}
+      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-cyan-500/10 opacity-70 pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 h-9 flex items-center justify-between gap-2 text-xs relative">
         {/* Left Side Live Indicator Dot */}

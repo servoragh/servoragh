@@ -29,8 +29,8 @@ export default function DeliveryProviderOnboardingPage() {
   // Identity Form State
   const [idType, setIdType] = useState("GHANA_CARD");
   const [idNumber, setIdNumber] = useState("");
-  const [idDocumentUrl, setIdDocumentUrl] = useState("https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=800&q=80");
-  const [selfieUrl, setSelfieUrl] = useState("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80");
+  const [idDocumentUrl, setIdDocumentUrl] = useState("");
+  const [selfieUrl, setSelfieUrl] = useState("");
   const [emergencyContactName, setEmergencyContactName] = useState("");
   const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
   const [residentialAddress, setResidentialAddress] = useState("");
@@ -39,10 +39,10 @@ export default function DeliveryProviderOnboardingPage() {
   const [vehicleType, setVehicleType] = useState("MOTORCYCLE");
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
-  const [year, setYear] = useState("2022");
+  const [year, setYear] = useState("");
   const [plateNumber, setPlateNumber] = useState("");
   const [color, setColor] = useState("");
-  const [vehiclePhotoUrl, setVehiclePhotoUrl] = useState("https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80");
+  const [vehiclePhotoUrl, setVehiclePhotoUrl] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

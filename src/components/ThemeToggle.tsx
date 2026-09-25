@@ -33,25 +33,69 @@ export function ThemeToggle() {
     };
   }, []);
 
-  function toggleTheme() {
+  function toggleTheme(event?: React.MouseEvent<HTMLButtonElement>) {
     const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    localStorage.setItem("servora_theme", nextTheme);
 
-    if (nextTheme === "dark") {
-      document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
+    const updateDOM = () => {
+      setTheme(nextTheme);
+      localStorage.setItem("servora_theme", nextTheme);
+
+      if (nextTheme === "dark") {
+        document.documentElement.classList.add("dark");
+        document.documentElement.classList.remove("light");
+      } else {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.classList.add("light");
+      }
+
+      window.dispatchEvent(new Event("servora_theme_changed"));
+    };
+
+    const doc = document as any;
+
+    // Modern View Transitions API for unified, seamless ripple transition
+    if (doc.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const rect = event?.currentTarget?.getBoundingClientRect();
+      const x = event?.clientX ?? (rect ? rect.left + rect.width / 2 : window.innerWidth / 2);
+      const y = event?.clientY ?? (rect ? rect.top + rect.height / 2 : 30);
+
+      const endRadius = Math.hypot(
+        Math.max(x, window.innerWidth - x),
+        Math.max(y, window.innerHeight - y)
+      );
+
+      const transition = doc.startViewTransition(() => {
+        updateDOM();
+      });
+
+      transition.ready.then(() => {
+        document.documentElement.animate(
+          {
+            clipPath: [
+              `circle(0px at ${x}px ${y}px)`,
+              `circle(${endRadius}px at ${x}px ${y}px)`,
+            ],
+          },
+          {
+            duration: 480,
+            easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+            pseudoElement: "::view-transition-new(root)",
+          }
+        );
+      });
     } else {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.classList.add("light");
+      // Fallback: Uniform synchronized CSS transition across all DOM elements
+      document.documentElement.classList.add("theme-transitioning");
+      updateDOM();
+      setTimeout(() => {
+        document.documentElement.classList.remove("theme-transitioning");
+      }, 450);
     }
-
-    window.dispatchEvent(new Event("servora_theme_changed"));
   }
 
   if (!mounted) {
     return (
-      <div className="w-9 h-9 sm:w-28 sm:h-9 rounded-full bg-stone-200/60 dark:bg-stone-800/60 animate-pulse shrink-0" />
+      <div className="w-9 h-9 sm:w-28 sm:h-9 rounded-full bg-slate-200/60 dark:bg-slate-800/60 animate-pulse shrink-0" />
     );
   }
 
@@ -59,24 +103,25 @@ export function ThemeToggle() {
     <button
       onClick={toggleTheme}
       type="button"
-      className="relative group p-2 sm:px-3 sm:py-1.5 rounded-full bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-purple-500/10 dark:from-indigo-950/80 dark:to-purple-950/80 border border-stone-200/90 dark:border-stone-700/90 hover:border-emerald-500/50 dark:hover:border-indigo-400/50 text-stone-800 dark:text-stone-100 shadow-xs backdrop-blur-md transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
+      className="relative group p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-slate-100/90 dark:bg-slate-800/90 hover:bg-slate-200/90 dark:hover:bg-slate-700/90 border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-slate-100 shadow-sm dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
       title={`Switch to ${theme === "light" ? "Dark" : "Light"} mode`}
+      aria-label="Toggle theme"
     >
       {theme === "light" ? (
         <>
-          <div className="p-1 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 transition duration-300 group-hover:rotate-45">
+          <div className="p-1 rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 transition-transform duration-300 group-hover:rotate-12">
             <Moon className="w-3.5 h-3.5 shrink-0" />
           </div>
-          <span className="hidden sm:inline text-xs font-extrabold text-stone-700 dark:text-stone-300 tracking-tight">
+          <span className="hidden sm:inline text-xs font-bold text-slate-700 dark:text-slate-300 tracking-tight">
             Dark Mode
           </span>
         </>
       ) : (
         <>
-          <div className="p-1 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-500 transition duration-300 group-hover:rotate-90">
+          <div className="p-1 rounded-full bg-amber-500/15 text-amber-400 dark:bg-amber-400/20 dark:text-amber-300 transition-transform duration-300 group-hover:rotate-45 shadow-[0_0_10px_rgba(251,191,36,0.3)]">
             <Sun className="w-3.5 h-3.5 shrink-0" />
           </div>
-          <span className="hidden sm:inline text-xs font-extrabold text-stone-700 dark:text-stone-300 tracking-tight">
+          <span className="hidden sm:inline text-xs font-bold text-slate-200 tracking-tight">
             Light Mode
           </span>
         </>

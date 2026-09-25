@@ -158,6 +158,7 @@ export default function AdminDashboardPage() {
   >("overview");
 
   const [searchFilter, setSearchFilter] = useState("");
+  const [signupRoleFilter, setSignupRoleFilter] = useState<"ALL" | "CUSTOMER" | "PROVIDER">("ALL");
 
   // Feature Flags Toggle State
   const [localFlags, setLocalFlags] = useState<any[]>(DEFAULT_FEATURE_FLAGS);
@@ -282,72 +283,91 @@ export default function AdminDashboardPage() {
         <div className="space-y-6">
           {/* TOP KPI METRICS STRIP (4 EQUAL CARDS) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Card 1: Weekly Connections / North Star */}
-            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-5 shadow-xs space-y-2">
+            {/* Card 1: Regular Customers */}
+            <div
+              onClick={() => setActiveView("crm")}
+              className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xs space-y-2 cursor-pointer hover:border-emerald-500/50 transition-all group"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
-                  Weekly Connections
+                <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">
+                  Regular Customers (Buyers)
                 </span>
-                <span className="p-2 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-bold flex items-center gap-0.5">
-                  <TrendingUp className="w-3.5 h-3.5" /> +14%
+                <span className="p-2 bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-1 group-hover:scale-105 transition">
+                  <Users className="w-3.5 h-3.5" /> CRM
                 </span>
               </div>
-              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {stats.northStarWeeklyConnections || 83}
+              <div className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                {stats.totalCustomers ?? users.filter((u: any) => u.role === "CUSTOMER").length ?? 18}
               </div>
-              <span className="text-[11px] text-slate-400 dark:text-zinc-500 block">
-                Accepted Quotes + Completed Jobs
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center justify-between">
+                <span>Active consumers & shoppers</span>
+                <span className="underline group-hover:text-emerald-500 text-[10px]">Open CRM →</span>
               </span>
             </div>
 
             {/* Card 2: Registered Artisans & Businesses */}
-            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-5 shadow-xs space-y-2">
+            <div
+              onClick={() => setActiveView("businesses")}
+              className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xs space-y-2 cursor-pointer hover:border-emerald-500/50 transition-all group"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
-                  Registered Merchants
+                <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">
+                  Registered Businesses & Sellers
                 </span>
-                <Building2 className="w-4 h-4 text-slate-400" />
+                <span className="p-2 bg-teal-50 dark:bg-teal-950/80 text-teal-600 dark:text-teal-400 rounded-xl text-xs font-bold flex items-center gap-1 group-hover:scale-105 transition">
+                  <Building2 className="w-3.5 h-3.5" /> Biz
+                </span>
               </div>
-              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {stats.totalProviders || 24}
+              <div className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                {stats.totalProviders ?? providers.length ?? 24}
               </div>
-              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold block">
-                {stats.verifiedProviders || 21} Verified • {stats.pendingVerifications || 3} Pending
+              <span className="text-[11px] text-teal-600 dark:text-teal-400 font-semibold flex items-center justify-between">
+                <span>{stats.verifiedProviders || 21} Verified • {stats.pendingVerifications || 3} Pending</span>
+                <span className="underline group-hover:text-teal-500 text-[10px]">Manage →</span>
               </span>
             </div>
 
             {/* Card 3: Total Active Products & Gigs */}
-            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-5 shadow-xs space-y-2">
+            <div
+              onClick={() => setActiveView("requests")}
+              className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xs space-y-2 cursor-pointer hover:border-emerald-500/50 transition-all group"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
-                  Products & Service Calls
+                <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">
+                  Service Requests & Gigs
                 </span>
-                <ShoppingBag className="w-4 h-4 text-slate-400" />
+                <span className="p-2 bg-cyan-50 dark:bg-cyan-950/80 text-cyan-600 dark:text-cyan-400 rounded-xl text-xs font-bold">
+                  <MessageSquare className="w-3.5 h-3.5" />
+                </span>
               </div>
-              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {(stats.totalProducts || 6) + (stats.totalRequests || 12)}
+              <div className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                {stats.totalRequests ?? 12}
               </div>
-              <span className="text-[11px] text-slate-400 dark:text-zinc-500 block">
-                {stats.totalProducts || 6} Products • {stats.totalRequests || 12} Active Requests
+              <span className="text-[11px] text-slate-400 dark:text-zinc-500 flex items-center justify-between">
+                <span>{stats.openRequests || 5} Open • {stats.completedJobs || 7} Completed</span>
+                <span className="underline text-[10px]">Inspect →</span>
               </span>
             </div>
 
-            {/* Card 4: Infrastructure & Storage */}
-            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-5 shadow-xs space-y-2">
+            {/* Card 4: Catalog & Storage */}
+            <div
+              onClick={() => setActiveView("products")}
+              className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xs space-y-2 cursor-pointer hover:border-emerald-500/50 transition-all group"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
-                  Storage & Infrastructure
+                <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">
+                  Catalog Products & Listings
                 </span>
-                <HardDrive className="w-4 h-4 text-slate-400" />
+                <span className="p-2 bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-bold">
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                </span>
               </div>
-              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {storageStats.totalStorageUsedMB || 1.85} MB
+              <div className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                {stats.totalProducts ?? 6}
               </div>
-              <div className="w-full h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                <div className="w-[2%] h-full bg-emerald-500 rounded-full" />
-              </div>
-              <span className="text-[10px] text-slate-400 dark:text-zinc-500 block">
-                100 GB Free Cap (Cloudflare R2 + Scaleway)
+              <span className="text-[11px] text-slate-400 dark:text-zinc-500 flex items-center justify-between">
+                <span>{stats.pendingProducts || 0} Pending Moderation</span>
+                <span className="underline text-[10px]">Review →</span>
               </span>
             </div>
           </div>
@@ -468,6 +488,149 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* ALL PLATFORM SIGNUPS: REGULAR CUSTOMERS & REGISTERED BUSINESSES */}
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-zinc-800">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <span>All Platform Signups: Regular Customers & Registered Businesses</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Live database registry of all registered users, distinguishing regular buyers from merchant storefronts.
+                </p>
+              </div>
+
+              {/* Quick Filter Pill Buttons */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-zinc-800/80 rounded-xl text-xs font-bold">
+                <button
+                  onClick={() => setSignupRoleFilter("ALL")}
+                  className={`px-3 py-1 rounded-lg transition cursor-pointer ${
+                    signupRoleFilter === "ALL"
+                      ? "bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-xs"
+                      : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  All Accounts ({users.length})
+                </button>
+                <button
+                  onClick={() => setSignupRoleFilter("CUSTOMER")}
+                  className={`px-3 py-1 rounded-lg transition cursor-pointer ${
+                    signupRoleFilter === "CUSTOMER"
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  Regular Customers ({users.filter((u: any) => u.role === "CUSTOMER").length})
+                </button>
+                <button
+                  onClick={() => setSignupRoleFilter("PROVIDER")}
+                  className={`px-3 py-1 rounded-lg transition cursor-pointer ${
+                    signupRoleFilter === "PROVIDER"
+                      ? "bg-teal-600 text-white shadow-xs"
+                      : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  Businesses ({providers.length})
+                </button>
+              </div>
+            </div>
+
+            {/* Signups Table */}
+            <div className="overflow-x-auto max-h-[380px] overflow-y-auto">
+              <table className="w-full text-left text-xs min-w-[650px]">
+                <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-zinc-950 text-slate-500 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200 dark:border-zinc-800 shadow-xs">
+                  <tr>
+                    <th className="p-3">User & Contact</th>
+                    <th className="p-3">Account Type</th>
+                    <th className="p-3">Business / Location</th>
+                    <th className="p-3">Date Registered</th>
+                    <th className="p-3 text-right">Quick Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/80">
+                  {users
+                    .filter((u: any) => {
+                      if (signupRoleFilter === "CUSTOMER") return u.role === "CUSTOMER";
+                      if (signupRoleFilter === "PROVIDER") return u.role === "PROVIDER";
+                      return true;
+                    })
+                    .slice(0, 30)
+                    .map((usr: any) => {
+                      const isProv = usr.role === "PROVIDER";
+                      const provProfile = providers.find((p: any) => p.user?.id === usr.id || p.userId === usr.id);
+                      return (
+                        <tr key={usr.id} className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition">
+                          <td className="p-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                                {usr.name ? usr.name.slice(0, 2) : "U"}
+                              </div>
+                              <div>
+                                <span className="font-extrabold text-slate-900 dark:text-white block text-xs">
+                                  {usr.name || "Registered User"}
+                                </span>
+                                <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">
+                                  {usr.phone}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            {isProv ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/30">
+                                <Building2 className="w-3 h-3" />
+                                <span>Business Owner</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                                <Users className="w-3 h-3" />
+                                <span>Regular Customer</span>
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 text-[11px] text-slate-600 dark:text-zinc-300">
+                            {provProfile ? (
+                              <div>
+                                <span className="font-bold text-slate-900 dark:text-white block">
+                                  {provProfile.businessName}
+                                </span>
+                                <span className="text-slate-500 text-[10px]">
+                                  📍 {provProfile.serviceArea || "Tamale"}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400">Tamale Buyer / Consumer</span>
+                            )}
+                          </td>
+                          <td className="p-3 font-mono text-[11px] text-slate-500 dark:text-zinc-400">
+                            {formatDate(usr.createdAt || new Date().toISOString())}
+                          </td>
+                          <td className="p-3 text-right">
+                            {isProv ? (
+                              <button
+                                onClick={() => setActiveView("businesses")}
+                                className="px-3 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 font-bold text-[11px] rounded-lg transition cursor-pointer"
+                              >
+                                View Business
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setActiveView("crm")}
+                                className="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] rounded-lg transition cursor-pointer"
+                              >
+                                Open CRM
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

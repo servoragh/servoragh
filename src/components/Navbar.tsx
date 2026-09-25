@@ -34,10 +34,25 @@ export function Navbar() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem("servora_user_session");
+      if (cached) setSession(JSON.parse(cached));
+    } catch (_) {}
+
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
-        if (data.user) setSession(data.user);
+        if (data.user) {
+          setSession(data.user);
+          try {
+            sessionStorage.setItem("servora_user_session", JSON.stringify(data.user));
+          } catch (_) {}
+        } else {
+          setSession(null);
+          try {
+            sessionStorage.removeItem("servora_user_session");
+          } catch (_) {}
+        }
       })
       .catch(() => {});
   }, []);
@@ -46,6 +61,10 @@ export function Navbar() {
 
   async function handleLogout() {
     setMobileMenuOpen(false);
+    try {
+      sessionStorage.removeItem("servora_user_session");
+      sessionStorage.removeItem("servora_merchant_portal_data");
+    } catch (_) {}
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/";
   }
@@ -57,7 +76,7 @@ export function Navbar() {
       {/* Modern Dynamic Vertical Swipe-Up Ticker Banner */}
       <TopAnnouncementBar />
 
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border-b border-stone-200 dark:border-stone-800 shadow-xs transition duration-200">
+      <header className="sticky top-0 z-40 bg-white/85 dark:bg-[#080b11]/85 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/[0.08] shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
           {/* Brand Logo */}
           <Link href="/" onClick={closeMenu} className="flex items-center gap-2.5 group shrink-0">

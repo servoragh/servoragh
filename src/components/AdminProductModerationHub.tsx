@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "@/lib/toast";
 import {
   ShoppingBag,
+  Package,
   Search,
   CheckCircle2,
   XCircle,
@@ -305,12 +306,16 @@ export function AdminProductModerationHub({ isDark = false }: AdminProductModera
                 <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                   {/* Media & Details */}
                   <div className="flex items-start gap-4">
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 shrink-0 bg-stone-100">
-                      <img
-                        src={item.images[0] || "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80"}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 shrink-0 bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
+                      {item.images && item.images[0] ? (
+                        <img
+                          src={item.images[0]}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Package className="w-8 h-8 text-stone-400 opacity-40" />
+                      )}
                     </div>
 
                     <div className="space-y-1.5">

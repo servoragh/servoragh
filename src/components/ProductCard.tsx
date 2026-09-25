@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Tag, MapPin, Star, ShoppingBag, Eye, CheckCircle2, Play } from "lucide-react";
+import { Tag, MapPin, Star, ShoppingBag, Eye, CheckCircle2, Play, Package } from "lucide-react";
 import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
 import { formatGHS, parseJsonArray } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/timeFormatter";
@@ -41,9 +41,8 @@ export function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const [imgError, setImgError] = useState(false);
   const images = Array.isArray(product.images) ? product.images : parseJsonArray(product.images);
-  const mainImage = imgError || !images[0]
-    ? "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80"
-    : images[0];
+  const hasValidImage = Boolean(images && images.length > 0 && images[0] && !imgError);
+  const mainImage = hasValidImage ? images[0] : null;
 
   const hasDiscount = product.originalPrice && Number(product.originalPrice) > Number(product.price);
   const discountPct = hasDiscount ? Math.round(((Number(product.originalPrice) - Number(product.price)) / Number(product.originalPrice)) * 100) : 0;
@@ -63,13 +62,20 @@ export function ProductCard({ product }: ProductCardProps) {
     >
       <div>
         {/* Product Image */}
-        <div className="relative h-36 sm:h-48 w-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
-          <img
-            src={mainImage}
-            alt={product.title}
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover group-hover:scale-108 transition duration-500 ease-out"
-          />
+        <div className="relative h-36 sm:h-48 w-full bg-stone-100 dark:bg-stone-800 overflow-hidden flex items-center justify-center">
+          {mainImage ? (
+            <img
+              src={mainImage}
+              alt={product.title}
+              onError={() => setImgError(true)}
+              className="w-full h-full object-cover group-hover:scale-108 transition duration-500 ease-out"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-stone-400 dark:text-stone-600 gap-1.5 bg-stone-100 dark:bg-stone-900">
+              <Package className="w-8 h-8 opacity-40" />
+              <span className="text-[10px] font-semibold text-stone-400 dark:text-stone-500">No Image Uploaded</span>
+            </div>
+          )}
 
           {/* Category Overlay Pill */}
           <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md text-stone-900 dark:text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-stone-200/80 dark:border-stone-700 shadow-2xs max-w-[80%] truncate">

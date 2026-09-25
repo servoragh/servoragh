@@ -114,7 +114,7 @@ export function FeaturedHeroAdvertSpotlight({ onOpenWizard }: FeaturedHeroAdvert
             completedJobsCount: p.completedJobsCount || 25,
             bio: p.bio || "Verified business provider offering fast, reliable service in Northern Region.",
             pricingTag: p.pricingHourly ? `GH₵ ${p.pricingHourly}/hr` : p.pricingFixedStart ? `From GH₵ ${p.pricingFixedStart}` : "Free Estimate",
-            avatarUrl: p.user?.avatarUrl || "https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80",
+            avatarUrl: p.user?.avatarUrl || null,
             isPromoted: p.isPromoted,
           }));
 
@@ -148,7 +148,7 @@ export function FeaturedHeroAdvertSpotlight({ onOpenWizard }: FeaturedHeroAdvert
 
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % adverts.length);
-    }, 4000);
+    }, 4500);
 
     return () => clearInterval(timer);
   }, [isPaused, adverts.length]);
@@ -169,34 +169,34 @@ export function FeaturedHeroAdvertSpotlight({ onOpenWizard }: FeaturedHeroAdvert
       onMouseLeave={() => setIsPaused(false)}
       className="hidden lg:block lg:col-span-5 relative z-10"
     >
-      <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-2xl border border-stone-200/90 dark:border-stone-800 rounded-3xl p-6 shadow-2xl shadow-stone-300/40 dark:shadow-black/60 space-y-4 text-stone-900 dark:text-white relative transition-all duration-300">
-        {/* Ambient Glow Gradient */}
-        <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+      <div className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 shadow-xl dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_20px_40px_-15px_rgba(0,0,0,0.7)] space-y-4 text-slate-900 dark:text-white relative">
+        {/* Subtle Ethereal Accent Glow */}
+        <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-transparent rounded-full blur-2xl pointer-events-none" />
 
         {/* Top Status & Carousel Header Bar */}
-        <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-3 relative z-10">
+        <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/10 pb-3 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-mono flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-mono flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-              <span>FEATURED HOMEPAGE ADVERT 🚀</span>
+              <span>FEATURED SPOTLIGHT 🚀</span>
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono font-bold text-stone-400 dark:text-stone-500">
+            <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500">
               {currentIndex + 1}/{adverts.length}
             </span>
             <div className="flex items-center gap-1">
               <button
                 onClick={handlePrev}
-                className="p-1 rounded-lg bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition cursor-pointer"
+                className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition cursor-pointer border border-slate-200/60 dark:border-white/5"
                 title="Previous Featured Advert"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={handleNext}
-                className="p-1 rounded-lg bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition cursor-pointer"
+                className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition cursor-pointer border border-slate-200/60 dark:border-white/5"
                 title="Next Featured Advert"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -206,57 +206,63 @@ export function FeaturedHeroAdvertSpotlight({ onOpenWizard }: FeaturedHeroAdvert
         </div>
 
         {/* Featured Business Advert Card Preview (Auto-Swiping) */}
-        <div className="p-4 bg-stone-50/90 dark:bg-stone-800/80 border border-stone-200/90 dark:border-stone-700/80 rounded-2xl space-y-3 shadow-xs relative z-10 transition-all duration-300 min-h-[160px] flex flex-col justify-between">
+        <div className="p-4 bg-slate-50/90 dark:bg-slate-950/60 border border-slate-200/80 dark:border-white/[0.08] rounded-2xl space-y-3 shadow-xs relative z-10 min-h-[160px] flex flex-col justify-between">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <img
-                src={currentItem.avatarUrl}
-                alt={currentItem.businessName}
-                className="w-12 h-12 rounded-2xl object-cover border-2 border-emerald-500 shadow-xs shrink-0"
-              />
+              {currentItem.avatarUrl ? (
+                <img
+                  src={currentItem.avatarUrl}
+                  alt={currentItem.businessName}
+                  className="w-12 h-12 rounded-2xl object-cover border-2 border-emerald-500/80 shadow-xs shrink-0"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border-2 border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-xs">
+                  <Building2 className="w-6 h-6" />
+                </div>
+              )}
               <div>
-                <h4 className="font-black text-sm text-stone-900 dark:text-white flex items-center gap-1.5 line-clamp-1">
+                <h4 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-1.5 line-clamp-1">
                   <span>{currentItem.businessName}</span>
                   <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 fill-emerald-100 dark:fill-emerald-950 shrink-0" />
                 </h4>
-                <span className="text-xs text-stone-500 dark:text-stone-400 font-medium">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {currentItem.serviceArea} &bull; {currentItem.ownerName}
                 </span>
               </div>
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
-              <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-extrabold text-xs border border-amber-500/30">
+              <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 dark:bg-amber-400/15 text-amber-700 dark:text-amber-300 font-extrabold text-xs border border-amber-500/30">
                 {currentItem.ratingAverage} ⭐ ({currentItem.completedJobsCount} Jobs)
               </span>
               {currentItem.isPromoted && (
-                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500 text-stone-950 px-2 py-0.5 rounded-full shadow-2xs">
-                  Sponsored Advert
+                <span className="text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 px-2 py-0.5 rounded-full shadow-xs">
+                  Sponsored
                 </span>
               )}
             </div>
           </div>
 
-          <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed font-medium line-clamp-2">
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium line-clamp-2">
             {currentItem.bio}
           </p>
 
           <div className="flex items-center justify-between pt-1 text-xs gap-2">
-            <span className="font-black text-emerald-700 dark:text-emerald-400 shrink-0">
+            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 shrink-0">
               {currentItem.pricingTag}
             </span>
             <div className="flex items-center gap-2">
               <Link
                 href={`/provider/${currentItem.slug}`}
-                className="px-3 py-1.5 bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-800 dark:text-stone-200 font-bold rounded-xl text-xs transition inline-flex items-center gap-1"
+                className="px-3 py-1.5 bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl text-xs transition inline-flex items-center gap-1 border border-slate-300/50 dark:border-white/5"
               >
                 <span>View Shop</span>
                 <ExternalLink className="w-3 h-3" />
               </Link>
               <button
                 onClick={onOpenWizard}
-                className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black rounded-xl text-xs transition cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95 flex items-center gap-1"
+                className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold rounded-xl text-xs transition cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95 flex items-center gap-1"
               >
-                <span>Get Price Estimate</span>
+                <span>Get Estimate</span>
                 <MessageCircle className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -271,8 +277,8 @@ export function FeaturedHeroAdvertSpotlight({ onOpenWizard }: FeaturedHeroAdvert
               onClick={() => setCurrentIndex(idx)}
               className={`h-1.5 rounded-full transition-all cursor-pointer ${
                 idx === currentIndex
-                  ? "w-6 bg-emerald-500"
-                  : "w-1.5 bg-stone-300 dark:bg-stone-700 hover:bg-stone-400"
+                  ? "w-6 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                  : "w-1.5 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400"
               }`}
               title={`Switch to ${ad.businessName}`}
             />
@@ -280,25 +286,25 @@ export function FeaturedHeroAdvertSpotlight({ onOpenWizard }: FeaturedHeroAdvert
         </div>
 
         {/* Live Community Activity Ticker */}
-        <div className="p-3.5 bg-emerald-50/70 dark:bg-stone-950/60 border border-emerald-200/60 dark:border-stone-800 rounded-2xl text-xs space-y-2 relative z-10">
+        <div className="p-3.5 bg-emerald-500/[0.08] dark:bg-emerald-950/25 border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl text-xs space-y-2 relative z-10">
           <span className="text-[10px] font-mono font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block">
             ⚡ Recent Service Request
           </span>
-          <p className="text-stone-800 dark:text-stone-200 font-semibold leading-snug">
+          <p className="text-slate-800 dark:text-slate-200 font-semibold leading-snug">
             "Urgent: 5.5KVA Silent Diesel Generator Needed for 2 Days in Sakasaka Site Work."
           </p>
-          <div className="flex items-center justify-between text-[11px] text-stone-500 dark:text-stone-400 pt-1 font-mono">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 font-mono">
             <span>Posted 12m ago • 3 Price Offers Received</span>
             <span className="text-emerald-700 dark:text-emerald-400 font-extrabold">Open Active</span>
           </div>
         </div>
 
         {/* Bottom Feature Badges Bar */}
-        <div className="pt-2 border-t border-stone-200/80 dark:border-stone-800/80 flex items-center justify-between relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs shadow-md shadow-emerald-600/20">
+        <div className="pt-2 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between relative z-10">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20">
             <Sparkles className="w-3.5 h-3.5 fill-white" /> Direct WhatsApp Messages
           </div>
-          <span className="text-[11px] font-extrabold text-stone-600 dark:text-stone-400 font-mono">
+          <span className="text-[11px] font-extrabold text-slate-600 dark:text-slate-400 font-mono">
             ⚡ 0% Platform Fee
           </span>
         </div>

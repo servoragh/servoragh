@@ -33,6 +33,7 @@ import {
 import { formatGHS } from "@/lib/utils";
 import { CategoryPickerModal } from "@/components/CategoryPickerModal";
 import { toast } from "@/lib/toast";
+import { filterAndRankItems } from "@/lib/reliableSearch";
 
 interface BusinessCatalogManagerProps {
   products: any[];
@@ -434,9 +435,30 @@ export function BusinessCatalogManager({
     }
   };
 
-  const filteredProducts = products.filter((p) => p.title?.toLowerCase().includes(search.toLowerCase()));
-  const filteredRentals = rentals.filter((r) => r.title?.toLowerCase().includes(search.toLowerCase()));
-  const filteredServices = services.filter((s) => s.serviceName?.toLowerCase().includes(search.toLowerCase()));
+  const filteredProducts = filterAndRankItems(products, search, (p) => ({
+    title: p.title,
+    category: p.category,
+    subCategory: p.subCategory,
+    description: p.description,
+    price: p.price,
+    sku: p.sku,
+  }));
+
+  const filteredRentals = filterAndRankItems(rentals, search, (r) => ({
+    title: r.title,
+    category: r.category,
+    subCategory: r.subCategory,
+    description: r.description,
+    price: r.dailyRate || r.price,
+  }));
+
+  const filteredServices = filterAndRankItems(services, search, (s) => ({
+    title: s.serviceName || s.name || "",
+    category: s.category || "Services",
+    subCategory: s.subCategory,
+    description: s.description,
+    price: s.startingPrice || s.price,
+  }));
 
   return (
     <div className="space-y-6">

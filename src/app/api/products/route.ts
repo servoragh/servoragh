@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { matchProductTaxonomy } from "@/lib/taxonomyResolver";
+import { getServerCache, setServerCache } from "@/lib/serverCache";
+import { filterAndRankItems, extractQueryTokens } from "@/lib/reliableSearch";
 
 export async function GET(request: Request) {
   try {
@@ -12,6 +14,18 @@ export async function GET(request: Request) {
     const search = searchParams.get("q");
     const sortBy = searchParams.get("sortBy") || "newest";
     const includeInactive = searchParams.get("all") === "true";
+
+    // Fast In-Memory Cache Lookup (Sub-millisecond instant return)
+    const cacheKey = `products_${category || ""}_${subCategory || ""}_${providerSlug || ""}_${area || ""}_${search || ""}_${sortBy}_${includeInactive}`;
+    const cachedResponse = getServerCache(cacheKey);
+    if (cachedResponse) {
+      return NextResponse.json(cachedResponse, {
+        headers: {
+          "Cache-Control": "public, s-maxage=15, stale-while-revalidate=60",
+          "X-Servora-Cache": "HIT",
+        },
+      });
+    }
 
     // 1. Where clause for legacy `prisma.product`
     const productWhere: any = {};
@@ -28,12 +42,18 @@ export async function GET(request: Request) {
         serviceArea: { contains: area, mode: "insensitive" },
       };
     }
-    if (search) {
-      productWhere.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { category: { contains: search, mode: "insensitive" } },
-      ];
+    // Token & Synonym Expansion for DB search
+    if (search && search.trim()) {
+      const { rawTokens, synonymTokens } = extractQueryTokens(search);
+      const allSearchTerms = Array.from(new Set([...rawTokens, ...synonymTokens.slice(0, 3)]));
+
+      if (allSearchTerms.length > 0) {
+        productWhere.OR = allSearchTerms.flatMap((term) => [
+          { title: { contains: term, mode: "insensitive" } },
+          { description: { contains: term, mode: "insensitive" } },
+          { category: { contains: term, mode: "insensitive" } },
+        ]);
+      }
     }
 
     // 2. Where clause for `prisma.productListing`
@@ -51,13 +71,18 @@ export async function GET(request: Request) {
     if (area && area !== "all") {
       listingWhere.area = { contains: area, mode: "insensitive" };
     }
-    if (search) {
-      listingWhere.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { category: { contains: search, mode: "insensitive" } },
-        { subCategory: { contains: search, mode: "insensitive" } },
-      ];
+    if (search && search.trim()) {
+      const { rawTokens, synonymTokens } = extractQueryTokens(search);
+      const allSearchTerms = Array.from(new Set([...rawTokens, ...synonymTokens.slice(0, 3)]));
+
+      if (allSearchTerms.length > 0) {
+        listingWhere.OR = allSearchTerms.flatMap((term) => [
+          { title: { contains: term, mode: "insensitive" } },
+          { description: { contains: term, mode: "insensitive" } },
+          { category: { contains: term, mode: "insensitive" } },
+          { subCategory: { contains: term, mode: "insensitive" } },
+        ]);
+      }
     }
 
     // Run both queries concurrently with Promise.all for maximum speed!
@@ -229,29 +254,47 @@ export async function GET(request: Request) {
       allMerged = allMerged.filter((p) => matchProductTaxonomy(p, category, subCategory));
     }
 
-    // MODERN PRODUCT SORTING (Applied AFTER filtering!)
-    allMerged.sort((a, b) => {
-      if (sortBy === "oldest") {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      }
-      if (sortBy === "price_asc") {
-        return a.price - b.price;
-      }
-      if (sortBy === "price_desc") {
-        return b.price - a.price;
-      }
-      if (sortBy === "rating") {
-        return (b.provider?.ratingAverage || 0) - (a.provider?.ratingAverage || 0);
-      }
-      // Default: "newest"
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
+    // RELIABLE INTELLIGENT RELEVANCE RANKING (If search is present)
+    if (search && search.trim()) {
+      allMerged = filterAndRankItems(allMerged, search, (p: any) => ({
+        title: p.title,
+        category: p.category,
+        subCategory: p.subCategory,
+        description: p.description,
+        price: p.price,
+        area: p.provider?.serviceArea || p.area,
+      }));
+    }
+
+    // MODERN PRODUCT SORTING (Applied AFTER filtering / if user selected explicit sort)
+    if (!search || (sortBy && sortBy !== "newest")) {
+      allMerged.sort((a, b) => {
+        if (sortBy === "oldest") {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        }
+        if (sortBy === "price_asc") {
+          return a.price - b.price;
+        }
+        if (sortBy === "price_desc") {
+          return b.price - a.price;
+        }
+        if (sortBy === "rating") {
+          return (b.provider?.ratingAverage || 0) - (a.provider?.ratingAverage || 0);
+        }
+        // Default: "newest"
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    }
+
+    const responsePayload = { products: allMerged, total: allMerged.length };
+    setServerCache(cacheKey, responsePayload, 30);
 
     return NextResponse.json(
-      { products: allMerged, total: allMerged.length },
+      responsePayload,
       {
         headers: {
-          "Cache-Control": "public, s-maxage=10, stale-while-revalidate=60",
+          "Cache-Control": "public, s-maxage=15, stale-while-revalidate=60",
+          "X-Servora-Cache": "MISS",
         },
       }
     );

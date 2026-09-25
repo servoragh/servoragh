@@ -2336,10 +2336,10 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bizName = _profile?['businessName'] ?? 'Savannah Fresh Agro-Goods';
-    final slug = _profile?['slug'] ?? 'savannah-fresh-farms';
-    final zone = _profile?['zone'] ?? 'Aboabo';
-    final bannerLogo = _profile?['logoUrl'] ?? 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&q=80';
+    final bizName = _profile?['businessName'] ?? 'Business Workspace';
+    final slug = _profile?['slug'] ?? '';
+    final zone = _profile?['zone'] ?? '';
+    final bannerLogo = _profile?['logoUrl'] ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2427,18 +2427,25 @@ class _BusinessPortalViewState extends State<BusinessPortalView> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: CachedNetworkImage(
-                  imageUrl: logo,
-                  width: 62,
-                  height: 62,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => Container(
-                    width: 62,
-                    height: 62,
-                    color: Colors.white24,
-                    child: const Icon(Icons.storefront_rounded, color: Colors.white),
-                  ),
-                ),
+                child: logo.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: logo,
+                        width: 62,
+                        height: 62,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => Container(
+                          width: 62,
+                          height: 62,
+                          color: Colors.white24,
+                          child: const Icon(Icons.storefront_rounded, color: Colors.white),
+                        ),
+                      )
+                    : Container(
+                        width: 62,
+                        height: 62,
+                        color: Colors.white24,
+                        child: const Icon(Icons.storefront_rounded, color: Colors.white),
+                      ),
               ),
               const Gap(14),
               Expanded(

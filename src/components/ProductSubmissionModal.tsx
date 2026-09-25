@@ -47,17 +47,17 @@ export function ProductSubmissionModal({
   const [category, setCategory] = useState<string>(CLASSIFIED_CATEGORIES[0].name);
   const [subCategory, setSubCategory] = useState<string>(CLASSIFIED_CATEGORIES[0].subcategories[0].name);
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
-  const [condition, setCondition] = useState<ItemCondition>("USED_GOOD");
+  const [condition, setCondition] = useState<ItemCondition>("BRAND_NEW");
   const [description, setDescription] = useState("");
 
-  const [price, setPrice] = useState<number>(250);
-  const [isNegotiable, setIsNegotiable] = useState(true);
+  const [price, setPrice] = useState<number>(0);
+  const [isNegotiable, setIsNegotiable] = useState(false);
   const [currency, setCurrency] = useState("GHS");
 
-  const [area, setArea] = useState("Sakasaka, Tamale");
-  const [deliveryOptions, setDeliveryOptions] = useState<string[]>(["PICKUP", "LOCAL_DELIVERY"]);
+  const [area, setArea] = useState("");
+  const [deliveryOptions, setDeliveryOptions] = useState<string[]>(["PICKUP"]);
 
-  const [imageUrl, setImageUrl] = useState("https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&auto=format&fit=crop&q=80");
+  const [imageUrl, setImageUrl] = useState("");
   const [imagesList, setImagesList] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState("");
 

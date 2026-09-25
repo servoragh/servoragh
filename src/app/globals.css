@@ -3,15 +3,49 @@
 /* Force Selector-based Dark Mode for Tailwind CSS v4 */
 @variant dark (&:where(.dark, .dark *));
 
+/* World-Class Modern Theme System (Linear / Apple / Stripe Inspired) */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Remap "stone" globally across entire application to an ultra-modern Midnight Slate / Obsidian palette */
+  --color-stone-50: #f8fafc;
+  --color-stone-100: #f1f5f9;
+  --color-stone-200: #e2e8f0;
+  --color-stone-300: #cbd5e1;
+  --color-stone-400: #94a3b8;
+  --color-stone-500: #64748b;
+  --color-stone-600: #475569;
+  --color-stone-700: #334155;
+  --color-stone-800: #1e293b;
+  --color-stone-900: #0f172a;
+  --color-stone-950: #07090e;
+
+  /* Precision Slate Accents */
+  --color-slate-925: #0b0f19;
+  --color-slate-950: #07090e;
+
+  /* Radiant Emerald & Mint Palette */
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-950: #022c22;
+}
+
 :root {
-  --background: #fafaf9;
-  --foreground: #1c1917;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --header-bg: rgba(255, 255, 255, 0.85);
   color-scheme: light;
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #f4f4f5;
+  --background: #07090e;
+  --foreground: #f8fafc;
+  --card-bg: #0f172a;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --header-bg: rgba(11, 15, 25, 0.85);
   color-scheme: dark;
 }
 
@@ -19,12 +53,58 @@
 html {
   background-color: var(--background);
   color: var(--foreground);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.012em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Modern World-Class Glassmorphism & Elevation */
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+}
+
+.dark .glass-panel-dark,
+.dark .glass-card {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Grid Pattern Backgrounds for Futuristic Depth */
+.bg-grid-pattern {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(226, 232, 240, 0.5) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.5) 1px, transparent 1px);
+}
+
+.dark .bg-grid-pattern {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+}
+
+/* Radiant Ambient Glows */
+.glow-emerald {
+  box-shadow: 0 0 40px -10px rgba(16, 185, 129, 0.35);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 40px -10px rgba(6, 182, 212, 0.3);
 }
 
 /* Horizontal Ticker Text Reveal Animation for Mobile & Long Messages */
@@ -47,4 +127,53 @@ body {
   display: inline-block;
   white-space: nowrap;
   animation: ticker-marquee 6.5s linear infinite alternate;
+}
+
+/* =========================================================================
+   Ultra-Modern View Transition (Circular Ripple Wave Theme Transition)
+   ========================================================================= */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 99999;
+}
+
+/* =========================================================================
+   Uniform Global Theme Transition (Fallback & Universal Uniformity)
+   ========================================================================= */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              fill 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              stroke 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition-delay: 0s !important;
+}
+
+/* =========================================================================
+   Hide Scrollbars for Clean Touch & Modern UI (No Ugly Horizontal Arrows)
+   ========================================================================= */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }

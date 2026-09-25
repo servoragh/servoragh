@@ -38,6 +38,7 @@ import {
   Search,
 } from "lucide-react";
 import { formatGHS } from "@/lib/utils";
+import { filterAndRankItems } from "@/lib/reliableSearch";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { ShareDrawerModal } from "@/components/ShareDrawerModal";
 import { QrCodeGeneratorModal } from "@/components/QrCodeGeneratorModal";
@@ -220,33 +221,34 @@ export default function PublicDigitalStorefrontPage() {
     );
   }
 
-  const q = searchQuery.trim().toLowerCase();
   const rawProducts = profile.products || [];
   const rawRentals = profile.rentals || [];
   const rawServices = profile.services || [];
 
-  const products = rawProducts.filter((p: any) => {
-    if (!q) return true;
-    const title = (p.title || "").toLowerCase();
-    const category = (p.category || "").toLowerCase();
-    const description = (p.description || "").toLowerCase();
-    return title.includes(q) || category.includes(q) || description.includes(q);
-  });
+  const products = filterAndRankItems(rawProducts, searchQuery, (p: any) => ({
+    title: p.title,
+    category: p.category,
+    subCategory: p.subCategory,
+    description: p.description,
+    price: p.price,
+    sku: p.sku,
+  }));
 
-  const rentals = rawRentals.filter((r: any) => {
-    if (!q) return true;
-    const title = (r.title || "").toLowerCase();
-    const category = (r.category || "").toLowerCase();
-    const description = (r.description || "").toLowerCase();
-    return title.includes(q) || category.includes(q) || description.includes(q);
-  });
+  const rentals = filterAndRankItems(rawRentals, searchQuery, (r: any) => ({
+    title: r.title,
+    category: r.category,
+    subCategory: r.subCategory,
+    description: r.description,
+    price: r.dailyRate || r.price,
+  }));
 
-  const services = rawServices.filter((s: any) => {
-    if (!q) return true;
-    const name = (s.serviceName || s.name || "").toLowerCase();
-    const description = (s.description || "").toLowerCase();
-    return name.includes(q) || description.includes(q);
-  });
+  const services = filterAndRankItems(rawServices, searchQuery, (s: any) => ({
+    title: s.serviceName || s.name || "",
+    category: s.category || "Services",
+    subCategory: s.subCategory,
+    description: s.description,
+    price: s.startingPrice || s.price,
+  }));
 
   const renderProductCard = (p: any) => {
     const pImages: string[] = Array.isArray(p.images)
@@ -596,382 +598,491 @@ export default function PublicDigitalStorefrontPage() {
     );
   };
 
+  // Helper to strip raw coordinates from location strings (e.g. "Dungu / UDS, Tamale (5.5545, -0.1902)")
+  const cleanLocation = (locStr?: string | null) => {
+    if (!locStr) return "Tamale, Northern Region";
+    return (
+      locStr
+        .replace(/\s*\([-+]?[0-9]*\.?[0-9]+,\s*[-+]?[0-9]*\.?[0-9]+\)/g, "")
+        .replace(/\b[-+]?[0-9]{1,3}\.[0-9]{3,},\s*[-+]?[0-9]{1,3}\.[0-9]{3,}\b/g, "")
+        .trim() || "Tamale, Northern Region"
+    );
+  };
+
+  // Only consider active categories that actually have posted items
+  const availableCategories: Array<{
+    id: "products" | "rentals" | "services";
+    label: string;
+    count: number;
+    icon: any;
+  }> = [];
+
+  if (products.length > 0) {
+    availableCategories.push({
+      id: "products",
+      label: "Products",
+      count: products.length,
+      icon: Package,
+    });
+  }
+  if (rentals.length > 0) {
+    availableCategories.push({
+      id: "rentals",
+      label: "Tool Rentals",
+      count: rentals.length,
+      icon: Wrench,
+    });
+  }
+  if (services.length > 0) {
+    availableCategories.push({
+      id: "services",
+      label: "Services",
+      count: services.length,
+      icon: Layers,
+    });
+  }
+
+  // Active category selection: dynamically defaults to the first available category
+  const selectedCategory =
+    availableCategories.find((c) => c.id === activeTab)?.id ||
+    availableCategories[0]?.id ||
+    "products";
+
+  const hasDistinctDescription = Boolean(
+    profile.description &&
+      profile.description.trim().toLowerCase() !== (profile.tagline || "").trim().toLowerCase() &&
+      profile.description.trim().toLowerCase() !== profile.businessName.trim().toLowerCase()
+  );
+
+  const displayZone = cleanLocation(profile.zone || profile.addressDetails);
+
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 py-8 lg:py-12 text-stone-900 dark:text-stone-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 pb-28 md:pb-16 text-stone-900 dark:text-stone-100 antialiased selection:bg-emerald-500 selection:text-white">
+      {/* Top Floating Navigation Header Bar */}
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 pt-4 pb-2 flex items-center justify-between gap-3">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-emerald-600 transition-all"
+          className="inline-flex items-center gap-2 px-3.5 py-2 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md hover:bg-white dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-2xl text-xs font-bold border border-stone-200/80 dark:border-stone-800 shadow-2xs transition-all"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Servora Marketplace
+          <ArrowLeft className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Marketplace</span>
         </Link>
 
-        {/* HERO STOREFRONT BANNER */}
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl overflow-hidden shadow-xl">
-          {/* Cover Banner with Premium Default Fallback */}
-          <div className="h-48 lg:h-64 w-full bg-gradient-to-r from-emerald-950 via-stone-900 to-emerald-900 relative">
-            <img
-              src={profile.bannerUrl || "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&auto=format&fit=crop&q=80"}
-              alt="Storefront Banner"
-              className="w-full h-full object-cover opacity-85"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-900/95 via-stone-900/30 to-transparent" />
+        {/* Quick Utilities (Save, Share, QR) */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <FavoriteButton
+            businessId={profile.id}
+            businessSlug={profile.slug}
+            businessName={profile.businessName}
+            variant="button"
+            size="sm"
+            className="shadow-2xs py-2 px-3"
+          />
+          <button
+            type="button"
+            onClick={() => setIsShareDrawerOpen(true)}
+            aria-label="Share Storefront"
+            className="p-2 sm:px-3 sm:py-2 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md hover:bg-white dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-2xl text-xs font-bold border border-stone-200/80 dark:border-stone-800 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <Share2 className="w-4 h-4 text-emerald-600" />
+            <span className="hidden sm:inline">Share</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsQrModalOpen(true)}
+            aria-label="Store QR Code"
+            className="p-2 sm:px-3 sm:py-2 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md hover:bg-white dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-2xl text-xs font-bold border border-stone-200/80 dark:border-stone-800 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <QrCode className="w-4 h-4 text-emerald-600" />
+            <span className="hidden sm:inline">QR</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 space-y-6">
+        {/* HERO STOREFRONT CARD */}
+        <div className="bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800/90 rounded-3xl overflow-hidden shadow-lg shadow-stone-200/40 dark:shadow-none">
+          {/* Cover Banner */}
+          <div className="h-40 sm:h-56 lg:h-64 w-full bg-gradient-to-r from-stone-900 via-slate-900 to-stone-950 relative overflow-hidden">
+            {profile.bannerUrl ? (
+              <>
+                <img
+                  src={profile.bannerUrl}
+                  alt={`${profile.businessName} Storefront Banner`}
+                  className="w-full h-full object-cover opacity-90"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/90 via-stone-950/20 to-transparent" />
+              </>
+            ) : (
+              <div className="w-full h-full relative flex items-center justify-center">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.08),transparent_65%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:28px_28px]" />
+                <div className="relative text-stone-500/40 text-[10px] sm:text-xs font-bold uppercase tracking-widest flex items-center gap-2 select-none">
+                  <ImageIcon className="w-4 h-4 opacity-40" />
+                  <span>Verified Storefront</span>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Profile Header Info */}
-          <div className="p-6 lg:p-8 relative -mt-16 lg:-mt-20">
-            <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
-              <div className="flex items-end gap-5">
-                <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-3xl bg-white dark:bg-stone-800 border-4 border-white dark:border-stone-900 shadow-2xl overflow-hidden shrink-0 flex items-center justify-center font-black text-3xl text-emerald-600">
+          {/* Profile Identity Block */}
+          <div className="p-4 sm:p-6 lg:p-8 relative -mt-12 sm:-mt-16">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+              <div className="flex items-end gap-3.5 sm:gap-5">
+                {/* Store Avatar Logo */}
+                <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-800 border-3 sm:border-4 border-white dark:border-stone-900 shadow-xl overflow-hidden shrink-0 flex items-center justify-center font-black text-2xl sm:text-3xl text-emerald-600">
                   {profile.logoUrl ? (
                     <img src={profile.logoUrl} alt={profile.businessName} className="w-full h-full object-cover" />
                   ) : (
-                    <Building2 className="w-12 h-12" />
+                    <Building2 className="w-10 h-10 sm:w-14 sm:h-14 text-emerald-600" />
                   )}
                 </div>
 
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-bold shadow-sm">
+                <div className="space-y-1">
+                  {/* Badges Pill Row */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-full text-[11px] font-bold">
                       <ShieldCheck className="w-3.5 h-3.5 fill-emerald-500 text-white" />
-                      <span>Verified Business</span>
+                      <span>Verified</span>
                     </span>
-                    <span className="px-2.5 py-0.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-full text-xs font-bold">
-                      {profile.zone}
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-full text-[11px] font-bold">
+                      <MapPin className="w-3 h-3 text-stone-400" />
+                      <span>{displayZone}</span>
                     </span>
                   </div>
 
-                  <h1 className="text-2xl lg:text-4xl font-black text-stone-900 dark:text-white">
+                  <h1 className="text-xl sm:text-3xl lg:text-4xl font-black text-stone-900 dark:text-white tracking-tight leading-tight">
                     {profile.businessName}
                   </h1>
+
                   {profile.tagline && (
-                    <p className="text-xs lg:text-sm font-medium text-stone-500 dark:text-stone-400 mt-1">
+                    <p className="text-xs sm:text-sm font-medium text-stone-500 dark:text-stone-400 leading-snug">
                       {profile.tagline}
                     </p>
                   )}
                 </div>
               </div>
-
-              {/* PRIMARY ACTION CTAS */}
-              <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
-                <FavoriteButton
-                  businessId={profile.id}
-                  businessSlug={profile.slug}
-                  businessName={profile.businessName}
-                  variant="button"
-                  size="md"
-                  className="py-3 px-4 shadow-sm"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setIsShareDrawerOpen(true)}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-extrabold rounded-2xl text-xs transition-all border border-stone-200 dark:border-stone-700"
-                >
-                  <Share2 className="w-4 h-4 text-emerald-600" /> Share Link
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsQrModalOpen(true)}
-                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-extrabold rounded-2xl text-xs transition-all border border-stone-200 dark:border-stone-700"
-                >
-                  <QrCode className="w-4 h-4 text-emerald-600" /> QR Code
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleWhatsAppClick()}
-                  className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs shadow-lg shadow-emerald-600/30 transition-all"
-                >
-                  <MessageSquare className="w-4 h-4" /> WhatsApp
-                </button>
-
-                <a
-                  href={`tel:${profile.phone}`}
-                  className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-3 bg-stone-900 dark:bg-white text-white dark:text-stone-900 font-bold rounded-2xl text-xs hover:opacity-90 transition-all"
-                >
-                  <PhoneCall className="w-4 h-4" /> Call
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() => setIsQuoteModalOpen(true)}
-                  className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white font-bold rounded-2xl text-xs hover:bg-stone-200 transition-all border border-stone-200 dark:border-stone-700"
-                >
-                  Get Price Estimate
-                </button>
-              </div>
             </div>
 
-            {/* Description & Overview */}
-            {profile.description && (
-              <p className="text-xs lg:text-sm text-stone-600 dark:text-stone-300 mt-6 leading-relaxed border-t border-stone-100 dark:border-stone-800 pt-6">
+            {/* Distinct Description (Rendered only if different from tagline) */}
+            {hasDistinctDescription && (
+              <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 mt-4 pt-4 border-t border-stone-100 dark:border-stone-800 leading-relaxed">
                 {profile.description}
               </p>
             )}
 
-            {/* Physical Workshop / Storefront Photo Showcase */}
-            {profile.storefrontPhotoUrl && (
-              <div className="mt-6 border-t border-stone-100 dark:border-stone-800 pt-6 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-emerald-600" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-stone-700 dark:text-stone-300">
-                      Physical Storefront & Workshop Photo
-                    </h3>
-                  </div>
-                  <span className="text-[10px] px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold rounded-full border border-emerald-200 dark:border-emerald-800">
-                    Verified Location
-                  </span>
-                </div>
-                <div className="relative rounded-3xl overflow-hidden border border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-950 group h-64 sm:h-80">
-                  <img
-                    src={profile.storefrontPhotoUrl}
-                    alt={`${profile.businessName} Physical Storefront`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-between p-4 sm:p-6">
-                    <div className="text-white">
-                      <p className="text-xs font-black drop-shadow-sm flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-400" /> {profile.addressDetails || profile.zone}
-                      </p>
-                      {profile.landmark && (
-                        <p className="text-[11px] text-stone-300">Landmark: {profile.landmark}</p>
-                      )}
-                    </div>
-                    <a
-                      href={profile.storefrontPhotoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-1.5 bg-white/90 hover:bg-white text-stone-900 text-xs font-bold rounded-xl flex items-center gap-1 shadow-lg backdrop-blur-xs transition"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> Full Photo
-                    </a>
-                  </div>
-                </div>
+            {/* ACTION CENTER CTAs (High Conversion Mobile Buttons) */}
+            <div className="mt-5 pt-4 border-t border-stone-100 dark:border-stone-800/80 space-y-2.5">
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleWhatsAppClick()}
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl text-xs sm:text-sm shadow-md shadow-emerald-600/25 active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4 fill-current" />
+                  <span>WhatsApp Chat</span>
+                </button>
+
+                <a
+                  href={`tel:${profile.phone}`}
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-stone-900 hover:bg-stone-800 dark:bg-white dark:hover:bg-stone-100 text-white dark:text-stone-900 font-black rounded-2xl text-xs sm:text-sm shadow-sm active:scale-[0.98] transition-all"
+                >
+                  <PhoneCall className="w-4 h-4" />
+                  <span>Call Direct</span>
+                </a>
               </div>
-            )}
 
-            {/* Location & Interactive Live Map */}
-            {(() => {
-              const lat = profile.latitude ? Number(profile.latitude) : 9.4074;
-              const lng = profile.longitude ? Number(profile.longitude) : -0.8416;
-              const googleMapsUrl = profile.latitude && profile.longitude
-                ? `https://www.google.com/maps/dir/?api=1&destination=${profile.latitude},${profile.longitude}`
-                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((profile.addressDetails || profile.zone || "Tamale") + " Ghana")}`;
-
-              return (
-                <div className="mt-6 border-t border-stone-100 dark:border-stone-800 pt-6 space-y-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-2xl">
-                        <MapPin className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-black text-stone-900 dark:text-white flex items-center gap-2">
-                          <span>{profile.addressDetails || profile.zone}</span>
-                          <span className="text-[10px] px-2 py-0.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-full font-mono">
-                            {profile.latitude && profile.longitude ? `${Number(profile.latitude).toFixed(4)}° N, ${Number(profile.longitude).toFixed(4)}° W` : "Tamale, Ghana"}
-                          </span>
-                        </h4>
-                        {profile.landmark && (
-                          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                            Landmark: <strong>{profile.landmark}</strong>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <a
-                      href={googleMapsUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-2xl flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition cursor-pointer"
-                    >
-                      <Navigation className="w-4 h-4" /> Open in Google Maps (Live Directions) 🚗
-                    </a>
-                  </div>
-
-                  {/* Interactive Live Map Iframe Embed */}
-                  <div className="relative rounded-3xl overflow-hidden border border-stone-200 dark:border-stone-800 shadow-inner h-56 sm:h-64 bg-stone-100 dark:bg-stone-950">
-                    <iframe
-                      title="Storefront Location Live Map"
-                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.008}%2C${lat - 0.005}%2C${lng + 0.008}%2C${lat + 0.005}&layer=mapnik&marker=${lat}%2C${lng}`}
-                      className="w-full h-full border-0"
-                      loading="lazy"
-                    />
-                    <a
-                      href={googleMapsUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="absolute bottom-3 right-3 px-3 py-1.5 bg-stone-900/90 hover:bg-stone-900 text-white rounded-xl text-[11px] font-extrabold flex items-center gap-1.5 backdrop-blur-md shadow-lg transition"
-                    >
-                      <Navigation className="w-3.5 h-3.5 text-emerald-400" /> Navigate to Store ↗
-                    </a>
-                  </div>
-                </div>
-              );
-            })()}
+              <button
+                type="button"
+                onClick={() => setIsQuoteModalOpen(true)}
+                className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-stone-50 hover:bg-stone-100 dark:bg-stone-800/60 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold rounded-2xl text-xs sm:text-sm border border-stone-200/80 dark:border-stone-700/80 transition-all cursor-pointer"
+              >
+                <span>Get Price Estimate / Custom Quote</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* TABBED SHOWCASE: PRODUCTS, RENTALS, SERVICES */}
-        <div className="space-y-6">
-          {/* Real-Time Store Catalog Search Bar */}
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Search ${profile.businessName} catalog & services...`}
-              className="w-full pl-11 pr-10 py-3.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-xs transition"
-            />
-            <Search className="w-4 h-4 text-stone-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-1 cursor-pointer"
-                title="Clear search"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+        {/* PHYSICAL STOREFRONT PHOTO SHOWCASE (If Uploaded) */}
+        {profile.storefrontPhotoUrl && (
+          <div className="bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800/80 rounded-3xl p-4 sm:p-6 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Store className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-stone-700 dark:text-stone-300">
+                  Physical Storefront & Workshop
+                </h3>
+              </div>
+              <span className="text-[10px] px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold rounded-full border border-emerald-200 dark:border-emerald-800">
+                Verified Premises
+              </span>
+            </div>
+            <div className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-950 group h-56 sm:h-72">
+              <img
+                src={profile.storefrontPhotoUrl}
+                alt={`${profile.businessName} Storefront`}
+                className="w-full h-full object-cover group-hover:scale-102 transition duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent flex items-end justify-between p-4">
+                <p className="text-white text-xs font-bold flex items-center gap-1.5 drop-shadow-sm">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-400" /> {displayZone}
+                  {profile.landmark && <span className="text-stone-300 font-normal">({profile.landmark})</span>}
+                </p>
+                <a
+                  href={profile.storefrontPhotoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 bg-white/90 hover:bg-white text-stone-900 text-[11px] font-bold rounded-xl flex items-center gap-1 shadow-md transition"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Full Photo
+                </a>
+              </div>
+            </div>
           </div>
+        )}
 
+        {/* LOCATION & DIRECTIONS CARD (Clean Airbnb/Apple Maps Style) */}
+        {(() => {
+          const lat = profile.latitude ? Number(profile.latitude) : 9.4074;
+          const lng = profile.longitude ? Number(profile.longitude) : -0.8416;
+          const googleMapsUrl = profile.latitude && profile.longitude
+            ? `https://www.google.com/maps/dir/?api=1&destination=${profile.latitude},${profile.longitude}`
+            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayZone + " Tamale Ghana")}`;
+
+          return (
+            <div className="bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800/80 rounded-3xl p-4 sm:p-6 shadow-sm space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-extrabold text-stone-900 dark:text-white line-clamp-1">
+                      {displayZone}
+                    </h3>
+                    {profile.landmark && (
+                      <p className="text-[11px] text-stone-500 dark:text-stone-400">
+                        Landmark: <strong>{profile.landmark}</strong>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 shrink-0 transition"
+                >
+                  <Navigation className="w-3.5 h-3.5" />
+                  <span>Directions ↗</span>
+                </a>
+              </div>
+
+              {/* Embedded Live Map View */}
+              <div className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 h-44 sm:h-56 bg-stone-100 dark:bg-stone-950">
+                <iframe
+                  title="Storefront Location Live Map"
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.008}%2C${lat - 0.005}%2C${lng + 0.008}%2C${lat + 0.005}&layer=mapnik&marker=${lat}%2C${lng}`}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* CATALOG & SHOWCASE SECTION (Smart Dynamic Tabs) */}
+        <div className="space-y-4">
+          {/* Search bar (only if catalog has items or search is active) */}
+          {(rawProducts.length > 0 || rawRentals.length > 0 || rawServices.length > 0 || searchQuery) && (
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Search ${profile.businessName} catalog...`}
+                className="w-full pl-10 pr-9 py-3 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-2xs transition"
+              />
+              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* DYNAMIC CATEGORY SHOWCASE */}
           {searchQuery.trim() ? (
-            /* UNIFIED GENERAL OMNISEARCH RESULTS */
-            <div className="space-y-8">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase text-emerald-600 tracking-wider">
-                  All Catalog Results for &quot;{searchQuery}&quot; ({products.length + rentals.length + services.length} items)
+            /* OMNISEARCH RESULTS */
+            <div className="space-y-6">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-extrabold text-emerald-600 uppercase tracking-wider">
+                  Search Results for &quot;{searchQuery}&quot; ({products.length + rentals.length + services.length})
                 </span>
                 <button
+                  type="button"
                   onClick={() => setSearchQuery("")}
-                  className="text-xs text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 underline cursor-pointer"
+                  className="text-stone-500 hover:underline"
                 >
-                  Clear search
+                  Clear
                 </button>
               </div>
 
               {products.length === 0 && rentals.length === 0 && services.length === 0 && (
-                <div className="py-16 text-center text-stone-400 text-xs">
-                  No products, equipment rentals, or services matching &quot;{searchQuery}&quot; found in this store.
+                <div className="py-12 text-center text-stone-400 text-xs">
+                  No items matching &quot;{searchQuery}&quot; found in this catalog.
                 </div>
               )}
 
-              {/* 1. Matching Products */}
               {products.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-extrabold text-stone-900 dark:text-white flex items-center gap-2">
-                    <Package className="w-4 h-4 text-emerald-600" /> Products &amp; Goods ({products.length})
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase text-stone-500 flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5 text-emerald-600" /> Products ({products.length})
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
                     {products.map((p: any) => renderProductCard(p))}
                   </div>
                 </div>
               )}
 
-              {/* 2. Matching Equipment Rentals */}
               {rentals.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-extrabold text-stone-900 dark:text-white flex items-center gap-2">
-                    <Wrench className="w-4 h-4 text-amber-600" /> Equipment Rentals ({rentals.length})
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase text-stone-500 flex items-center gap-1.5">
+                    <Wrench className="w-3.5 h-3.5 text-amber-600" /> Equipment Rentals ({rentals.length})
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {rentals.map((r: any) => renderRentalCard(r))}
                   </div>
                 </div>
               )}
 
-              {/* 3. Matching Services */}
               {services.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-extrabold text-stone-900 dark:text-white flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-emerald-600" /> Services Offered ({services.length})
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase text-stone-500 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-emerald-600" /> Services ({services.length})
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {services.map((s: any) => renderServiceCard(s))}
                   </div>
                 </div>
               )}
             </div>
-          ) : (
-            <>
-              {/* Normal 3-Tab Segment Selector */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-stone-200 dark:border-stone-800">
-                <button
-                  onClick={() => setActiveTab("products")}
-                  className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                    activeTab === "products"
-                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                      : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300"
-                  }`}
-                >
-                  <Package className="w-4 h-4" /> Products ({products.length})
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("rentals")}
-                  className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                    activeTab === "rentals"
-                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                      : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300"
-                  }`}
-                >
-                  <Wrench className="w-4 h-4" /> Equipment Rentals ({rentals.length})
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("services")}
-                  className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                    activeTab === "services"
-                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                      : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300"
-                  }`}
-                >
-                  <Layers className="w-4 h-4" /> Services Offered ({services.length})
-                </button>
+          ) : availableCategories.length === 0 ? (
+            /* ULTRA-MODERN CLEAN EMPTY STATE (ZERO TABS SHOWN) */
+            <div className="bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800/80 rounded-3xl p-8 sm:p-10 text-center space-y-4 shadow-sm">
+              <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-inner">
+                <Store className="w-8 h-8" />
               </div>
+              <div className="max-w-md mx-auto space-y-1">
+                <h3 className="font-black text-base sm:text-lg text-stone-900 dark:text-white">
+                  Catalog Under Preparation
+                </h3>
+                <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 leading-relaxed">
+                  {profile.businessName} is registered and verified on Servora. Direct orders, inquiries, and service bookings are open right now.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleWhatsAppClick()}
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4" /> Chat on WhatsApp
+                </button>
+                <a
+                  href={`tel:${profile.phone}`}
+                  className="px-4 py-2.5 bg-stone-900 hover:bg-stone-800 dark:bg-white dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5"
+                >
+                  <PhoneCall className="w-4 h-4" /> Call Merchant
+                </a>
+              </div>
+            </div>
+          ) : (
+            /* WHEN ONE OR MORE CATEGORIES EXIST: ONLY SHOW THOSE THAT EXIST */
+            <div className="space-y-5">
+              {availableCategories.length > 1 && (
+                <div className="flex items-center gap-2 p-1.5 bg-stone-100 dark:bg-stone-900 rounded-2xl border border-stone-200/80 dark:border-stone-800/80 overflow-x-auto scrollbar-none">
+                  {availableCategories.map((cat) => {
+                    const Icon = cat.icon;
+                    const isActive = selectedCategory === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setActiveTab(cat.id)}
+                        className={`flex-1 min-w-[120px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer ${
+                          isActive
+                            ? "bg-white dark:bg-stone-800 text-emerald-600 dark:text-emerald-400 shadow-xs border border-stone-200/60 dark:border-stone-700/60"
+                            : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{cat.label}</span>
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${isActive ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" : "bg-stone-200 dark:bg-stone-800 text-stone-500"}`}>
+                          {cat.count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-              {/* PRODUCTS SHOWCASE */}
-              {activeTab === "products" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Show items of selected category */}
+              {selectedCategory === "products" && products.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
                   {products.map((p: any) => renderProductCard(p))}
-                  {products.length === 0 && (
-                    <div className="col-span-full py-16 text-center text-stone-400 text-xs">
-                      No active products listed on this digital storefront yet.
-                    </div>
-                  )}
                 </div>
               )}
 
-              {/* RENTALS SHOWCASE */}
-              {activeTab === "rentals" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {selectedCategory === "rentals" && rentals.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {rentals.map((r: any) => renderRentalCard(r))}
-                  {rentals.length === 0 && (
-                    <div className="col-span-full py-16 text-center text-stone-400 text-xs">
-                      No heavy machinery or tool rentals listed yet.
-                    </div>
-                  )}
                 </div>
               )}
 
-              {/* SERVICES SHOWCASE */}
-              {activeTab === "services" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {selectedCategory === "services" && services.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {services.map((s: any) => renderServiceCard(s))}
-                  {services.length === 0 && (
-                    <div className="col-span-full py-16 text-center text-stone-400 text-xs">
-                      No custom service options listed yet.
-                    </div>
-                  )}
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
+      </div>
+
+      {/* MOBILE STICKY BOTTOM FLOATING BAR (Frictionless Conversion for Mobile Shoppers) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border-t border-stone-200/80 dark:border-stone-800/80 px-4 py-2.5 shadow-2xl flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => handleWhatsAppClick()}
+          className="flex-1 py-3 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-2xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/25 active:scale-95 transition cursor-pointer"
+        >
+          <MessageSquare className="w-4 h-4 fill-current" />
+          <span>WhatsApp</span>
+        </button>
+
+        <a
+          href={`tel:${profile.phone}`}
+          className="flex-1 py-3 px-3 bg-stone-900 hover:bg-stone-800 dark:bg-white dark:hover:bg-stone-100 text-white dark:text-stone-900 font-extrabold rounded-2xl text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition"
+        >
+          <PhoneCall className="w-4 h-4" />
+          <span>Call</span>
+        </a>
+
+        <button
+          type="button"
+          onClick={() => setIsQuoteModalOpen(true)}
+          className="p-3 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-bold rounded-2xl text-xs border border-stone-200 dark:border-stone-700 hover:bg-stone-200 transition cursor-pointer"
+          title="Get Quote"
+        >
+          <Store className="w-4 h-4 text-emerald-600" />
+        </button>
       </div>
 
       {/* FULL PRODUCT MULTI-IMAGE & 30s VIDEO GALLERY MODAL */}

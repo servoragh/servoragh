@@ -40,8 +40,6 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
   // In-Store Shopping Cart
   final List<StorefrontCartItem> _cartItems = [];
 
-  static const String _defaultBannerUrl =
-      'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&auto=format&fit=crop&q=80';
 
   @override
   void initState() {
@@ -416,8 +414,7 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
     final List reviewsList = (data['reviews'] is List) ? data['reviews'] : [];
 
     final String logoUrl = data['logoUrl'] ?? data['user']?['avatarUrl'] ?? '';
-    final String rawBanner = data['bannerUrl'] ?? '';
-    final String bannerUrl = rawBanner.isNotEmpty ? rawBanner : _defaultBannerUrl;
+    final String bannerUrl = data['bannerUrl'] ?? '';
     final String storefrontPhotoUrl = data['storefrontPhotoUrl'] ?? '';
 
     // Search Filtering
@@ -523,13 +520,23 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                   stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
                   background: Stack(
                     fit: StackFit.expand,
-                    children: [
-                      CachedNetworkImage(
-                        imageUrl: bannerUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(color: Colors.grey[900]),
-                        errorWidget: (_, __, ___) => Container(color: const Color(0xFF064E3B)),
-                      ),
+                      if (bannerUrl.isNotEmpty)
+                        CachedNetworkImage(
+                          imageUrl: bannerUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(color: Colors.grey[900]),
+                          errorWidget: (_, __, ___) => Container(color: const Color(0xFF0F172A)),
+                        )
+                      else
+                        Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF022C22)],
+                            ),
+                          ),
+                        ),
                       // Ambient Luxury Gradient Scrim
                       DecoratedBox(
                         decoration: BoxDecoration(
@@ -544,30 +551,31 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
                           ),
                         ),
                       ),
-                      // Floating Cover Lightbox Pill
-                      Positioned(
-                        bottom: 14,
-                        right: 14,
-                        child: GestureDetector(
-                          onTap: () => ServoraImageLightbox.show(context, title: name, images: [bannerUrl]),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white24, width: 0.8),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.photo_library_rounded, size: 12, color: Colors.white),
-                                Gap(5),
-                                Text('Cover Photo', style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700)),
-                              ],
+                      // Floating Cover Lightbox Pill (only if banner uploaded)
+                      if (bannerUrl.isNotEmpty)
+                        Positioned(
+                          bottom: 14,
+                          right: 14,
+                          child: GestureDetector(
+                            onTap: () => ServoraImageLightbox.show(context, title: name, images: [bannerUrl]),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white24, width: 0.8),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.photo_library_rounded, size: 12, color: Colors.white),
+                                  Gap(5),
+                                  Text('Cover Photo', style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700)),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),

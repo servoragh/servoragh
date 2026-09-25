@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerCache, setServerCache } from "@/lib/serverCache";
 
 export async function GET(
   req: Request,
@@ -14,6 +15,19 @@ export async function GET(
     const slug = rawSlug.startsWith("%40") || rawSlug.startsWith("@")
       ? rawSlug.replace(/^(%40|@)/, "")
       : rawSlug;
+
+    const cacheKey = `storefront_${slug}`;
+    if (!action) {
+      const cached = getServerCache(cacheKey);
+      if (cached) {
+        return NextResponse.json(cached, {
+          headers: {
+            "Cache-Control": "public, s-maxage=20, stale-while-revalidate=60",
+            "X-Servora-Cache": "HIT",
+          },
+        });
+      }
+    }
 
     let profile = await prisma.businessProfile.findUnique({
       where: { slug },
@@ -379,12 +393,23 @@ export async function GET(
       take: 10,
     }).catch(() => []) : [];
 
-    return NextResponse.json({
+    const payload = {
       profile: {
         ...profile,
         reviews,
       },
       communityPosts,
+    };
+
+    if (!action) {
+      setServerCache(cacheKey, payload, 30);
+    }
+
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": "public, s-maxage=20, stale-while-revalidate=60",
+        "X-Servora-Cache": "MISS",
+      },
     });
   } catch (error: any) {
     console.error("GET Public Storefront API Error:", error);

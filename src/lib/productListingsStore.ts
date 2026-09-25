@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { invalidateServerCache } from "@/lib/serverCache";
 import {
   ProductListingItem,
   CreateListingPayload,
@@ -111,15 +112,15 @@ export async function getAllProductListings(query?: ListingFilterQuery): Promise
         originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
         isNegotiable: false,
         currency: "GHS",
-        images: parsedImages.length > 0 ? parsedImages : ["https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=600&auto=format&fit=crop&q=80"],
+        images: parsedImages,
         videoUrl: null,
         area: p.provider?.serviceArea || "Tamale, Northern Region",
         deliveryOptions: ["PICKUP", "LOCAL_DELIVERY", "SHIPPING"],
         sellerType: "REGISTERED_USER",
         sellerId: p.provider?.userId || p.providerId,
         sellerName: p.provider?.businessName || p.provider?.user?.name || "Verified Artisan Merchant",
-        sellerPhone: p.provider?.user?.phone || "+233245556677",
-        sellerSlug: p.provider?.slug || p.providerId || "artisan-merchant",
+        sellerPhone: p.provider?.user?.phone || "",
+        sellerSlug: p.provider?.slug || p.providerId || "",
         status: p.isAvailable ? "ACTIVE" : "SUSPENDED",
         isFeatured: true,
         autoModerationFlags: [],
@@ -216,7 +217,7 @@ export async function createProductListing(payload: CreateListingPayload, sessio
       originalPrice: payload.originalPrice ? Number(payload.originalPrice) : null,
       isNegotiable: !!payload.isNegotiable,
       currency: payload.currency || "GHS",
-      images: payload.images && payload.images.length > 0 ? payload.images : ["https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80"],
+      images: payload.images && payload.images.length > 0 ? payload.images : [],
       videoUrl: payload.videoUrl || null,
       area: payload.area || businessProfile?.zone || "Tamale Central",
       deliveryOptions: payload.deliveryOptions || ["PICKUP"],
@@ -233,6 +234,8 @@ export async function createProductListing(payload: CreateListingPayload, sessio
       isFeatured: false,
     },
   });
+
+  invalidateServerCache("products_");
 
   return {
     id: createdDbItem.id,
@@ -368,6 +371,8 @@ export async function updateProductListingStatus(
   }
 
   if (!updated) return null;
+
+  invalidateServerCache("products_");
 
   return {
     id: updated.id,

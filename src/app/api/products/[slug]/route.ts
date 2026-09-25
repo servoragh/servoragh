@@ -94,14 +94,14 @@ export async function GET(
       const sellerBusiness = listing.business;
       const sellerUser = listing.seller;
       const sellerName = sellerBusiness?.businessName || sellerUser?.name || listing.guestName || "Verified Local Enterprise";
-      const sellerSlug = sellerBusiness?.slug || "royals-motors";
-      const sellerPhone = sellerBusiness?.phone || sellerUser?.phone || listing.guestPhone || "+233240000000";
+      const sellerSlug = sellerBusiness?.slug || "";
+      const sellerPhone = sellerBusiness?.phone || sellerUser?.phone || listing.guestPhone || "";
       const sellerWhatsApp = sellerBusiness?.phone || sellerUser?.phone || listing.guestWhatsApp || sellerPhone;
-      const sellerZone = sellerBusiness?.zone || listing.area || "Lamashegu, Tamale";
+      const sellerZone = sellerBusiness?.zone || listing.area || "Tamale";
       const sellerRating = sellerBusiness?.ratingAverage || 5.0;
-      const sellerReviewCount = sellerBusiness?.reviewsCount || 18;
-      const sellerVerification = sellerBusiness?.verificationStatus || "TIER_2_VERIFIED_ARTISAN";
-      const sellerLogo = sellerBusiness?.logoUrl || sellerUser?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80";
+      const sellerReviewCount = sellerBusiness?.reviewsCount || 0;
+      const sellerVerification = sellerBusiness?.verificationStatus || "TIER_1_BASIC";
+      const sellerLogo = sellerBusiness?.logoUrl || sellerUser?.avatarUrl || null;
 
       productPayload = {
         id: listing.id,
@@ -227,9 +227,9 @@ export async function GET(
             id: legacyProd.provider?.id || "provider-id",
             name: legacyProd.provider?.businessName || "Tamale Enterprise",
             businessName: legacyProd.provider?.businessName || "Tamale Enterprise",
-            slug: legacyProd.provider?.slug || "kwame-electrical-tamale",
-            logoUrl: legacyProd.provider?.logoUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80",
-            avatarUrl: legacyProd.provider?.logoUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80",
+            slug: legacyProd.provider?.slug || "",
+            logoUrl: legacyProd.provider?.logoUrl || null,
+            avatarUrl: legacyProd.provider?.logoUrl || null,
             phone: legacyProd.provider?.user?.phone || "+233240000000",
             whatsapp: legacyProd.provider?.user?.phone || "+233240000000",
             zone: legacyProd.provider?.serviceArea || "Sakasaka, Tamale",
@@ -320,9 +320,9 @@ export async function GET(
               id: rentalTool.provider?.id || "provider-id",
               name: rentalTool.provider?.businessName || "Tamale Rental Equipment Hub",
               businessName: rentalTool.provider?.businessName || "Tamale Rental Equipment Hub",
-              slug: rentalTool.provider?.slug || "tamale-equipment",
-              logoUrl: rentalTool.provider?.logoUrl || "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&q=80",
-              avatarUrl: rentalTool.provider?.logoUrl || "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&q=80",
+              slug: rentalTool.provider?.slug || "",
+              logoUrl: rentalTool.provider?.logoUrl || null,
+              avatarUrl: rentalTool.provider?.logoUrl || null,
               phone: rentalTool.provider?.user?.phone || "+233240000000",
               whatsapp: rentalTool.provider?.user?.phone || "+233240000000",
               zone: rentalTool.provider?.serviceArea || "Tamale Metro",
@@ -380,8 +380,8 @@ export async function GET(
           name: "Tamale Digital & Marketplace Store",
           businessName: "Tamale Digital & Marketplace Store",
           slug: "tamale-digital-hub",
-          logoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80",
-          avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80",
+          logoUrl: null,
+          avatarUrl: null,
           phone: "+233240000000",
           whatsapp: "+233240000000",
           zone: "Sakasaka, Tamale",
@@ -566,11 +566,11 @@ export async function GET(
           category: rec.category,
           area: rec.area || "Tamale",
           condition: rec.condition || "USED_GOOD",
-          image: parsedImgs[0] || "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80",
+          image: parsedImgs[0] || null,
           images: parsedImgs,
-          likesCount: rec.likesCount || 5,
+          likesCount: rec.likesCount || 0,
           seller: rec.businessName || "Verified Merchant",
-          sellerSlug: rec.businessSlug || "royals-motors",
+          sellerSlug: rec.businessSlug || "",
           sellerLogo: rec.businessLogo || null,
           sellerRating: rec.businessRating || 5.0,
         };

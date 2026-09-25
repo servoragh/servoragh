@@ -51,8 +51,16 @@ export default function BusinessOwnerPortalPage() {
   const [recycleBinCount, setRecycleBinCount] = useState(0);
 
   useEffect(() => {
+    // ⚡ INSTANT RENDER FROM CACHE (0ms delay)
+    try {
+      const cached = sessionStorage.getItem("servora_merchant_portal_data");
+      if (cached) {
+        setData(JSON.parse(cached));
+        setLoading(false);
+      }
+    } catch (_) {}
+
     fetchPortalData();
-    fetchRecycleBinCount();
   }, []);
 
   async function fetchRecycleBinCount() {
@@ -73,7 +81,7 @@ export default function BusinessOwnerPortalPage() {
 
   async function fetchPortalData() {
     try {
-      setLoading(true);
+      if (!data) setLoading(true);
       setError(null);
       const res = await fetch("/api/business/portal");
       const json = await res.json();
@@ -85,8 +93,18 @@ export default function BusinessOwnerPortalPage() {
         throw new Error(json.error || "Failed to load portal data.");
       }
       setData(json);
+      try {
+        sessionStorage.setItem("servora_merchant_portal_data", JSON.stringify(json));
+      } catch (_) {}
+
+      // Lazily fetch recycle bin count after main data has loaded to prevent query contention
+      setTimeout(() => {
+        fetchRecycleBinCount();
+      }, 500);
     } catch (err: any) {
-      setError(err.message || "Unable to reach business portal server.");
+      if (!data) {
+        setError(err.message || "Unable to reach business portal server.");
+      }
     } finally {
       setLoading(false);
     }

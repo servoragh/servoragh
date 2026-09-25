@@ -10,6 +10,8 @@ import {
   Star,
   ShieldCheck,
   Tag,
+  Building2,
+  Package,
   Eye,
   CheckCircle2,
   Heart,
@@ -364,7 +366,7 @@ export default function ProductDetailPage() {
 
   const images: string[] = product.images && product.images.length > 0
     ? product.images
-    : ["https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&q=80"];
+    : [];
 
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   const savings = hasDiscount ? product.originalPrice - product.price : 0;
@@ -432,15 +434,22 @@ export default function ProductDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
             {/* Left Column: Media Carousel & Interactive Gallery */}
             <div className="lg:col-span-6 space-y-4">
-              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-800 group">
-                <img
-                  src={images[activeImageIndex]}
-                  alt={product.title}
-                  onClick={() => setIsLightboxOpen(true)}
-                  className={`w-full h-full object-cover cursor-zoom-in transition-transform duration-300 ${
-                    isZoomed ? "scale-125" : "scale-100 group-hover:scale-105"
-                  }`}
-                />
+              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-800 group flex items-center justify-center">
+                {images.length > 0 ? (
+                  <img
+                    src={images[activeImageIndex]}
+                    alt={product.title}
+                    onClick={() => setIsLightboxOpen(true)}
+                    className={`w-full h-full object-cover cursor-zoom-in transition-transform duration-300 ${
+                      isZoomed ? "scale-125" : "scale-100 group-hover:scale-105"
+                    }`}
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-stone-400 gap-2">
+                    <Package className="w-12 h-12 opacity-30" />
+                    <span className="text-xs font-semibold text-stone-400">No Image Uploaded</span>
+                  </div>
+                )}
 
                 {/* Overlay Badges */}
                 <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 pointer-events-none">
@@ -602,11 +611,17 @@ export default function ProductDetailPage() {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={product.seller?.logoUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80"}
-                        alt={product.seller?.name}
-                        className="w-12 h-12 rounded-xl object-cover border-2 border-emerald-500 shadow-sm"
-                      />
+                      {product.seller?.logoUrl ? (
+                        <img
+                          src={product.seller.logoUrl}
+                          alt={product.seller?.name}
+                          className="w-12 h-12 rounded-xl object-cover border-2 border-emerald-500 shadow-sm"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border-2 border-emerald-500/40 flex items-center justify-center text-emerald-600 font-bold text-base shadow-sm">
+                          <Building2 className="w-6 h-6" />
+                        </div>
+                      )}
                       <div>
                         <h4 className="font-bold text-sm text-stone-900 dark:text-white flex items-center gap-1.5">
                           {product.seller?.businessName || product.seller?.name}
@@ -628,13 +643,15 @@ export default function ProductDetailPage() {
                       </div>
                     </div>
 
-                    <Link
-                      href={`/biz/${product.seller?.slug || "royals-motors"}`}
-                      className="px-3.5 py-1.5 bg-white dark:bg-stone-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1"
-                    >
-                      <span>View Storefront</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </Link>
+                    {product.seller?.slug && (
+                      <Link
+                        href={`/biz/${product.seller.slug}`}
+                        className="px-3.5 py-1.5 bg-white dark:bg-stone-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                      >
+                        <span>View Storefront</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>

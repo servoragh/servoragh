@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getServerCache, setServerCache } from "@/lib/serverCache";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,14 @@ export async function GET() {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ user: null });
+    }
+
+    const cacheKey = `auth_me_${session.id}`;
+    const cachedUser = getServerCache(cacheKey);
+    if (cachedUser) {
+      return NextResponse.json({ user: cachedUser }, {
+        headers: { "X-Servora-Cache": "HIT" }
+      });
     }
 
     try {
@@ -38,6 +47,7 @@ export async function GET() {
         });
 
         if (dbUser) {
+          setServerCache(cacheKey, dbUser, 30);
           return NextResponse.json({ user: dbUser });
         }
       }

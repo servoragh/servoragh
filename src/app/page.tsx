@@ -69,25 +69,28 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 transition-colors duration-200 max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 max-w-full overflow-x-hidden">
       {/* 1. HERO SECTION */}
-      <section className="relative pt-6 sm:pt-12 pb-10 sm:pb-14 bg-gradient-to-b from-emerald-50/70 via-stone-50 to-stone-50 dark:from-stone-900 dark:via-stone-900 dark:to-stone-950 border-b border-stone-200 dark:border-stone-800 z-40 transition-colors duration-200">
-        {/* Ambient Blur Orbs */}
-        <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-72 sm:w-96 h-72 sm:h-96 bg-gradient-to-tr from-emerald-500/15 to-teal-500/20 rounded-full blur-3xl pointer-events-none overflow-hidden" />
-        <div className="absolute bottom-0 left-0 translate-y-12 -translate-x-12 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none overflow-hidden" />
+      <section className="relative pt-6 sm:pt-12 pb-10 sm:pb-14 bg-gradient-to-b from-emerald-50/40 via-stone-50 to-stone-50 dark:from-[#0b0f19] dark:via-[#080b11] dark:to-[#07090e] border-b border-stone-200/80 dark:border-white/[0.06] z-40 overflow-hidden">
+        {/* Futuristic Subtle Grid Pattern */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-40 dark:opacity-60 pointer-events-none" />
+
+        {/* Ambient Top Radial Spotlight & Glows */}
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] sm:w-[900px] h-[350px] bg-gradient-to-b from-emerald-500/15 via-teal-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-10 right-0 w-80 h-80 bg-gradient-to-bl from-teal-500/10 via-emerald-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-40">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-            {/* Left Column: Value Proposition & Search Omnibox (High z-index z-50 so search dropdown floats on top) */}
+            {/* Left Column: Value Proposition & Search Omnibox */}
             <div className="lg:col-span-7 space-y-5 relative z-50">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 dark:from-emerald-950/80 dark:to-teal-950/80 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[11px] sm:text-xs font-extrabold shadow-xs backdrop-blur-md max-w-full">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-[11px] sm:text-xs font-extrabold shadow-xs backdrop-blur-md max-w-full">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span className="truncate">#1 Local Service & Universal Trade Marketplace in Northern Ghana</span>
               </div>
 
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.12] text-stone-900 dark:text-white">
                 Find trusted local services in{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 dark:from-emerald-400 dark:via-teal-300 dark:to-amber-300">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-300">
                   Northern Ghana.
                 </span>
               </h1>
@@ -108,7 +111,7 @@ export default function HomePage() {
                   <button
                     key={tag.query}
                     onClick={() => setIsWizardOpen(true)}
-                    className="px-2.5 py-1 bg-white/80 dark:bg-stone-900/80 hover:bg-emerald-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 hover:text-emerald-700 dark:hover:text-emerald-400 text-[11px] font-bold rounded-full border border-stone-200/80 dark:border-stone-800 transition cursor-pointer shadow-2xs"
+                    className="px-2.5 py-1 bg-white/90 dark:bg-stone-900/80 hover:bg-emerald-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 hover:text-emerald-700 dark:hover:text-emerald-400 text-[11px] font-bold rounded-full border border-stone-200/80 dark:border-white/[0.08] transition cursor-pointer shadow-2xs backdrop-blur-sm"
                   >
                     {tag.label}
                   </button>
@@ -119,7 +122,7 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
                 <button
                   onClick={() => setIsWizardOpen(true)}
-                  className="w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-600 hover:from-emerald-800 hover:to-teal-700 text-white font-black text-sm sm:text-base rounded-full shadow-lg shadow-emerald-600/20 active:scale-98 transition flex items-center justify-center gap-2 group cursor-pointer"
+                  className="w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm sm:text-base rounded-full shadow-lg shadow-emerald-500/25 active:scale-98 transition flex items-center justify-center gap-2 group cursor-pointer"
                 >
                   <PlusCircle className="w-5 h-5 group-hover:rotate-90 transition duration-300" />
                   <span>Post Request & Get Prices</span>
@@ -134,16 +137,16 @@ export default function HomePage() {
               </div>
 
               {/* Minimal Trust Badges */}
-              <div className="pt-3 border-t border-stone-200/80 dark:border-stone-800/80 flex flex-wrap items-center justify-start gap-2 sm:gap-4 text-[11px] font-semibold text-stone-600 dark:text-stone-400">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 dark:bg-stone-900/80 border border-stone-200/80 dark:border-stone-800/80 shadow-2xs text-stone-800 dark:text-stone-200">
+              <div className="pt-3 border-t border-stone-200/80 dark:border-white/[0.08] flex flex-wrap items-center justify-start gap-2 sm:gap-4 text-[11px] font-semibold text-stone-600 dark:text-stone-400">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 dark:bg-stone-900/70 border border-stone-200/80 dark:border-white/[0.08] shadow-2xs text-stone-800 dark:text-stone-200 backdrop-blur-sm">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Phone & ID Verified</span>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 dark:bg-stone-900/80 border border-stone-200/80 dark:border-stone-800/80 shadow-2xs text-stone-800 dark:text-stone-200">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 dark:bg-stone-900/70 border border-stone-200/80 dark:border-white/[0.08] shadow-2xs text-stone-800 dark:text-stone-200 backdrop-blur-sm">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Direct WhatsApp Messages</span>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 dark:bg-stone-900/80 border border-stone-200/80 dark:border-stone-800/80 shadow-2xs text-stone-800 dark:text-stone-200">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 dark:bg-stone-900/70 border border-stone-200/80 dark:border-white/[0.08] shadow-2xs text-stone-800 dark:text-stone-200 backdrop-blur-sm">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>100% Free Service</span>
                 </div>

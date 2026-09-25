@@ -20,8 +20,8 @@ export async function GET(request: Request) {
         ]
       : [];
 
-    // 1. Resolve User in Database
-    let user = await prisma.user.findFirst({
+    // 1. Resolve User in Database strictly for authenticated session
+    const user = await prisma.user.findFirst({
       where: {
         OR: [
           ...(session.id ? [{ id: session.id }] : []),
@@ -35,10 +35,36 @@ export async function GET(request: Request) {
     });
 
     if (!user) {
-      user = await prisma.user.findFirst({
-        include: {
-          businessProfile: true,
-          providerProfile: true,
+      return NextResponse.json({
+        success: true,
+        businessProfile: null,
+        products: [],
+        rentals: [],
+        services: [],
+        reviews: [],
+        questions: [],
+        escrowDeals: [],
+        chatRooms: [],
+        leads: [],
+        quotes: [],
+        incomingRequests: [],
+        kpis: {
+          totalProductLikes: 0,
+          totalProductViews: 0,
+          totalProductsCount: 0,
+          totalRentalsCount: 0,
+          totalServicesCount: 0,
+          activeEscrowsCount: 0,
+          totalEscrowVolumeGhs: 0,
+          unreadMessagesCount: 0,
+          pendingLeadsCount: 0,
+          reviewsCount: 0,
+          averageRating: 5.0,
+          profileViews: 0,
+          whatsappClicks: 0,
+          qrScansCount: 0,
+          sharesCount: 0,
+          favoritesCount: 0,
         },
       });
     }
@@ -54,8 +80,8 @@ export async function GET(request: Request) {
         ]
       : [];
 
-    // 2. Fetch Business Profile & Catalogs
-    let businessProfile = await prisma.businessProfile.findFirst({
+    // 2. Fetch Business Profile strictly for this user
+    const businessProfile = await prisma.businessProfile.findFirst({
       where: {
         OR: [
           ...(userId ? [{ userId }] : []),
@@ -81,201 +107,160 @@ export async function GET(request: Request) {
       },
     });
 
-    // If no business profile found for this specific user, fallback to the default business profile
-    if (!businessProfile) {
-      businessProfile = await prisma.businessProfile.findFirst({
-        include: {
-          products: { orderBy: { createdAt: "desc" } },
-          services: { orderBy: { createdAt: "desc" } },
-          rentals: { orderBy: { createdAt: "desc" } },
-          leads: { orderBy: { createdAt: "desc" } },
-          quotes: { orderBy: { createdAt: "desc" } },
-        },
-      });
-    }
-
     const businessId = businessProfile?.id;
 
-    // 3. Fetch All Product Listings owned by this business/user
-    let products: any[] = [];
-    try {
-      products = await prisma.productListing.findMany({
-        where: {
-          OR: [
-            ...(businessId ? [{ businessId }] : []),
-            ...(userId ? [{ sellerId: userId }] : []),
-          ],
-        },
-        orderBy: { createdAt: "desc" },
-      });
-    } catch (_) {
-      products = [];
-    }
+    // 3. Parallel Query Wave 1: Fetch Products, Escrow Deals, Chat Rooms, and Incoming Requests concurrently
+    const [
+      productsResult,
+      escrowDealsResult,
+      chatMembershipsResult,
+      incomingRequestsResult
+    ] = await Promise.all([
+      // Products
+      (businessId || userId)
+        ? prisma.productListing.findMany({
+            where: {
+              OR: [
+                ...(businessId ? [{ businessId }] : []),
+                ...(userId ? [{ sellerId: userId }] : []),
+              ],
+            },
+            orderBy: { createdAt: "desc" },
+          }).catch(() => [])
+        : Promise.resolve([]),
 
-    // If still 0 products, fetch general active listings for this store
-    if (products.length === 0) {
-      try {
-        products = await prisma.productListing.findMany({
-          take: 12,
-          orderBy: { createdAt: "desc" },
-        });
-      } catch (_) {
-        products = [];
-      }
-    }
-
-    const productIds = products.map((p) => p.id);
-
-    // 4. Fetch Reviews Across All Merchant's Products & Services
-    let reviews: any[] = [];
-    if (productIds.length > 0) {
-      try {
-        const rawReviews = await prisma.productReview.findMany({
-          where: {
-            productId: { in: productIds },
-          },
-          include: {
-            product: { select: { id: true, title: true, slug: true } },
-            user: { select: { id: true, name: true, avatarUrl: true, phone: true } },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        });
-
-        reviews = rawReviews.map((r) => ({
-          id: r.id,
-          productId: r.productId,
-          productTitle: r.product?.title || "Product Item",
-          productSlug: r.product?.slug || "",
-          userId: r.userId,
-          authorName: r.user?.name || "Customer",
-          authorAvatar: r.user?.avatarUrl || null,
-          authorPhone: r.user?.phone || null,
-          rating: Number(r.rating) || 5,
-          title: r.title || "Customer Review",
-          comment: r.comment,
-          photos: Array.isArray(r.photos) ? r.photos : [],
-          isVerified: Boolean(r.isVerified),
-          sellerReply: r.sellerReply || null,
-          sellerRepliedAt: r.sellerRepliedAt || null,
-          createdAt: r.createdAt.toISOString(),
-        }));
-      } catch (err) {
-        console.warn("Product reviews query fallback:", err);
-        reviews = [];
-      }
-    }
-
-    // 5. Fetch Customer Questions Across All Merchant's Products
-    let questions: any[] = [];
-    if (productIds.length > 0) {
-      try {
-        const rawQuestions = await prisma.productQuestion.findMany({
-          where: {
-            productId: { in: productIds },
-          },
-          include: {
-            product: { select: { id: true, title: true, slug: true } },
-            user: { select: { id: true, name: true, avatarUrl: true, phone: true } },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        });
-
-        questions = rawQuestions.map((q) => ({
-          id: q.id,
-          productId: q.productId,
-          productTitle: q.product?.title || "Product Item",
-          productSlug: q.product?.slug || "",
-          userId: q.userId,
-          askerName: q.user?.name || "Interested Customer",
-          askerAvatar: q.user?.avatarUrl || null,
-          askerPhone: q.user?.phone || null,
-          question: q.question,
-          answer: q.answer || null,
-          answeredBy: q.answeredBy || null,
-          answeredAt: q.answeredAt || null,
-          createdAt: q.createdAt.toISOString(),
-        }));
-      } catch (err) {
-        console.warn("Product questions query fallback:", err);
-        questions = [];
-      }
-    }
-
-    // 6. Fetch Escrow Deals Where Merchant Is Provider (Or Customer)
-    let escrowDeals: any[] = [];
-    if (userId) {
-      try {
-        escrowDeals = await prisma.escrowDeal.findMany({
-          where: {
-            OR: [
-              { providerId: userId },
-              { customerId: userId },
-            ],
-          },
-          include: {
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                phone: true,
-                avatarUrl: true,
+      // Escrow Deals
+      userId
+        ? prisma.escrowDeal.findMany({
+            where: {
+              OR: [
+                { providerId: userId },
+                { customerId: userId },
+              ],
+            },
+            include: {
+              customer: {
+                select: { id: true, name: true, phone: true, avatarUrl: true },
+              },
+              provider: {
+                select: { id: true, name: true, phone: true, avatarUrl: true },
               },
             },
-            provider: {
-              select: {
-                id: true,
-                name: true,
-                phone: true,
-                avatarUrl: true,
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-        });
-      } catch {
-        escrowDeals = [];
-      }
-    }
+            orderBy: { createdAt: "desc" },
+          }).catch(() => [])
+        : Promise.resolve([]),
 
-    // 7. Fetch Direct Customer In-App Chat Rooms
-    let chatMemberships: any[] = [];
-    if (userId) {
-      try {
-        chatMemberships = await prisma.chatParticipant.findMany({
-          where: {
-            userId: userId,
-          },
-          include: {
-            room: {
-              include: {
-                participants: {
-                  include: {
-                    user: {
-                      select: {
-                        id: true,
-                        name: true,
-                        role: true,
-                        avatarUrl: true,
-                        phone: true,
+      // Chat Memberships
+      userId
+        ? prisma.chatParticipant.findMany({
+            where: { userId: userId },
+            include: {
+              room: {
+                include: {
+                  participants: {
+                    include: {
+                      user: {
+                        select: { id: true, name: true, role: true, avatarUrl: true, phone: true },
                       },
                     },
                   },
-                },
-                messages: {
-                  orderBy: { createdAt: "desc" },
-                  take: 1,
+                  messages: {
+                    orderBy: { createdAt: "desc" },
+                    take: 1,
+                  },
                 },
               },
             },
+            orderBy: { room: { updatedAt: "desc" } },
+            take: 20,
+          }).catch(() => [])
+        : Promise.resolve([]),
+
+      // Incoming Requests
+      prisma.serviceRequest.findMany({
+        where: {
+          status: { in: ["OPEN", "PUBLISHED"] },
+        },
+        include: {
+          customer: { select: { name: true, phone: true, avatarUrl: true } },
+          service: true,
+          location: true,
+          quotes: {
+            where: { providerId: userId },
           },
-          orderBy: { room: { updatedAt: "desc" } },
-          take: 20,
-        });
-      } catch {
-        chatMemberships = [];
-      }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 15,
+      }).catch(() => []),
+    ]);
+
+    const products = productsResult || [];
+    const escrowDeals = escrowDealsResult || [];
+    const chatMemberships = chatMembershipsResult || [];
+    const incomingRequests = incomingRequestsResult || [];
+
+    const productIds = products.map((p) => p.id);
+
+    // 4. Parallel Query Wave 2: Reviews and Questions concurrently
+    let reviews: any[] = [];
+    let questions: any[] = [];
+
+    if (productIds.length > 0) {
+      const [rawReviews, rawQuestions] = await Promise.all([
+        prisma.productReview.findMany({
+          where: { productId: { in: productIds } },
+          include: {
+            product: { select: { id: true, title: true, slug: true } },
+            user: { select: { id: true, name: true, avatarUrl: true, phone: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        }).catch(() => []),
+        prisma.productQuestion.findMany({
+          where: { productId: { in: productIds } },
+          include: {
+            product: { select: { id: true, title: true, slug: true } },
+            user: { select: { id: true, name: true, avatarUrl: true, phone: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        }).catch(() => []),
+      ]);
+
+      reviews = (rawReviews || []).map((r) => ({
+        id: r.id,
+        productId: r.productId,
+        productTitle: r.product?.title || "Product Item",
+        productSlug: r.product?.slug || "",
+        userId: r.userId,
+        authorName: r.user?.name || "Customer",
+        authorAvatar: r.user?.avatarUrl || null,
+        authorPhone: r.user?.phone || null,
+        rating: Number(r.rating) || 5,
+        title: r.title || "Customer Review",
+        comment: r.comment,
+        photos: Array.isArray(r.photos) ? r.photos : [],
+        isVerified: Boolean(r.isVerified),
+        sellerReply: r.sellerReply || null,
+        sellerRepliedAt: r.sellerRepliedAt || null,
+        createdAt: r.createdAt.toISOString(),
+      }));
+
+      questions = (rawQuestions || []).map((q) => ({
+        id: q.id,
+        productId: q.productId,
+        productTitle: q.product?.title || "Product Item",
+        productSlug: q.product?.slug || "",
+        userId: q.userId,
+        askerName: q.user?.name || "Interested Customer",
+        askerAvatar: q.user?.avatarUrl || null,
+        askerPhone: q.user?.phone || null,
+        question: q.question,
+        answer: q.answer || null,
+        answeredBy: q.answeredBy || null,
+        answeredAt: q.answeredAt || null,
+        createdAt: q.createdAt.toISOString(),
+      }));
     }
 
     const chatRooms = (chatMemberships || []).map((m) => {
@@ -291,28 +276,6 @@ export async function GET(request: Request) {
         lastMessage: m.room?.messages?.[0] || null,
       };
     });
-
-    // 8. Fetch Incoming Community Service Requests & Submitted Quotes
-    let incomingRequests: any[] = [];
-    try {
-      incomingRequests = await prisma.serviceRequest.findMany({
-        where: {
-          status: { in: ["OPEN", "PUBLISHED"] },
-        },
-        include: {
-          customer: { select: { name: true, phone: true, avatarUrl: true } },
-          service: true,
-          location: true,
-          quotes: {
-            where: { providerId: userId },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 15,
-      });
-    } catch {
-      incomingRequests = [];
-    }
 
     // 9. Compute Comprehensive KPI Analytics
     const totalProductLikes = products.reduce((acc, p) => acc + (p.likesCount || 0), 0);
@@ -337,10 +300,10 @@ export async function GET(request: Request) {
       averageRating: reviews.length > 0 
         ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1))
         : (businessProfile?.ratingAverage || 5.0),
-      profileViews: businessProfile?.profileViews || 150,
+      profileViews: businessProfile?.profileViews || 0,
       whatsappClicks: businessProfile?.whatsappClicks || 0,
-      qrScansCount: businessProfile?.qrScansCount || 24,
-      sharesCount: businessProfile?.sharesCount || 12,
+      qrScansCount: businessProfile?.qrScansCount || 0,
+      sharesCount: businessProfile?.sharesCount || 0,
       favoritesCount: businessProfile?.favoritesCount || 0,
     };
 

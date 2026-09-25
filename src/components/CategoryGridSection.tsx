@@ -56,7 +56,7 @@ export function CategoryGridSection({ onPostRequestClick }: CategoryGridSectionP
   const mobileCategoriesList = showAllMobile ? categoriesList : categoriesList.slice(0, 6);
 
   return (
-    <section className="py-6 sm:py-10 bg-stone-50 dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800 transition-colors duration-200">
+    <section className="py-6 sm:py-10 bg-stone-50 dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}

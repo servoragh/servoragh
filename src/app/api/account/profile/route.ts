@@ -250,14 +250,14 @@ export async function GET(req: Request) {
             originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
             discountPercent: p.discountPercent,
             images: parsedImages,
-            image: parsedImages[0] || "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&q=80",
+            image: parsedImages[0] || null,
             category: p.category,
             area: p.area || "Tamale",
-            condition: p.condition || "USED_GOOD",
+            condition: p.condition || "BRAND_NEW",
             likesCount: p.likesCount,
             businessName: p.business?.businessName || p.seller?.name || p.guestName || "Verified Local Merchant",
-            businessSlug: p.business?.slug || "royals-motors",
-            businessPhone: p.business?.phone || p.seller?.phone || p.guestPhone || "+233240000000",
+            businessSlug: p.business?.slug || "",
+            businessPhone: p.business?.phone || p.seller?.phone || p.guestPhone || "",
             likedAt: l.id,
           };
         });
