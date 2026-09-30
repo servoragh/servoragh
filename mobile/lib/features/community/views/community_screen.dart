@@ -4,9 +4,9 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/constants.dart';
 import '../../../shared/widgets/servora_card.dart';
-import '../../../shared/widgets/servora_button.dart';
 import '../../../shared/widgets/servora_dropdown_sheet.dart';
 import '../../auth/providers/auth_provider.dart';
 
@@ -172,6 +172,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
       phoneCtrl.text = currentUser.phone;
     }
 
+    final modalCategories = [
+      {'id': 'SERVICE_CALL', 'label': '⚡ Urgent Gig'},
+      {'id': 'TOOL_RENTAL', 'label': '🔨 Tool Rental'},
+      {'id': 'ARTISAN_MEETUP', 'label': '🤝 Meetup'},
+      {'id': 'GRID_ALERT', 'label': '📢 Grid Alert'},
+      {'id': 'SKILL_SHARE', 'label': '🎓 Skill Share'},
+      {'id': 'RECOMMENDATION', 'label': '⭐ Recommend'},
+      {'id': 'LOST_AND_FOUND', 'label': '🔍 Lost Tools'},
+      {'id': 'ALL_DISCUSSIONS', 'label': '💬 Discussion'},
+    ];
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -180,169 +191,410 @@ class _CommunityScreenState extends State<CommunityScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: EdgeInsets.only(
-            top: 20,
-            left: 20,
-            right: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+        builder: (context, setModalState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final inputBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+          final inputBorder = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+
+          Widget buildInput({
+            required TextEditingController controller,
+            required String label,
+            required String hint,
+            required IconData icon,
+            int maxLines = 1,
+            TextInputType? keyboardType,
+          }) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.campaign_rounded, color: Color(0xFF059669), size: 22),
-                        Gap(8),
-                        Text('Post Notice / Equipment Call', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
-                      ],
-                    ),
-                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(ctx).pop()),
-                  ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white70 : const Color(0xFF475569),
+                  ),
                 ),
-                const Text(
-                  'Post directly to the Tamale Community Notice Board (synced with Web & Mobile).',
-                  style: TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-                const Gap(14),
-
-                // Category Selector
-                const Text('Notice Category *', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                const Gap(4),
-                DropdownButtonFormField<String>(
-                  value: category,
+                const Gap(5),
+                TextField(
+                  controller: controller,
+                  maxLines: maxLines,
+                  keyboardType: keyboardType,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'SERVICE_CALL', child: Text('⚡ Urgent Gig / Service Call')),
-                    DropdownMenuItem(value: 'TOOL_RENTAL', child: Text('🔨 Tool / Equipment Needed')),
-                    DropdownMenuItem(value: 'ARTISAN_MEETUP', child: Text('🤝 Artisan Meetup / Event')),
-                    DropdownMenuItem(value: 'GRID_ALERT', child: Text('⚡ Power / Water Grid Alert')),
-                    DropdownMenuItem(value: 'SKILL_SHARE', child: Text('🎓 Apprenticeship / Skill Share')),
-                    DropdownMenuItem(value: 'RECOMMENDATION', child: Text('⭐ Trade Recommendation')),
-                    DropdownMenuItem(value: 'LOST_AND_FOUND', child: Text('🔍 Lost & Found Tools')),
-                    DropdownMenuItem(value: 'ALL_DISCUSSIONS', child: Text('💬 General Discussion')),
-                  ],
-                  onChanged: (v) => setModalState(() => category = v ?? 'URGENT_GIG'),
-                ),
-                const Gap(10),
-
-                TextField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(labelText: 'Title / Summary *', hintText: 'e.g. Need scaffolding in Sakasaka today'),
-                ),
-                const Gap(10),
-
-                TextField(
-                  controller: contentCtrl,
-                  maxLines: 3,
-                  decoration: const InputDecoration(labelText: 'Detailed Notice *', hintText: 'Describe equipment specs, location, or problem...'),
-                ),
-                const Gap(10),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: budgetCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Budget (GH₵ Optional)', hintText: '350'),
-                      ),
+                    hintText: hint,
+                    hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+                    prefixIcon: Icon(icon, size: 18, color: const Color(0xFF059669)),
+                    filled: true,
+                    fillColor: inputBg,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: inputBorder),
                     ),
-                    const Gap(10),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: zone,
-                        decoration: InputDecoration(
-                          labelText: 'Zone *',
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        items: ['Sakasaka', 'Tamale Central', 'Choggu', 'Nyohini', 'Aboabo', 'Dungu', 'Lamashegu', 'Bolgatanga']
-                            .map((z) => DropdownMenuItem(value: z, child: Text(z, style: const TextStyle(fontSize: 12))))
-                            .toList(),
-                        onChanged: (v) => setModalState(() => zone = v ?? 'Sakasaka'),
-                      ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: inputBorder),
                     ),
-                  ],
-                ),
-                const Gap(10),
-
-                if (currentUser == null) ...[
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Your Name *', hintText: 'e.g. Amina'),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5),
+                    ),
                   ),
-                  const Gap(10),
-                  TextField(
-                    controller: phoneCtrl,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(labelText: 'WhatsApp Phone Number *', hintText: '+233 24 000 0000'),
-                  ),
-                  const Gap(10),
-                ],
-
-                const Gap(12),
-                ServoraButton(
-                  label: submitting ? 'Publishing Notice...' : 'Publish to Community Live 🎉',
-                  isLoading: submitting,
-                  onPressed: submitting
-                      ? null
-                      : () async {
-                          if (titleCtrl.text.trim().isEmpty || contentCtrl.text.trim().isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please enter title and content.')),
-                            );
-                            return;
-                          }
-                          final messenger = ScaffoldMessenger.of(ctx);
-                          setModalState(() => submitting = true);
-                          try {
-                            final token = await authNotifier.storage.getToken();
-                            final res = await _dio.post(
-                              '/community/posts',
-                              data: {
-                                'title': titleCtrl.text.trim(),
-                                'content': contentCtrl.text.trim(),
-                                'category': category,
-                                'zone': zone.toUpperCase().replaceAll(' ', '_'),
-                                'budget': budgetCtrl.text.isNotEmpty ? double.tryParse(budgetCtrl.text) : null,
-                                'urgency': urgency,
-                                'guestName': nameCtrl.text.trim().isNotEmpty ? nameCtrl.text.trim() : (currentUser?.name ?? 'Tamale Member'),
-                                'guestPhone': phoneCtrl.text.trim().isNotEmpty ? phoneCtrl.text.trim() : (currentUser?.phone ?? '+233240000000'),
-                              },
-                              options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
-                            );
-
-                            if (res.statusCode == 200 || res.statusCode == 201) {
-                              if (ctx.mounted) Navigator.of(ctx).pop();
-                              messenger.showSnackBar(
-                                const SnackBar(
-                                  backgroundColor: Color(0xFF059669),
-                                  content: Text('Notice posted to Community Board! Live on Web & Mobile ✓'),
-                                ),
-                              );
-                              _fetchLivePosts();
-                            }
-                          } catch (e) {
-                            setModalState(() => submitting = false);
-                            messenger.showSnackBar(
-                              SnackBar(backgroundColor: Colors.red, content: Text('Error posting: $e')),
-                            );
-                          }
-                        },
                 ),
               ],
+            );
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(
+              top: 12,
+              left: 20,
+              right: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
             ),
-          ),
-        ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Top Grab Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.35),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const Gap(14),
+
+                  // Header Row
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF059669), Color(0xFF0D9488)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF059669).withOpacity(0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.campaign_rounded, color: Colors.white, size: 20),
+                      ),
+                      const Gap(10),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Post Trade Notice',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                            ),
+                            Text(
+                              'Instant live sync with Tamale artisans & web feed',
+                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                  const Gap(14),
+
+                  // Category Selector (Interactive modern horizontal pills)
+                  Text(
+                    'Notice Category *',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white70 : const Color(0xFF475569),
+                    ),
+                  ),
+                  const Gap(6),
+                  SizedBox(
+                    height: 36,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: modalCategories.length,
+                      separatorBuilder: (_, __) => const Gap(8),
+                      itemBuilder: (context, idx) {
+                        final cat = modalCategories[idx];
+                        final isSel = category == cat['id'];
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setModalState(() => category = cat['id']!);
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: isSel
+                                  ? const Color(0xFF059669)
+                                  : inputBg,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: isSel ? const Color(0xFF059669) : inputBorder,
+                              ),
+                              boxShadow: isSel
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFF059669).withOpacity(0.3),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Text(
+                              cat['label']!,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isSel ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const Gap(12),
+
+                  // Title Field
+                  buildInput(
+                    controller: titleCtrl,
+                    label: 'Notice Title / Summary *',
+                    hint: category == 'TOOL_RENTAL'
+                        ? 'e.g. Need 5.5KVA Generator in Sakasaka'
+                        : category == 'SERVICE_CALL'
+                            ? 'e.g. Urgent electrician for shop wiring in Choggu'
+                            : 'e.g. Notice summary or equipment requirement',
+                    icon: Icons.title_rounded,
+                  ),
+                  const Gap(10),
+
+                  // Content Field
+                  buildInput(
+                    controller: contentCtrl,
+                    label: 'Detailed Notice *',
+                    hint: 'Describe specs, location directions, daily rate, or requirements...',
+                    icon: Icons.notes_rounded,
+                    maxLines: 3,
+                  ),
+                  const Gap(10),
+
+                  // Budget & Zone Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: buildInput(
+                          controller: budgetCtrl,
+                          label: 'Budget (GH₵ Optional)',
+                          hint: '350',
+                          icon: Icons.payments_outlined,
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Zone / Neighborhood *',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white70 : const Color(0xFF475569),
+                              ),
+                            ),
+                            const Gap(5),
+                            Container(
+                              height: 48,
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: inputBg,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: inputBorder),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: zone,
+                                  isExpanded: true,
+                                  icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF059669)),
+                                  items: ['Sakasaka', 'Tamale Central', 'Choggu', 'Nyohini', 'Aboabo', 'Dungu', 'Lamashegu', 'Bolgatanga']
+                                      .map((z) => DropdownMenuItem(
+                                            value: z,
+                                            child: Text(
+                                              z,
+                                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                            ),
+                                          ))
+                                      .toList(),
+                                  onChanged: (v) => setModalState(() => zone = v ?? 'Sakasaka'),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(12),
+
+                  // Guest contact details (if not logged in)
+                  if (currentUser == null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: inputBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: inputBorder),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.contact_phone_outlined, size: 15, color: Color(0xFF059669)),
+                              Gap(6),
+                              Text(
+                                'Your Contact (artisans reach you here)',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const Gap(8),
+                          buildInput(
+                            controller: nameCtrl,
+                            label: 'Your Name *',
+                            hint: 'e.g. Amina Alhassan',
+                            icon: Icons.person_outline_rounded,
+                          ),
+                          const Gap(8),
+                          buildInput(
+                            controller: phoneCtrl,
+                            label: 'WhatsApp Phone Number *',
+                            hint: '0240000000 or +233...',
+                            icon: Icons.phone_iphone_rounded,
+                            keyboardType: TextInputType.phone,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Gap(12),
+                  ],
+
+                  // Modern Submit Button
+                  InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: submitting
+                        ? null
+                        : () async {
+                            if (titleCtrl.text.trim().isEmpty || contentCtrl.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Please enter title and content.')),
+                              );
+                              return;
+                            }
+                            final messenger = ScaffoldMessenger.of(ctx);
+                            setModalState(() => submitting = true);
+                            try {
+                              final token = await authNotifier.storage.getToken();
+                              final res = await _dio.post(
+                                '/community/posts',
+                                data: {
+                                  'title': titleCtrl.text.trim(),
+                                  'content': contentCtrl.text.trim(),
+                                  'category': category,
+                                  'zone': zone.toUpperCase().replaceAll(' ', '_'),
+                                  'budget': budgetCtrl.text.isNotEmpty ? double.tryParse(budgetCtrl.text) : null,
+                                  'urgency': urgency,
+                                  'guestName': nameCtrl.text.trim().isNotEmpty ? nameCtrl.text.trim() : (currentUser?.name ?? 'Tamale Member'),
+                                  'guestPhone': phoneCtrl.text.trim().isNotEmpty ? phoneCtrl.text.trim() : (currentUser?.phone ?? '+233240000000'),
+                                },
+                                options: Options(headers: token != null ? {'Authorization': 'Bearer $token'} : {}),
+                              );
+
+                              if (res.statusCode == 200 || res.statusCode == 201) {
+                                if (ctx.mounted) Navigator.of(ctx).pop();
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    backgroundColor: Color(0xFF059669),
+                                    content: Text('Notice posted to Community Board! Live on Web & Mobile ✓'),
+                                  ),
+                                );
+                                _fetchLivePosts();
+                              }
+                            } catch (e) {
+                              setModalState(() => submitting = false);
+                              messenger.showSnackBar(
+                                SnackBar(backgroundColor: Colors.red, content: Text('Error posting: $e')),
+                              );
+                            }
+                          },
+                    child: Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF059669), Color(0xFF0D9488)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF059669).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: submitting
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                                  Gap(8),
+                                  Text(
+                                    'Publish Notice Live 🚀',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -388,7 +640,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           separatorBuilder: (_, __) => const Gap(8),
                           itemBuilder: (context, i) {
                             final c = comments[i];
-                            final author = c['author']?['name'] ?? c['guestName'] ?? 'Community Member';
+                            final dynamic cAuthor = c is Map ? c['author'] : null;
+                            final author = (cAuthor is Map ? cAuthor['name']?.toString() : (cAuthor is String ? cAuthor : null)) ?? c['guestName']?.toString() ?? 'Community Member';
                             return Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
@@ -509,9 +762,56 @@ class _CommunityScreenState extends State<CommunityScreen> {
         onRefresh: _fetchLivePosts,
         child: Column(
           children: [
+            // ── Clean & Sleek Quick Post Action Banner ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: _openCreatePostModal,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF059669), Color(0xFF0D9488)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF059669).withOpacity(0.22),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.add_circle_rounded, color: Colors.white, size: 20),
+                      Gap(10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '+ Post Notice / Equipment Call',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+                            ),
+                            Text(
+                              'Rent tools, post gigs & trade alerts in Tamale',
+                              style: TextStyle(color: Colors.white70, fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 12),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
             // Search & Zone Filter Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
               child: Row(
                 children: [
                   Expanded(
@@ -638,8 +938,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   Widget _buildPostCard(dynamic p, bool isDark) {
-    final authorName = p['author']?['name'] ?? p['guestName'] ?? 'Community Member';
-    final phone = p['author']?['phone'] ?? p['guestPhone'] ?? p['guestWhatsApp'] ?? '';
+    final dynamic pAuthor = p['author'];
+    final authorName = (pAuthor is Map ? pAuthor['name']?.toString() : (pAuthor is String ? pAuthor : null)) ?? p['guestName']?.toString() ?? 'Community Member';
+    final phone = (pAuthor is Map ? pAuthor['phone']?.toString() : null) ?? p['guestPhone']?.toString() ?? p['guestWhatsApp']?.toString() ?? '';
     final title = p['title'] ?? 'Community Notice';
     final content = p['content'] ?? '';
     final category = p['category']?.toString() ?? 'GENERAL';

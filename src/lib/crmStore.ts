@@ -648,6 +648,30 @@ export async function updateCustomerStatus(
   });
 
   writeLocalCrmData(list);
+
+  // Send real-time notification to user account
+  try {
+    const dbUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: target.userId },
+          { phone: target.phone },
+          ...(target.email ? [{ email: target.email }] : []),
+        ],
+      },
+    });
+    if (dbUser) {
+      await prisma.notification.create({
+        data: {
+          userId: dbUser.id,
+          title: `Account Status Update: ${newStatus}`,
+          message: `Your Servora account status has been updated to ${newStatus}. Reason: "${reason || 'Administrative operational review'}".`,
+          link: "/profile",
+        },
+      });
+    }
+  } catch (_) {}
+
   return target;
 }
 
@@ -758,6 +782,30 @@ export async function applyFinancialAdjustment(
   target.riskLevel = risk.level;
 
   writeLocalCrmData(list);
+
+  // Send real-time notification to user account
+  try {
+    const dbUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: target.userId },
+          { phone: target.phone },
+          ...(target.email ? [{ email: target.email }] : []),
+        ],
+      },
+    });
+    if (dbUser) {
+      await prisma.notification.create({
+        data: {
+          userId: dbUser.id,
+          title: `Account Transaction Notice: ${title}`,
+          message: `Your Servora account was updated with ${type.replace(/_/g, " ")} of GHS ${amount.toFixed(2)}. Title: "${title}".`,
+          link: "/profile",
+        },
+      });
+    }
+  } catch (_) {}
+
   return target;
 }
 
@@ -783,5 +831,30 @@ export async function generateShadowLoginToken(
   });
 
   writeLocalCrmData(list);
+
+  // Send real-time notification to user account so they are informed of administrator impersonation / access
+  try {
+    const dbUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: target.userId },
+          { phone: target.phone },
+          ...(target.email ? [{ email: target.email }] : []),
+        ],
+      },
+    });
+    if (dbUser) {
+      await prisma.notification.create({
+        data: {
+          userId: dbUser.id,
+          title: "Security Notice: Administrator Support Session Active",
+          message: `An authorized Servora administrator has initiated a secure support session for your account. Reason logged: "${reason}". If you did not request support, please contact Servora immediately.`,
+          link: "/profile",
+        },
+      });
+    }
+  } catch (_) {}
+
   return { token, expiresAt };
 }
+

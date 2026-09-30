@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getCrmCustomerById } from "@/lib/crmStore";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
+    const session = await getSession(request);
     if (!session || session.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized. Admin privileges required." }, { status: 403 });
     }

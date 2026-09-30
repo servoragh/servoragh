@@ -6,6 +6,7 @@ import '../../features/delivery/views/delivery_screen.dart';
 import '../../features/search/views/search_screen.dart';
 import '../../features/community/views/community_screen.dart';
 import '../../features/services/views/request_wizard_screen.dart';
+import '../../features/services/views/request_detail_screen.dart';
 import '../../features/business_portal/views/artisan_storefront_screen.dart';
 import '../../features/escrow/views/escrow_deal_screen.dart';
 import '../../features/activity/views/activity_screen.dart';
@@ -20,7 +21,7 @@ import '../../shared/widgets/main_shell_scaffold.dart';
 /// Helper to wrap screens in native iOS CupertinoPage with smooth swipe-to-back animations
 Page<dynamic> _iosPage({required GoRouterState state, required Widget child}) {
   return CupertinoPage<void>(
-    key: ValueKey('${state.uri}_${state.pageKey.value}'),
+    key: state.pageKey,
     child: child,
   );
 }
@@ -28,7 +29,7 @@ Page<dynamic> _iosPage({required GoRouterState state, required Widget child}) {
 /// Helper for bottom tabs to avoid nested route animation overhead
 Page<dynamic> _tabNavPage({required GoRouterState state, required Widget child}) {
   return NoTransitionPage<void>(
-    key: ValueKey('${state.uri}_${state.pageKey.value}'),
+    key: state.pageKey,
     child: child,
   );
 }
@@ -36,66 +37,91 @@ Page<dynamic> _tabNavPage({required GoRouterState state, required Widget child})
 final appRouter = GoRouter(
   initialLocation: '/home',
   routes: [
-    // ShellRoute for persistent bottom navigation bar across all main screens
-    ShellRoute(
-      builder: (BuildContext context, GoRouterState state, Widget child) {
-        return MainShellScaffold(child: child);
+    // StatefulShellRoute for persistent bottom navigation bar across all main screens (instant 0ms 60fps switching)
+    StatefulShellRoute.indexedStack(
+      builder: (BuildContext context, GoRouterState state, StatefulNavigationShell navigationShell) {
+        return MainShellScaffold(navigationShell: navigationShell);
       },
-      routes: [
-        GoRoute(
-          path: '/home',
-          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
-            state: state,
-            child: const HomeScreen(),
-          ),
+      branches: [
+        // Branch 0: Home
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/home',
+              pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
+                state: state,
+                child: const HomeScreen(),
+              ),
+            ),
+          ],
         ),
-        GoRoute(
-          path: '/products',
-          pageBuilder: (BuildContext context, GoRouterState state) {
-            final cat = state.uri.queryParameters['category'];
-            final subCat = state.uri.queryParameters['subCategory'];
-            return _tabNavPage(
-              state: state,
-              child: ProductsScreen(initialCategory: cat, initialSubCategory: subCat),
-            );
-          },
+
+        // Branch 1: Products
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/products',
+              pageBuilder: (BuildContext context, GoRouterState state) {
+                final cat = state.uri.queryParameters['category'];
+                final subCat = state.uri.queryParameters['subCategory'];
+                return _tabNavPage(
+                  state: state,
+                  child: ProductsScreen(initialCategory: cat, initialSubCategory: subCat),
+                );
+              },
+            ),
+          ],
         ),
-        GoRoute(
-          path: '/community',
-          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
-            state: state,
-            child: const CommunityScreen(),
-          ),
+
+        // Branch 2: Community & Notice Board
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/community',
+              pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
+                state: state,
+                child: const CommunityScreen(),
+              ),
+            ),
+            GoRoute(
+              path: '/notice-board',
+              pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
+                state: state,
+                child: const CommunityScreen(),
+              ),
+            ),
+          ],
         ),
-        GoRoute(
-          path: '/notice-board',
-          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
-            state: state,
-            child: const CommunityScreen(),
-          ),
-        ),
-        GoRoute(
-          path: '/businesses',
-          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
-            state: state,
-            child: const BusinessesScreen(),
-          ),
-        ),
-        GoRoute(
-          path: '/profile',
-          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
-            state: state,
-            child: const ProfileScreen(),
-          ),
-        ),
-        GoRoute(
-          path: '/account',
-          pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
-            state: state,
-            child: const ProfileScreen(),
-          ),
+
+        // Branch 3: Profile & Account
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/account',
+              pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
+                state: state,
+                child: const ProfileScreen(),
+              ),
+            ),
+            GoRoute(
+              path: '/profile',
+              pageBuilder: (BuildContext context, GoRouterState state) => _tabNavPage(
+                state: state,
+                child: const ProfileScreen(),
+              ),
+            ),
+          ],
         ),
       ],
+    ),
+
+    // Businesses Screen (overlay navigation)
+    GoRoute(
+      path: '/businesses',
+      pageBuilder: (BuildContext context, GoRouterState state) => _iosPage(
+        state: state,
+        child: const BusinessesScreen(),
+      ),
     ),
 
     // Full-screen overlay routes (with native iOS slide and swipe back gestures)
@@ -152,6 +178,14 @@ final appRouter = GoRouter(
         state: state,
         child: const RequestWizardScreen(),
       ),
+    ),
+    // Request detail — matches web /requests/:id
+    GoRoute(
+      path: '/requests/:id',
+      pageBuilder: (BuildContext context, GoRouterState state) {
+        final id = state.pathParameters['id'] ?? '';
+        return _iosPage(state: state, child: RequestDetailScreen(requestId: id));
+      },
     ),
     GoRoute(
       path: '/biz/:slug',

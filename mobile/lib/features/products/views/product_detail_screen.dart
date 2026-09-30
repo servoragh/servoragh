@@ -278,9 +278,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   void _showShareSheet() {
-    final title = _liveProduct?['title'] ?? 'Marketplace Item';
-    final price = _liveProduct?['price'] ?? 0;
-    final phone = _liveProduct?['seller']?['whatsapp'] ?? _liveProduct?['seller']?['phone'] ?? '+233240000000';
+    final title = _liveProduct?['title'] ?? widget.product['title'] ?? 'Marketplace Item';
+    final dynamic priceRaw = _liveProduct?['price'] ?? widget.product['price'] ?? 0;
+    final price = (priceRaw is num) ? priceRaw.toString() : priceRaw.toString();
+    final dynamic rawSeller = _liveProduct?['seller'] ?? widget.product['seller'];
+    final Map<String, dynamic>? sellerMap = (rawSeller is Map) ? Map<String, dynamic>.from(rawSeller) : null;
+    final phone = sellerMap?['whatsapp']?.toString() ??
+        sellerMap?['phone']?.toString() ??
+        _liveProduct?['phone']?.toString() ??
+        widget.product['phone']?.toString() ??
+        '+233240000000';
 
     showModalBottomSheet(
       context: context,
@@ -515,8 +522,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final user = authNotifier.state.user;
     if (user == null) return false;
     final prod = _liveProduct ?? widget.product;
-    final sellerId = prod['sellerId']?.toString() ?? prod['seller']?['id']?.toString();
-    final sellerPhone = prod['seller']?['phone']?.toString() ?? prod['phone']?.toString();
+    final dynamic rawSeller = prod['seller'];
+    final Map<String, dynamic>? sellerMap = (rawSeller is Map) ? Map<String, dynamic>.from(rawSeller) : null;
+    final sellerId = prod['sellerId']?.toString() ?? sellerMap?['id']?.toString();
+    final sellerPhone = sellerMap?['phone']?.toString() ?? prod['phone']?.toString();
     return (sellerId != null && sellerId == user.id) ||
         (sellerPhone != null && sellerPhone == user.phone) ||
         user.role == 'ADMIN' ||
@@ -1044,10 +1053,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final hasDiscount = originalPrice != null && originalPrice > price;
     final discountPct = prod['discountPercent'] ?? (hasDiscount ? (((originalPrice - price) / originalPrice) * 100).round() : 0);
 
-    final sellerData = prod['seller'] is Map ? prod['seller'] : {};
-    final sellerName = sellerData['businessName'] ?? sellerData['name'] ?? prod['seller'] ?? 'Verified Local Business';
-    final sellerSlug = sellerData['slug'] ?? prod['providerSlug'] ?? 'royals-motors';
-    final sellerLogo = sellerData['logoUrl'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80';
+    final dynamic rawSeller = prod['seller'];
+    final Map<String, dynamic> sellerData = (rawSeller is Map) ? Map<String, dynamic>.from(rawSeller) : {};
+    final sellerName = sellerData['businessName']?.toString() ??
+        sellerData['name']?.toString() ??
+        (rawSeller is String ? rawSeller : null) ??
+        'Verified Local Business';
+    final sellerSlug = sellerData['slug']?.toString() ?? prod['providerSlug']?.toString() ?? 'royals-motors';
+    final sellerLogo = sellerData['logoUrl']?.toString() ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80';
     final sellerRating = (sellerData['ratingAverage'] is num)
         ? (sellerData['ratingAverage'] as num).toDouble()
         : (sellerData['rating'] is num)
@@ -1058,7 +1071,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         : (sellerData['reviewCount'] is num)
             ? (sellerData['reviewCount'] as num).toInt()
             : 0;
-    final phone = sellerData['whatsapp'] ?? sellerData['phone'] ?? prod['phone'] ?? '+233240000000';
+    final phone = sellerData['whatsapp']?.toString() ??
+        sellerData['phone']?.toString() ??
+        prod['phone']?.toString() ??
+        '+233240000000';
 
     final description = prod['description'] ??
         'High quality genuine product verified and sourced directly in Northern Ghana.\n\n• Condition: Brand New / Tested Working\n• Warranty: 6 Months Local Guarantee\n• Delivery: Same-Day Express Haulage Available across Tamale.';
@@ -1598,10 +1614,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        q['asker']?['name'] ?? 'Customer Member',
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                                      ),
+                                      Builder(builder: (_) {
+                                        final dynamic asker = q['asker'];
+                                        final askerName = (asker is Map ? asker['name']?.toString() : (asker is String ? asker : null)) ?? 'Customer Member';
+                                        return Text(
+                                          askerName,
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                        );
+                                      }),
                                       Text(
                                         q['createdAt'] != null
                                             ? q['createdAt'].toString().substring(0, 10)
@@ -1747,7 +1767,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               Expanded(
                                 child: Column(
                                   children: [5, 4, 3, 2, 1].map((star) {
-                                    final pct = _reviewsSummary?['ratingPercentages']?[star.toString()] ?? 0;
+                                    final dynamic rawPcts = _reviewsSummary?['ratingPercentages'];
+                                    int pct = 0;
+                                    if (rawPcts is Map) {
+                                      final val = rawPcts[star.toString()] ?? rawPcts[star];
+                                      if (val is num) pct = val.toInt();
+                                    } else if (rawPcts is List && star >= 0 && star < rawPcts.length) {
+                                      final val = rawPcts[star];
+                                      if (val is num) pct = val.toInt();
+                                    }
                                     return Row(
                                       children: [
                                         Text('$star★', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
@@ -1756,7 +1784,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                           child: ClipRRect(
                                             borderRadius: BorderRadius.circular(4),
                                             child: LinearProgressIndicator(
-                                              value: (pct as num).toDouble() / 100.0,
+                                              value: pct.toDouble() / 100.0,
                                               backgroundColor: Colors.grey[300],
                                               valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
                                               minHeight: 6,
@@ -1796,23 +1824,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Row(
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 14,
-                                            backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
-                                            child: Text(
-                                              rev['author']?['name'] != null ? rev['author']['name'][0].toUpperCase() : 'C',
-                                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                                      Builder(builder: (_) {
+                                        final dynamic author = rev['author'];
+                                        final String authorName = (author is Map ? author['name']?.toString() : (author is String ? author : null)) ?? 'Verified Buyer';
+                                        return Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 14,
+                                              backgroundColor: ServoraColors.emerald600.withOpacity(0.15),
+                                              child: Text(
+                                                authorName.isNotEmpty ? authorName[0].toUpperCase() : 'C',
+                                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ServoraColors.emerald600),
+                                              ),
                                             ),
-                                          ),
-                                          const Gap(8),
-                                          Text(
-                                            rev['author']?['name'] ?? 'Verified Buyer',
-                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                          ),
-                                        ],
-                                      ),
+                                            const Gap(8),
+                                            Text(
+                                              authorName,
+                                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        );
+                                      }),
                                       Row(
                                         children: List.generate(
                                           (rev['rating'] is num ? (rev['rating'] as num).toInt() : 5),

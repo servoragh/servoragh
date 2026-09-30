@@ -238,17 +238,19 @@ model ServiceRequestMedia {
 }
 
 model Quote {
-  id             String      @id @default(uuid())
-  requestId      String
-  request        ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  providerId     String
-  provider       User        @relation("ProviderQuotes", fields: [providerId], references: [id], onDelete: Cascade)
-  price          Float
-  estimatedHours Int?
-  completionTime String
-  message        String
-  status         String      @default("PENDING") // PENDING, ACCEPTED, REJECTED
-  createdAt      DateTime    @default(now())
+  id                  String         @id @default(uuid())
+  requestId           String
+  request             ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  providerId          String
+  provider            User           @relation("ProviderQuotes", fields: [providerId], references: [id], onDelete: Cascade)
+  price               Float
+  estimatedHours      Int?
+  completionTime      String
+  message             String
+  status              String         @default("PENDING") // PENDING, CUSTOMER_ACCEPTED, ACCEPTED, REJECTED
+  customerAcceptedAt  DateTime?      // Timestamp when customer pressed Accept
+  providerConfirmedAt DateTime?      // Timestamp when provider confirmed they'll take the job
+  createdAt           DateTime       @default(now())
 
   conversation   Conversation?
 }

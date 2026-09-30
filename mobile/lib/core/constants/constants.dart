@@ -11,6 +11,7 @@ class ServoraConstants {
   static const String defaultLocalUrl = 'http://localhost:3000/api';
   static const String localBaseUrl = 'http://localhost:3000/api';
   static const String webBaseUrl = 'https://servoragh-inky.vercel.app';
+  static String get webUrl => webBaseUrl;
   static const String productionBaseUrl = 'https://servoragh-inky.vercel.app/api';
 
   static const List<String> northernNeighborhoods = [

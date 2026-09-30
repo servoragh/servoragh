@@ -248,22 +248,13 @@ class _AdminPortalViewState extends State<AdminPortalView> {
                             )
                           else
                             AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 260),
-                              reverseDuration: const Duration(milliseconds: 260),
-                              switchInCurve: Curves.easeOutCubic,
-                              switchOutCurve: Curves.easeInCubic,
+                              duration: const Duration(milliseconds: 160),
+                              switchInCurve: Curves.easeOut,
+                              switchOutCurve: Curves.easeIn,
                               transitionBuilder: (Widget child, Animation<double> animation) {
-                                final inOffset = Tween<Offset>(
-                                  begin: const Offset(0.15, 0.0),
-                                  end: Offset.zero,
-                                ).animate(animation);
-
-                                return SlideTransition(
-                                  position: inOffset,
-                                  child: FadeTransition(
-                                    opacity: animation,
-                                    child: child,
-                                  ),
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: child,
                                 );
                               },
                               child: KeyedSubtree(
@@ -1265,12 +1256,18 @@ class _AdminPortalViewState extends State<AdminPortalView> {
       selectedTileColor: ServoraColors.emerald600.withOpacity(0.12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       onTap: () {
-        setState(() {
-          _activeView = viewId;
-          _searchController.clear();
-          _searchQuery = '';
-        });
         Navigator.of(context).pop();
+        if (_activeView != viewId) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _activeView = viewId;
+                _searchController.clear();
+                _searchQuery = '';
+              });
+            }
+          });
+        }
       },
     );
   }

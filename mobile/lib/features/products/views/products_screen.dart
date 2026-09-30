@@ -178,6 +178,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
           }
 
           final providerSlug = provider['slug'] ?? p['providerSlug'] ?? p['sellerSlug'] ?? 'savannah-fresh-farms';
+          final dynamic provUser = provider['user'];
+          final Map<String, dynamic>? provUserMap = (provUser is Map) ? Map<String, dynamic>.from(provUser) : null;
 
           return {
             'id': p['id'] ?? 'prod',
@@ -192,7 +194,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             'sellerSlug': providerSlug,
             'providerSlug': providerSlug,
             'rating': 5.0,
-            'phone': provider['user']?['phone'] ?? '+233240000000',
+            'phone': provider['phone']?.toString() ?? provUserMap?['phone']?.toString() ?? '+233240000000',
             'escrow': true,
             'image': mainImage,
             'images': imageList,

@@ -802,7 +802,13 @@ class CustomerPortalViewState extends State<CustomerPortalView> {
                       height: 38,
                       decoration: const BoxDecoration(color: ServoraColors.emerald600, shape: BoxShape.circle),
                       child: Center(
-                        child: Text(biz['businessName']?.isNotEmpty == true ? biz['businessName'][0].toUpperCase() : 'B', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          () {
+                            final bn = biz['businessName']?.toString() ?? '';
+                            return bn.isNotEmpty ? bn[0].toUpperCase() : 'B';
+                          }(),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                     const Gap(10),

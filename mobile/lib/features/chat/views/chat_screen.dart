@@ -276,13 +276,19 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildActiveRoomHeader(String currentUserId, bool isDark) {
     final participants = List<dynamic>.from(_activeRoomData?['participants'] ?? []);
     final otherPart = participants.firstWhere(
-      (p) => (p['user']?['id'] ?? p['userId']) != currentUserId,
-      orElse: () => participants.isNotEmpty ? participants[0] : {},
+      (p) {
+        final dynamic pUser = p is Map ? p['user'] : null;
+        final String? uid = (pUser is Map ? pUser['id']?.toString() : null) ?? (p is Map ? p['userId']?.toString() : null);
+        return uid != currentUserId;
+      },
+      orElse: () => participants.isNotEmpty ? participants[0] : <String, dynamic>{},
     );
 
-    final userObj = otherPart['user'] is Map ? otherPart['user'] : {};
-    final String partnerName = userObj['providerProfile']?['businessName'] ?? userObj['name'] ?? _activeRoomData?['title'] ?? 'Merchant Inquiry';
-    final String? avatarUrl = userObj['avatarUrl'];
+    final userObj = otherPart['user'] is Map ? Map<String, dynamic>.from(otherPart['user'] as Map) : <String, dynamic>{};
+    final dynamic rawProvProfile = userObj['providerProfile'];
+    final Map<String, dynamic>? provProfileMap = (rawProvProfile is Map) ? Map<String, dynamic>.from(rawProvProfile) : null;
+    final String partnerName = provProfileMap?['businessName']?.toString() ?? userObj['name']?.toString() ?? _activeRoomData?['title']?.toString() ?? 'Merchant Inquiry';
+    final String? avatarUrl = userObj['avatarUrl']?.toString();
 
     return Row(
       children: [

@@ -22,7 +22,9 @@ class ServoraProviderCard extends StatelessWidget {
     final cardBg = isDark ? ServoraColors.darkSurface : Colors.white;
 
     final String name = provider['businessName'] ?? provider['name'] ?? 'Artisan Merchant';
-    final String ownerName = provider['ownerName'] ?? provider['user']?['name'] ?? 'Verified Owner';
+    final dynamic rawUser = provider['user'];
+    final Map<String, dynamic>? userMap = (rawUser is Map) ? Map<String, dynamic>.from(rawUser) : null;
+    final String ownerName = provider['ownerName'] ?? userMap?['name'] ?? (rawUser is String ? rawUser : null) ?? 'Verified Owner';
     final int yearsExp = int.tryParse((provider['yearsExperience'] ?? provider['yearsExp'] ?? 1).toString()) ?? 1;
     final String bio = provider['bio'] ?? provider['description'] ?? 'Certified local business and service specialist in Northern Ghana.';
     final String location = provider['serviceArea'] ?? provider['location'] ?? 'Tamale';
@@ -32,10 +34,10 @@ class ServoraProviderCard extends StatelessWidget {
     final double? startingPrice = (provider['pricingFixedStart'] != null)
         ? double.tryParse(provider['pricingFixedStart'].toString())
         : (provider['startingPrice'] != null ? double.tryParse(provider['startingPrice'].toString()) : null);
-    final String phone = provider['phone'] ?? provider['user']?['phone'] ?? '+233240000000';
+    final String phone = provider['phone'] ?? userMap?['phone'] ?? '+233240000000';
     final String slug = provider['slug'] ?? 'biz';
     final int trustScore = int.tryParse((provider['trustScore'] ?? 100).toString()) ?? 100;
-    final dynamic rawLogo = provider['logoUrl'] ?? provider['avatarUrl'] ?? provider['user']?['avatarUrl'] ?? provider['image'];
+    final dynamic rawLogo = provider['logoUrl'] ?? provider['avatarUrl'] ?? userMap?['avatarUrl'] ?? provider['image'];
     final String? avatarUrl = rawLogo is String
         ? (rawLogo.isNotEmpty ? rawLogo : null)
         : (rawLogo is List && rawLogo.isNotEmpty ? rawLogo[0]?.toString() : null);

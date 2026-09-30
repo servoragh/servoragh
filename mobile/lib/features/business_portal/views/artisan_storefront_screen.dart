@@ -414,7 +414,10 @@ class _ArtisanStorefrontScreenState extends State<ArtisanStorefrontScreen> {
     final List servicesList = (data['services'] is List) ? data['services'] : ((catalogs['services'] is List) ? catalogs['services'] : []);
     final List reviewsList = (data['reviews'] is List) ? data['reviews'] : [];
 
-    final String logoUrl = data['logoUrl'] ?? data['user']?['avatarUrl'] ?? '';
+    final dynamic storefrontUser = data['user'];
+    final Map<String, dynamic>? storefrontUserMap = (storefrontUser is Map) ? Map<String, dynamic>.from(storefrontUser) : null;
+    final String logoUrl = data['logoUrl']?.toString() ?? storefrontUserMap?['avatarUrl']?.toString() ?? '';
+
     final String bannerUrl = data['bannerUrl'] ?? '';
     final String storefrontPhotoUrl = data['storefrontPhotoUrl'] ?? '';
 

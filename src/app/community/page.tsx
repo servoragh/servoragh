@@ -153,56 +153,56 @@ export default function CommunityHubPage() {
     <div className="min-h-screen py-6 sm:py-10 bg-stone-50 dark:bg-stone-950 font-sans text-stone-900 dark:text-stone-100 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* ------------------------------------------------------------- */}
-        {/* 1. TOP ANNOUNCEMENT BANNER */}
+        {/* 1. ULTRA-MODERN UNIFIED COMMUNITY HERO */}
         {/* ------------------------------------------------------------- */}
-        <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-stone-900 text-white rounded-2xl p-3 sm:p-4 shadow-md flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-full bg-emerald-500/30 flex items-center justify-center font-extrabold text-amber-300 text-sm">
-              ✨
-            </span>
-            <span className="text-xs sm:text-sm font-bold tracking-tight">
-              Monetize your skills, offer local services & get Ghana Card verified in Northern Ghana!
-            </span>
-          </div>
-          <Link
-            href="/register"
-            className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-black rounded-xl transition shadow cursor-pointer shrink-0"
-          >
-            Become Verified Merchant →
-          </Link>
-        </div>
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-900 via-stone-900 to-emerald-950 text-white p-6 sm:p-8 shadow-2xl border border-stone-800/80">
+          {/* Subtle modern radial glow */}
+          <div className="absolute -top-24 -right-24 w-72 h-72 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* ------------------------------------------------------------- */}
-        {/* 2. HERO COMMUNITY BANNER */}
-        {/* ------------------------------------------------------------- */}
-        <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-stone-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 text-[11px] font-extrabold rounded-full border border-amber-500/30 uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" /> Northern Ghana Trade & Community Ecosystem
+          {/* Top Row: Live status pill + Verified merchant link */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-5 relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold tracking-wide">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Live Trade Feed · Tamale & Northern Ghana</span>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-              Northern Ghana Community Hub & Trade Board 💬
-            </h1>
-            <p className="text-xs sm:text-sm text-stone-300 leading-relaxed font-medium">
-              Hyper-local real-time feed connecting artisans, suppliers, contractors, and residents across Tamale, Sakasaka, Choggu, Nyohini, and Aboabo for equipment rentals, live service calls, grid alerts, and trade meetups.
-            </p>
+
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-stone-200 hover:text-white text-xs font-semibold backdrop-blur-md transition border border-white/10"
+            >
+              <span>✨ Monetize skills & get Ghana Card verified</span>
+              <ChevronRight className="w-3.5 h-3.5 text-amber-400" />
+            </Link>
           </div>
 
-          {/* Primary CTA Button */}
-          <button
-            onClick={() => setIsPostModalOpen(true)}
-            className="px-6 py-3.5 bg-gradient-to-r from-amber-500 via-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-stone-950 font-black text-sm rounded-2xl shadow-xl shadow-amber-500/10 transition active:scale-95 cursor-pointer flex items-center justify-center gap-2 shrink-0"
-          >
-            <PlusCircle className="w-5 h-5" />
-            <span>+ Post Notice / Equipment Call</span>
-          </button>
+          {/* Middle Row: Modern headline & CTA */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+            <div className="space-y-2 max-w-2xl">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white flex items-center gap-2.5">
+                <span>Community Hub & Trade Board</span>
+                <span className="text-xl sm:text-2xl">📢</span>
+              </h1>
+              <p className="text-xs sm:text-sm text-stone-300 font-medium leading-relaxed">
+                Connect with local artisans, tool rentals, urgent service calls, and neighborhood grid alerts across Sakasaka, Choggu, Nyohini, and Aboabo.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsPostModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-stone-950 font-black text-sm rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-95 transition cursor-pointer shrink-0"
+            >
+              <PlusCircle className="w-4 h-4 text-stone-950" />
+              <span>+ Post Notice / Equipment Call</span>
+            </button>
+          </div>
         </div>
 
         {/* ------------------------------------------------------------- */}
-        {/* 3. FILTERING & CONTROL TOOLBAR */}
+        {/* 2. FILTERING & CONTROL TOOLBAR */}
         {/* ------------------------------------------------------------- */}
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-4 shadow-xs space-y-3">
-          {/* Top Filter Bar: Zone, Status & Search */}
+        <div className="bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-200/80 dark:border-stone-800/80 rounded-3xl p-4 shadow-sm space-y-3.5">
+          {/* Top Filter Bar: Search, Zone & Status */}
           <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center">
             {/* Search Input */}
             <form onSubmit={handleSearchSubmit} className="flex-1 relative">
@@ -212,19 +212,28 @@ export default function CommunityHubPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search trade notices (e.g. generator rental, solar wiring, Nyohini alert)..."
-                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full pl-10 pr-9 py-2.5 bg-stone-50 dark:bg-stone-950/60 border border-stone-200 dark:border-stone-800 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => { setSearch(""); fetchCommunityPosts(); }}
+                  className="absolute right-3 top-3 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </form>
 
             {/* Neighborhood Zone Dropdown */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <MapPin className="w-4 h-4 text-rose-500" />
+            <div className="flex items-center gap-1.5 shrink-0 bg-stone-100/80 dark:bg-stone-800/80 px-3 py-1.5 rounded-2xl border border-stone-200 dark:border-stone-700">
+              <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <select
                 value={selectedZone}
                 onChange={(e) => setSelectedZone(e.target.value as any)}
-                className="p-2.5 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl text-xs font-bold outline-none"
+                className="bg-transparent text-xs font-bold outline-none cursor-pointer text-stone-800 dark:text-stone-200"
               >
-                <option value="ALL">All Northern Ghana GH</option>
+                <option value="ALL">All Northern Ghana</option>
                 <option value="SAKASAKA">Sakasaka, Tamale</option>
                 <option value="NYOHINI">Nyohini, Tamale</option>
                 <option value="CHOGGU">Choggu, Tamale</option>
@@ -241,35 +250,38 @@ export default function CommunityHubPage() {
             </div>
 
             {/* Status Dropdown */}
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0 bg-stone-100/80 dark:bg-stone-800/80 px-3 py-1.5 rounded-2xl border border-stone-200 dark:border-stone-700">
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value as any)}
-                className="p-2.5 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl text-xs font-bold outline-none"
+                className="bg-transparent text-xs font-bold outline-none cursor-pointer text-stone-800 dark:text-stone-200"
               >
-                <option value="OPEN_ACTIVE">Status: Open / Active 🟢</option>
-                <option value="RESOLVED">Resolved / Completed ⚪</option>
-                <option value="EXPIRED">Expired 🔴</option>
+                <option value="OPEN_ACTIVE">🟢 Open / Active</option>
+                <option value="RESOLVED">⚪ Resolved</option>
+                <option value="EXPIRED">🔴 Expired</option>
                 <option value="ALL">All Statuses</option>
               </select>
             </div>
           </div>
 
           {/* Scrollable Category Pill Carousel */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold">
-            {categoryPills.map((pill) => (
-              <button
-                key={pill.id}
-                onClick={() => setSelectedCategory(pill.id)}
-                className={`px-3.5 py-2 rounded-2xl transition cursor-pointer shrink-0 ${
-                  selectedCategory === pill.id
-                    ? "bg-amber-500 text-stone-950 font-black shadow-xs"
-                    : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200"
-                }`}
-              >
-                {pill.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold scrollbar-none">
+            {categoryPills.map((pill) => {
+              const active = selectedCategory === pill.id;
+              return (
+                <button
+                  key={pill.id}
+                  onClick={() => setSelectedCategory(pill.id)}
+                  className={`px-3.5 py-1.5 rounded-xl transition cursor-pointer shrink-0 text-xs font-bold ${
+                    active
+                      ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 scale-[1.02]"
+                      : "bg-stone-100 dark:bg-stone-800/80 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700"
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 

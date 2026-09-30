@@ -6,11 +6,7 @@ import path from "path";
 
 export async function POST(request: Request) {
   try {
-    const session = await getSession(request);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
-    }
-
+    // Allow guest uploads for service request media attachments
     const formData = await request.formData();
     const file = formData.get("file") as File;
 

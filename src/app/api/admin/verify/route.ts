@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
   try {
-    const session = await getSession();
+    const session = await getSession(request);
     if (!session || session.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized. Admin privileges required." }, { status: 403 });
     }
@@ -163,7 +165,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
+    const session = await getSession(request);
     if (!session || session.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized. Admin privileges required." }, { status: 403 });
     }

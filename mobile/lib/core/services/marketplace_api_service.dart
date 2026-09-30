@@ -399,4 +399,171 @@ class MarketplaceApiService {
     } catch (_) {}
     return [];
   }
+
+  /// Fetch full admin ID & Ghana card verification queue (All tiers: Business, Provider, Delivery, Request)
+  static Future<List<Map<String, dynamic>>> fetchVerificationQueue() async {
+    try {
+      final opts = await _authOptions();
+      final response = await _dio.get('/admin/verify', options: opts);
+      if (response.statusCode == 200 && response.data != null && response.data is Map) {
+        final queue = response.data['queue'];
+        if (queue is List) {
+          return List<Map<String, dynamic>>.from(queue.map((e) => Map<String, dynamic>.from(e as Map)));
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching verification queue: $e');
+    }
+    return [];
+  }
+
+  /// Submit admin verification decision (VERIFIED or REJECTED) with optional rejection reason notes
+  static Future<Map<String, dynamic>> submitVerificationAction({
+    required String targetId,
+    required String targetType,
+    required String status,
+    String? notes,
+  }) async {
+    try {
+      final opts = await _authOptions();
+      final response = await _dio.post(
+        '/admin/verify',
+        data: {
+          'targetId': targetId,
+          'targetType': targetType,
+          'status': status,
+          'notes': notes ?? '',
+        },
+        options: opts,
+      );
+      if (response.statusCode == 200 && response.data != null && response.data is Map) {
+        return {'success': response.data['success'] == true, 'message': 'OK'};
+      }
+      return {'success': false, 'error': response.data?['error'] ?? 'Action failed'};
+    } catch (e) {
+      debugPrint('Error submitting verification action: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Fetch full CRM customers and unified statistics
+  static Future<Map<String, dynamic>> fetchCrmCustomers({
+    String? search,
+    String? status,
+    String? riskLevel,
+    String? verificationTier,
+    String? tag,
+  }) async {
+    try {
+      final opts = await _authOptions();
+      final Map<String, dynamic> query = {};
+      if (search != null && search.isNotEmpty) query['search'] = search;
+      if (status != null && status != 'ALL') query['status'] = status;
+      if (riskLevel != null && riskLevel != 'ALL') query['riskLevel'] = riskLevel;
+      if (verificationTier != null && verificationTier != 'ALL') query['verificationTier'] = verificationTier;
+      if (tag != null && tag != 'ALL') query['tag'] = tag;
+
+      final response = await _dio.get(
+        '/admin/crm/customers',
+        queryParameters: query,
+        options: opts,
+      );
+
+      if (response.statusCode == 200 && response.data != null && response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+    } catch (e) {
+      debugPrint('Error fetching CRM customers: $e');
+    }
+    return {};
+  }
+
+  /// Fetch single 360-degree customer profile
+  static Future<Map<String, dynamic>?> fetchCrmCustomerDetails(String customerId) async {
+    try {
+      final opts = await _authOptions();
+      final response = await _dio.get(
+        '/admin/crm/customers/$customerId',
+        options: opts,
+      );
+      if (response.statusCode == 200 && response.data != null && response.data['customer'] != null) {
+        return Map<String, dynamic>.from(response.data['customer'] as Map);
+      }
+    } catch (e) {
+      debugPrint('Error fetching CRM customer details: $e');
+    }
+    return null;
+  }
+
+  /// Execute CRM customer action (SHADOW_LOGIN, FINANCIAL_ADJUSTMENT, UPDATE_STATUS, SECURITY_OVERRIDE)
+  static Future<Map<String, dynamic>> executeCrmAction({
+    required String customerId,
+    required String actionType,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final opts = await _authOptions();
+      final body = {
+        'actionType': actionType,
+        ...?data,
+      };
+      final response = await _dio.post(
+        '/admin/crm/customers/$customerId/action',
+        data: body,
+        options: opts,
+      );
+      if (response.statusCode == 200 && response.data != null && response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+      return {'success': false, 'error': response.data?['error'] ?? 'CRM action failed'};
+    } catch (e) {
+      debugPrint('Error executing CRM action: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Add internal sticky note to customer profile
+  static Future<Map<String, dynamic>> addCrmNote({
+    required String customerId,
+    required String content,
+    bool isPinned = false,
+  }) async {
+    try {
+      final opts = await _authOptions();
+      final response = await _dio.post(
+        '/admin/crm/customers/$customerId/notes',
+        data: {'content': content, 'isPinned': isPinned},
+        options: opts,
+      );
+      if (response.statusCode == 200 && response.data != null && response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+      return {'success': false, 'error': response.data?['error'] ?? 'Note failed'};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Update customer tags
+  static Future<Map<String, dynamic>> updateCrmTags({
+    required String customerId,
+    required List<String> tags,
+  }) async {
+    try {
+      final opts = await _authOptions();
+      final response = await _dio.post(
+        '/admin/crm/customers/$customerId/tags',
+        data: {'tags': tags},
+        options: opts,
+      );
+      if (response.statusCode == 200 && response.data != null && response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+      return {'success': false, 'error': response.data?['error'] ?? 'Tags failed'};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
 }
+
+

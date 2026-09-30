@@ -5,9 +5,9 @@ import '../../app/theme/servora_colors.dart';
 import '../../features/auth/providers/auth_provider.dart';
 
 class MainShellScaffold extends StatefulWidget {
-  final Widget child;
+  final StatefulNavigationShell navigationShell;
 
-  const MainShellScaffold({super.key, required this.child});
+  const MainShellScaffold({super.key, required this.navigationShell});
 
   @override
   State<MainShellScaffold> createState() => _MainShellScaffoldState();
@@ -15,54 +15,50 @@ class MainShellScaffold extends StatefulWidget {
 
 class _MainShellScaffoldState extends State<MainShellScaffold> {
   DateTime? _lastBackPressTime;
-  int _lastIndex = 0;
-  double _slideDirection = 1.0; // 1.0 for right-to-left (forward), -1.0 for left-to-right (backward)
 
-
-  int _calculateSelectedIndex(BuildContext context) {
-    final String location = GoRouterState.of(context).matchedLocation;
-    if (location.startsWith('/home')) return 0;
-    if (location.startsWith('/products')) return 1;
-    if (location.startsWith('/community') || location.startsWith('/notice-board')) return 3;
-    if (location.startsWith('/profile') || location.startsWith('/account') || location.startsWith('/portal') || location.startsWith('/dashboard')) return 4;
-    return 0;
-  }
-
-  void _onItemTapped(int index, BuildContext context) {
-    if (index == _lastIndex) return;
-
-    setState(() {
-      _slideDirection = index > _lastIndex ? 1.0 : -1.0;
-      _lastIndex = index;
-    });
-
-    switch (index) {
+  int _getNavIndexFromBranch(int branchIndex) {
+    switch (branchIndex) {
       case 0:
-        context.go('/home');
-        break;
+        return 0; // Home
       case 1:
-        context.go('/products');
-        break;
+        return 1; // Products
       case 2:
-        context.push('/services/request');
-        break;
+        return 3; // Notice Board (Community)
       case 3:
-        context.go('/community');
-        break;
-      case 4:
-        context.go('/account');
-        break;
+        return 4; // Account / Profile
+      default:
+        return 0;
     }
   }
 
-  void _handleBackPress(BuildContext context, int selectedIndex) {
-    if (selectedIndex != 0) {
-      // Return to Home tab from any other tab with iOS left-to-right slide
-      setState(() {
-        _slideDirection = -1.0;
-        _lastIndex = 0;
-      });
-      context.go('/home');
+  void _onDestinationSelected(int index) {
+    if (index == 2) {
+      // Middle Post Button: Push the modern request wizard modal
+      context.push('/services/request');
+      return;
+    }
+
+    int branch = 0;
+    if (index == 0) {
+      branch = 0;
+    } else if (index == 1) {
+      branch = 1;
+    } else if (index == 3) {
+      branch = 2;
+    } else if (index == 4) {
+      branch = 3;
+    }
+
+    widget.navigationShell.goBranch(
+      branch,
+      initialLocation: branch == widget.navigationShell.currentIndex,
+    );
+  }
+
+  void _handleBackPress() {
+    if (widget.navigationShell.currentIndex != 0) {
+      // Return to Home tab from any other tab instantly
+      widget.navigationShell.goBranch(0);
       return;
     }
 
@@ -99,7 +95,7 @@ class _MainShellScaffoldState extends State<MainShellScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedIndex = _calculateSelectedIndex(context);
+    final navIndex = _getNavIndexFromBranch(widget.navigationShell.currentIndex);
 
     return ListenableBuilder(
       listenable: authNotifier,
@@ -133,36 +129,14 @@ class _MainShellScaffoldState extends State<MainShellScaffold> {
           canPop: false,
           onPopInvoked: (didPop) {
             if (didPop) return;
-            _handleBackPress(context, selectedIndex);
+            _handleBackPress();
           },
           child: Scaffold(
-            body: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              reverseDuration: const Duration(milliseconds: 200),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                final inOffset = Tween<Offset>(
-                  begin: Offset(_slideDirection * 0.15, 0.0),
-                  end: Offset.zero,
-                ).animate(animation);
-
-                return SlideTransition(
-                  position: inOffset,
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  ),
-                );
-              },
-              child: KeyedSubtree(
-                key: ValueKey<int>(selectedIndex),
-                child: widget.child,
-              ),
-            ),
+            // ⚡ Zero-lag indexed navigation: branches stay loaded in memory!
+            body: widget.navigationShell,
             bottomNavigationBar: NavigationBar(
-              selectedIndex: selectedIndex,
-              onDestinationSelected: (index) => _onItemTapped(index, context),
+              selectedIndex: navIndex,
+              onDestinationSelected: _onDestinationSelected,
               destinations: [
                 const NavigationDestination(
                   icon: Icon(Icons.home_outlined),

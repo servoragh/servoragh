@@ -305,6 +305,8 @@ class _HomeScreenState extends State<HomeScreen> {
               }
 
               final providerSlug = provider['slug'] ?? p['providerSlug'] ?? p['sellerSlug'] ?? 'savannah-fresh-farms';
+              final dynamic providerUser = provider['user'];
+              final Map<String, dynamic>? providerUserMap = (providerUser is Map) ? Map<String, dynamic>.from(providerUser) : null;
 
               return {
                 'id': p['id'] ?? 'prod',
@@ -317,7 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 'sellerSlug': providerSlug,
                 'providerSlug': providerSlug,
                 'location': provider['serviceArea'] ?? 'Tamale',
-                'phone': provider['user']?['phone'] ?? '+233240000000',
+                'phone': provider['phone']?.toString() ?? providerUserMap?['phone']?.toString() ?? '+233240000000',
                 'image': mainImage,
                 'images': imageList,
                 'createdAt': p['createdAt'] ?? p['postedAt'] ?? p['created_at'],

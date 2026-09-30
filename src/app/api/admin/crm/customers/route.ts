@@ -3,9 +3,11 @@ import { getSession } from "@/lib/auth";
 import { getAllCrmCustomers } from "@/lib/crmStore";
 import { CustomerStatus, VerificationTier, RiskLevel } from "@/lib/crmTypes";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
-    const session = await getSession();
+    const session = await getSession(request);
     if (!session || session.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized. Admin privileges required." }, { status: 403 });
     }

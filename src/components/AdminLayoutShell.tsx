@@ -314,14 +314,14 @@ export function AdminLayoutShell({
       </header>
 
       {/* ------------------------------------------------------------- */}
-      {/* MOBILE DRAWER BACKDROP */}
+      {/* MOBILE DRAWER BACKDROP (HARDWARE ACCELERATED) */}
       {/* ------------------------------------------------------------- */}
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-zinc-950/60 backdrop-blur-xs z-40 md:hidden transition-opacity duration-200"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
-      )}
+      <div
+        className={`fixed inset-0 bg-zinc-950/60 z-40 md:hidden transition-opacity duration-200 cursor-pointer ${
+          mobileSidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setMobileSidebarOpen(false)}
+      />
 
       {/* ------------------------------------------------------------- */}
       {/* MAIN CONTAINER: SIDEBAR + CONTENT AREA */}
@@ -329,7 +329,7 @@ export function AdminLayoutShell({
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
         <aside
-          className={`bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 flex flex-col justify-between shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-20 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none ${
+          className={`bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 flex flex-col justify-between shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-20 transition-transform md:transition-all duration-200 ease-out will-change-transform shadow-2xl md:shadow-none ${
             mobileSidebarOpen ? "translate-x-0 w-72" : "-translate-x-full md:translate-x-0"
           } ${isSidebarExpanded ? "md:w-64" : "md:w-16"}`}
         >
